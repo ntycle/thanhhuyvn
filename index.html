@@ -62,72 +62,64 @@
 
   <div id="result"></div>
 
-  <script>
-    let data = [];
+function search() {
+  const rawInput = document.getElementById("orderId").value;
+  const ids = rawInput
+    .toUpperCase()
+    .split(/[\s,]+/) // Tách bằng khoảng trắng, dấu phẩy, xuống dòng
+    .filter(Boolean);
 
-    fetch('data.json')
-      .then(res => res.json())
-      .then(json => data = json)
-      .catch(err => {
-        document.getElementById("result").innerHTML = "<p class='not-found'>❌ Không thể tải file dữ liệu.</p>";
-        console.error("Lỗi tải JSON:", err);
-      });
+  const matches = data.filter(item => ids.includes(item["ID đơn hàng"].toUpperCase()));
 
-    function search() {
-      const id = document.getElementById("orderId").value.trim().toUpperCase();
-      const matches = data.filter(item => item["ID đơn hàng"].toUpperCase() === id);
+  const resultDiv = document.getElementById("result");
+  resultDiv.innerHTML = "";
 
-      const resultDiv = document.getElementById("result");
-      resultDiv.innerHTML = "";
+  if (matches.length === 0) {
+    resultDiv.innerHTML = `<p class="not-found">❌ Không tìm thấy đơn hàng nào khớp với: <b>${ids.join(", ")}</b></p>`;
+    return;
+  }
 
-      if (matches.length === 0) {
-        resultDiv.innerHTML = `<p class="not-found">❌ Không tìm thấy đơn hàng: <b>${id}</b></p>`;
-        return;
-      }
+  const table = document.createElement("table");
+  const headers = Object.keys(matches[0]);
 
-      const table = document.createElement("table");
-      const headers = Object.keys(matches[0]);
+  // Header
+  const thead = table.insertRow();
+  headers.forEach(h => {
+    const th = document.createElement("th");
+    th.innerText = h;
+    thead.appendChild(th);
+  });
 
-      // Header
-      const thead = table.insertRow();
-      headers.forEach(h => {
-        const th = document.createElement("th");
-        th.innerText = h;
-        thead.appendChild(th);
-      });
+  // Dữ liệu + cộng tổng
+  let totalValue = 0;
+  let totalDiscount = 0;
 
-      // Dữ liệu
-      let totalValue = 0;
-      let totalDiscount = 0;
+  matches.forEach(row => {
+    const tr = table.insertRow();
+    headers.forEach(h => {
+      const td = tr.insertCell();
+      td.innerText = row[h];
+    });
 
-      matches.forEach(row => {
-        const tr = table.insertRow();
-        headers.forEach(h => {
-          const td = tr.insertCell();
-          td.innerText = row[h];
-        });
+    totalValue += Number(row["Giá trị đơn hàng (₫)"]) || 0;
+    totalDiscount += Number(row["Chiết Khấu 2%"]) || 0;
+  });
 
-        // Cộng tổng
-        totalValue += Number(row["Giá trị đơn hàng (₫)"]) || 0;
-        totalDiscount += Number(row["Chiết Khấu 2%"]) || 0;
-      });
-
-      // Footer - dòng tổng
-      const tfoot = table.createTFoot();
-      const trFoot = tfoot.insertRow();
-      headers.forEach(h => {
-        const td = trFoot.insertCell();
-        if (h === "Giá trị đơn hàng (₫)") {
-          td.innerText = totalValue.toLocaleString("vi-VN");
-        } else if (h === "Chiết Khấu 2%") {
-          td.innerText = totalDiscount.toLocaleString("vi-VN");
-        } else {
-          td.innerText = ""; // để trống các ô khác
-        }
-      });
-
-      resultDiv.appendChild(table);
+  // Footer
+  const tfoot = table.createTFoot();
+  const trFoot = tfoot.insertRow();
+  headers.forEach(h => {
+    const td = trFoot.insertCell();
+    if (h === "Giá trị đơn hàng (₫)") {
+      td.innerText = totalValue.toLocaleString("vi-VN");
+    } else if (h === "Chiết Khấu 2%") {
+      td.innerText = totalDiscount.toLocaleString("vi-VN");
+    } else {
+      td.innerText = "";
     }
-  </script>
+  });
+
+  resultDiv.appendChild(table);
+}
 </body>
 </html>
