@@ -44,6 +44,10 @@
     th {
       background-color: #f2f2f2;
     }
+    tfoot td {
+      font-weight: bold;
+      background-color: #fafafa;
+    }
     .not-found {
       margin-top: 20px;
       color: red;
@@ -61,7 +65,6 @@
   <script>
     let data = [];
 
-    // Tải data.json
     fetch('data.json')
       .then(res => res.json())
       .then(json => data = json)
@@ -94,12 +97,33 @@
       });
 
       // Dữ liệu
+      let totalValue = 0;
+      let totalDiscount = 0;
+
       matches.forEach(row => {
         const tr = table.insertRow();
         headers.forEach(h => {
           const td = tr.insertCell();
           td.innerText = row[h];
         });
+
+        // Cộng tổng
+        totalValue += Number(row["Giá trị đơn hàng (₫)"]) || 0;
+        totalDiscount += Number(row["Chiết Khấu 2%"]) || 0;
+      });
+
+      // Footer - dòng tổng
+      const tfoot = table.createTFoot();
+      const trFoot = tfoot.insertRow();
+      headers.forEach(h => {
+        const td = trFoot.insertCell();
+        if (h === "Giá trị đơn hàng (₫)") {
+          td.innerText = totalValue.toLocaleString("vi-VN");
+        } else if (h === "Chiết Khấu 2%") {
+          td.innerText = totalDiscount.toLocaleString("vi-VN");
+        } else {
+          td.innerText = ""; // để trống các ô khác
+        }
       });
 
       resultDiv.appendChild(table);
