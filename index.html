@@ -93,11 +93,8 @@
         return;
       }
 
-      const hiddenField = "Hoa hồng Shopee trên sản phẩm(₫)";
-      const allHeaders = Object.keys(matches[0]);
-      const headers = allHeaders.filter(h => h !== hiddenField);
-
       const table = document.createElement("table");
+      const headers = Object.keys(matches[0]);
 
       const thead = table.insertRow();
       headers.forEach(h => {
@@ -110,10 +107,17 @@
       let totalDiscount = 0;
 
       matches.forEach(row => {
-        // Ràng buộc logic: nếu Hoa hồng Shopee bằng 0 → Chiết khấu 2% phải là 0
-        if (Number(row[hiddenField]) === 0) {
-          row["Chiết Khấu 2%"] = 0;
+        // Nếu Hoa hồng Shopee = 0 thì Chiết Khấu cũng là 0
+        const hoaHong = Number(row["Hoa hồng Shopee trên sản phẩm(₫)"]) || 0;
+        let discount = Number(row["Chiết Khấu 2%"]) || 0;
+
+        if (hoaHong === 0) {
+          discount = 0;
+        } else if (discount > 20000) {
+          discount = 20000;
         }
+
+        row["Chiết Khấu 2%"] = discount;
 
         const tr = table.insertRow();
         headers.forEach(h => {
@@ -122,7 +126,7 @@
         });
 
         totalValue += Number(row["Giá trị đơn hàng (₫)"]) || 0;
-        totalDiscount += Number(row["Chiết Khấu 2%"]) || 0;
+        totalDiscount += discount;
       });
 
       const tfoot = table.createTFoot();
