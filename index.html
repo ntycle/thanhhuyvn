@@ -2,28 +2,65 @@
 <html>
 <head>
   <title>Tra cứu đơn hàng</title>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    table, th, td { border: 1px solid #ccc; border-collapse: collapse; padding: 8px; }
+    table { width: 100%; margin-top: 20px; }
+    input { padding: 8px; width: 300px; }
+    button { padding: 8px 12px; }
+  </style>
 </head>
 <body>
-  <h2>Tra cứu Chiết Khấu Lại</h2>
-  <input id="orderInput" placeholder="Nhập mã đơn hàng">
-  <button onclick="traCuu()">Tra cứu</button>
-  <div id="ketQua"></div>
+  <h2>Tra cứu đơn hàng</h2>
+  <input type="text" id="orderIdInput" placeholder="Nhập ID đơn hàng">
+  <button onclick="traCuu()">Tìm</button>
+  <div id="result"></div>
 
   <script>
-    async function traCuu() {
-      const orderId = document.getElementById("orderInput").value.trim();
-      const res = await fetch("data.json"); // JSON tĩnh đã upload
-      const data = await res.json();
+    let data = [];
 
-      const matches = data.filter(row => row["ID đơn hàng"] === orderId);
-      if (matches.length === 0) {
-        document.getElementById("ketQua").innerText = "Không tìm thấy đơn hàng.";
+    async function loadData() {
+      const res = await fetch("data.json");
+      data = await res.json();
+    }
+
+    function traCuu() {
+      const id = document.getElementById("orderIdInput").value.trim();
+      const ketQua = data.filter(row => row.IDDonHang === id);
+
+      const resultDiv = document.getElementById("result");
+      if (ketQua.length === 0) {
+        resultDiv.innerHTML = "<p style='color:red'>Không tìm thấy đơn hàng.</p>";
         return;
       }
 
-      const lines = matches.map(r => "💰 Chiết Khấu Lại: " + r["Chiết Khấu Lại"]);
-      document.getElementById("ketQua").innerText = lines.join("\n");
+      let table = `<table><tr>
+        <th>Thời gian click</th>
+        <th>Thời gian đặt hàng</th>
+        <th>ID đơn hàng</th>
+        <th>Tên item</th>
+        <th>Trạng thái</th>
+        <th>Giá trị (₫)</th>
+        <th>Chiết khấu 2%</th>
+      </tr>`;
+
+      for (const row of ketQua) {
+        table += `<tr>
+          <td>${row.ThoiGianClick}</td>
+          <td>${row.ThoiGianDatHang}</td>
+          <td>${row.IDDonHang}</td>
+          <td>${row.TenItem}</td>
+          <td>${row.TrangThai}</td>
+          <td>${row.GiaTri}</td>
+          <td>${row.ChietKhau}</td>
+        </tr>`;
+      }
+      table += "</table>";
+      resultDiv.innerHTML = table;
     }
+
+    loadData();
   </script>
 </body>
 </html>
