@@ -4,29 +4,70 @@
   <meta charset="UTF-8">
   <title>Tra cứu Đơn hàng</title>
   <style>
-    table, th, td {
-      border: 1px solid #ccc;
+    body {
+      font-family: Arial, sans-serif;
+      padding: 30px;
+      background-color: #f9f9f9;
+    }
+    h2 {
+      color: #333;
+    }
+    input[type="text"] {
+      padding: 8px;
+      font-size: 16px;
+      width: 300px;
+      margin-right: 10px;
+    }
+    button {
+      padding: 8px 16px;
+      font-size: 16px;
+      cursor: pointer;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    table {
+      margin-top: 20px;
       border-collapse: collapse;
-      padding: 6px;
+      width: 100%;
+      background-color: white;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .not-found {
+      margin-top: 20px;
+      color: red;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <h2>Tra cứu đơn hàng</h2>
-  <input type="text" id="orderId" placeholder="Nhập ID đơn hàng" />
-  <button onclick="search()">Tìm</button>
-  <div id="result" style="margin-top: 20px;"></div>
+  <h2>🔍 Tra cứu đơn hàng Shopee</h2>
+  <input type="text" id="orderId" placeholder="Nhập ID đơn hàng...">
+  <button onclick="search()">Tìm kiếm</button>
+
+  <div id="result"></div>
 
   <script>
     let data = [];
 
-    // Load file data.json
+    // Tải data.json
     fetch('data.json')
-      .then(response => response.json())
+      .then(res => res.json())
       .then(json => data = json)
-      .catch(error => {
-        document.getElementById("result").innerHTML = "❌ Không thể tải data.json";
-        console.error("Lỗi load JSON:", error);
+      .catch(err => {
+        document.getElementById("result").innerHTML = "<p class='not-found'>❌ Không thể tải file dữ liệu.</p>";
+        console.error("Lỗi tải JSON:", err);
       });
 
     function search() {
@@ -37,28 +78,27 @@
       resultDiv.innerHTML = "";
 
       if (matches.length === 0) {
-        resultDiv.innerHTML = `<p>❌ Không tìm thấy đơn hàng: <b>${id}</b></p>`;
+        resultDiv.innerHTML = `<p class="not-found">❌ Không tìm thấy đơn hàng: <b>${id}</b></p>`;
         return;
       }
 
-      // Tạo bảng kết quả
       const table = document.createElement("table");
       const headers = Object.keys(matches[0]);
 
       // Header
       const thead = table.insertRow();
-      headers.forEach(key => {
+      headers.forEach(h => {
         const th = document.createElement("th");
-        th.innerText = key;
+        th.innerText = h;
         thead.appendChild(th);
       });
 
       // Dữ liệu
       matches.forEach(row => {
         const tr = table.insertRow();
-        headers.forEach(key => {
+        headers.forEach(h => {
           const td = tr.insertCell();
-          td.innerText = row[key];
+          td.innerText = row[h];
         });
       });
 
