@@ -2,13 +2,13 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>Tra cứu đơn hàng</title>
+  <title>Tra cứu đơn hàng Shopee</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      max-width: 960px;
-      margin: 0 auto;
       padding: 20px;
+      max-width: 1000px;
+      margin: auto;
     }
     input {
       padding: 8px;
@@ -16,7 +16,6 @@
     }
     button {
       padding: 8px 12px;
-      margin-left: 5px;
     }
     table {
       width: 100%;
@@ -25,11 +24,11 @@
     }
     th, td {
       border: 1px solid #ccc;
-      padding: 8px;
+      padding: 6px;
       font-size: 14px;
     }
     th {
-      background-color: #f0f0f0;
+      background-color: #f5f5f5;
     }
     tfoot td {
       font-weight: bold;
@@ -39,91 +38,90 @@
 </head>
 <body>
 
-  <h2>Tra cứu đơn hàng</h2>
-  <p>Nhập một hoặc nhiều ID đơn hàng, cách nhau bằng dấu phẩy.</p>
-  <input type="text" id="searchInput" placeholder="Ví dụ: 250730GYY7TUQS,250731ABC123">
+  <h2>🔎 Tra cứu đơn hàng Shopee</h2>
+  <p>Nhập ID đơn hàng (có thể nhập nhiều, cách nhau bằng dấu phẩy):</p>
+  <input type="text" id="searchBox" placeholder="VD: 250730GYY7TUQS, 250731ABC123">
   <button onclick="search()">Tìm kiếm</button>
 
   <table id="resultTable">
-    <thead>
-      <tr id="tableHead"></tr>
-    </thead>
-    <tbody id="tableBody"></tbody>
-    <tfoot>
-      <tr id="tableFooter"></tr>
-    </tfoot>
+    <thead><tr id="thead"></tr></thead>
+    <tbody id="tbody"></tbody>
+    <tfoot><tr id="tfoot"></tr></tfoot>
   </table>
 
   <script>
     let data = [];
 
-    fetch('data.json')
+    fetch("data.json")
       .then(res => res.json())
       .then(json => data = json)
-      .catch(err => console.error('Lỗi tải data:', err));
+      .catch(err => alert("Không tải được file data.json"));
 
     function search() {
-      const input = document.getElementById('searchInput').value.trim();
-      if (!input) return;
+      const input = document.getElementById("searchBox").value.trim();
+      const ids = input.split(",").map(x => x.trim());
+      const results = data.filter(row => ids.includes(row["ID đơn hàng"]));
 
-      const ids = input.split(',').map(id => id.trim());
-      const matched = data.filter(row => ids.includes(row["ID đơn hàng"]));
+      const table = document.getElementById("resultTable");
+      const thead = document.getElementById("thead");
+      const tbody = document.getElementById("tbody");
+      const tfoot = document.getElementById("tfoot");
 
-      const tableHead = document.getElementById('tableHead');
-      const tableBody = document.getElementById('tableBody');
-      const tableFooter = document.getElementById('tableFooter');
-      tableHead.innerHTML = '';
-      tableBody.innerHTML = '';
-      tableFooter.innerHTML = '';
+      thead.innerHTML = "";
+      tbody.innerHTML = "";
+      tfoot.innerHTML = "";
 
-      if (matched.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="99">Không tìm thấy đơn hàng</td></tr>';
+      if (results.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='99'>Không tìm thấy đơn hàng nào.</td></tr>";
         return;
       }
 
-      const allColumns = Object.keys(matched[0]);
-      const visibleColumns = allColumns.filter(c => c !== "Hoa hồng Shopee trên sản phẩm(₫)");
-
-      // Header
-      for (const col of visibleColumns) {
-        const th = document.createElement('th');
-        th.textContent = col;
-        tableHead.appendChild(th);
-      }
+      // Ẩn cột "Hoa hồng Shopee trên sản phẩm(₫)"
+      const allCols = Object.keys(results[0]);
+      const visibleCols = allCols.filter(col => col !== "Hoa hồng Shopee trên sản phẩm(₫)");
 
       // Tính tổng
-      let tongGiaTri = 0;
-      let tongChietKhau = 0;
+      let totalValue = 0;
+      let totalDiscount = 0;
 
-      for (const row of matched) {
+      // Header
+      for (const col of visibleCols) {
+        const th = document.createElement("th");
+        th.textContent = col;
+        thead.appendChild(th);
+      }
+
+      // Rows
+      results.forEach(row => {
+        // Nếu hoa hồng = 0 thì chiết khấu 2% cũng = 0
         if (parseFloat(row["Hoa hồng Shopee trên sản phẩm(₫)"]) === 0) {
-          row["Chiết Khấu 2%"] = 0;
+          row["Chiết Khấu 2%"] = "0";
         }
 
-        const tr = document.createElement('tr');
-        for (const col of visibleColumns) {
-          const td = document.createElement('td');
+        const tr = document.createElement("tr");
+        visibleCols.forEach(col => {
+          const td = document.createElement("td");
           td.textContent = row[col];
           tr.appendChild(td);
-        }
-        tableBody.appendChild(tr);
+        });
+        tbody.appendChild(tr);
 
-        tongGiaTri += parseFloat(row["Giá trị đơn hàng (₫)"]) || 0;
-        tongChietKhau += parseFloat(row["Chiết Khấu 2%"]) || 0;
-      }
+        totalValue += parseFloat(row["Giá trị đơn hàng (₫)"]) || 0;
+        totalDiscount += parseFloat(row["Chiết Khấu 2%"]) || 0;
+      });
 
       // Footer
-      for (const col of visibleColumns) {
-        const td = document.createElement('td');
+      visibleCols.forEach(col => {
+        const td = document.createElement("td");
         if (col === "Giá trị đơn hàng (₫)") {
-          td.textContent = tongGiaTri.toLocaleString();
+          td.textContent = totalValue.toLocaleString();
         } else if (col === "Chiết Khấu 2%") {
-          td.textContent = tongChietKhau.toLocaleString();
+          td.textContent = totalDiscount.toLocaleString();
         } else {
-          td.textContent = '';
+          td.textContent = "";
         }
-        tableFooter.appendChild(td);
-      }
+        tfoot.appendChild(td);
+      });
     }
   </script>
 
