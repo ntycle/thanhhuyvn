@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tra cứu đơn hàng</title>
+</head>
+<body>
+  <h2>Tra cứu Chiết Khấu Lại</h2>
+  <input id="orderInput" placeholder="Nhập mã đơn hàng">
+  <button onclick="traCuu()">Tra cứu</button>
+  <div id="ketQua"></div>
+
+  <script>
+    async function traCuu() {
+      const orderId = document.getElementById("orderInput").value.trim();
+      const res = await fetch("data.json"); // JSON tĩnh đã upload
+      const data = await res.json();
+
+      const matches = data.filter(row => row["ID đơn hàng"] === orderId);
+      if (matches.length === 0) {
+        document.getElementById("ketQua").innerText = "Không tìm thấy đơn hàng.";
+        return;
+      }
+
+      const lines = matches.map(r => "💰 Chiết Khấu Lại: " + r["Chiết Khấu Lại"]);
+      document.getElementById("ketQua").innerText = lines.join("\n");
+    }
+  </script>
+</body>
+</html>
