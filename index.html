@@ -1,138 +1,126 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
   <title>Tra cứu đơn hàng</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 40px;
-      background: #f8f8f8;
-      color: #333;
+      padding: 20px;
     }
-    h1 {
-      color: #0a6ebd;
-    }
-    textarea, button {
-      padding: 10px;
-      font-size: 16px;
-      margin-top: 10px;
-      width: 100%;
-      box-sizing: border-box;
-    }
-    button {
-      background-color: #0abd50;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #094e8c;
+    input {
+      padding: 8px;
+      width: 300px;
+      margin-right: 10px;
     }
     table {
-      width: 100%;
       border-collapse: collapse;
-      margin-top: 25px;
-      background: white;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      width: 100%;
+      margin-top: 20px;
     }
     th, td {
-      border: 1px solid #ddd;
-      padding: 10px;
+      border: 1px solid #ccc;
+      padding: 8px;
       text-align: left;
     }
     th {
-      background-color: #0a6ebd;
-      color: white;
+      background-color: #f4f4f4;
     }
-    tfoot td {
-      font-weight: bold;
-      background: #e8f4ff;
-    }
-    .not-found {
-      color: red;
-      font-weight: bold;
-      margin-top: 20px;
+    .hidden {
+      display: none;
     }
   </style>
 </head>
 <body>
-  <h1>Tra cứu đơn hàng</h1>
-  <textarea id="orderId" rows="4" placeholder="Nhập nhiều ID cách nhau bằng dấu phẩy, cách hoặc xuống dòng"></textarea>
-  <button onclick="search()">Tìm đơn hàng</button>
-  <div id="result"></div>
+
+  <h2>Tra cứu đơn hàng</h2>
+  <input type="text" id="searchInput" placeholder="Nhập một hoặc nhiều ID đơn hàng, cách nhau bằng dấu phẩy...">
+  <button onclick="search()">Tìm kiếm</button>
+
+  <table id="resultTable">
+    <thead>
+      <tr id="tableHead"></tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+    <tfoot>
+      <tr id="tableFooter"></tr>
+    </tfoot>
+  </table>
 
   <script>
     let data = [];
 
-    // Tải file JSON
-    fetch("data.json")
+    fetch('data.json')
       .then(response => response.json())
-      .then(json => {
-        data = json;
-      })
-      .catch(error => {
-        document.getElementById("result").innerHTML = "<p class='not-found'>❌ Không tải được dữ liệu.</p>";
-        console.error("Lỗi khi tải JSON:", error);
-      });
+      .then(json => data = json)
+      .catch(error => console.error('Lỗi tải dữ liệu:', error));
 
     function search() {
-      const rawInput = document.getElementById("orderId").value;
-      const ids = rawInput
-        .toUpperCase()
-        .split(/[\s,]+/)
-        .filter(Boolean);
+      const input = document.getElementById('searchInput').value.trim();
+      const ids = input.split(',').map(id => id.trim()).filter(id => id !== '');
+      const results = data.filter(row => ids.includes(row["ID đơn hàng"]));
 
-      const matches = data.filter(item => ids.includes(item["ID đơn hàng"].toUpperCase()));
+      const tableHead = document.getElementById('tableHead');
+      const tableBody = document.getElementById('tableBody');
+      const tableFooter = document.getElementById('tableFooter');
 
-      const resultDiv = document.getElementById("result");
-      resultDiv.innerHTML = "";
+      tableHead.innerHTML = '';
+      tableBody.innerHTML = '';
+      tableFooter.innerHTML = '';
 
-      if (matches.length === 0) {
-        resultDiv.innerHTML = `<p class="not-found">❌ Không tìm thấy đơn hàng nào khớp với: <b>${ids.join(", ")}</b></p>`;
+      if (results.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="10">Không tìm thấy đơn hàng</td></tr>';
         return;
       }
 
-      const table = document.createElement("table");
-      const headers = Object.keys(matches[0]);
+      // Lấy các cột cần hiển thị (trừ cột ẩn)
+      const columns = Object.keys(results[0]).filter(col => col !== "Hoa hồng Shopee trên sản phẩm(₫)");
 
-      const thead = table.insertRow();
-      headers.forEach(h => {
-        const th = document.createElement("th");
-        th.innerText = h;
-        thead.appendChild(th);
+      // Tạo header
+      columns.forEach(col => {
+        const th = document.createElement('th');
+        th.textContent = col;
+        tableHead.appendChild(th);
       });
 
-      let totalValue = 0;
-      let totalDiscount = 0;
+      // Tổng giá trị đơn và chiết khấu
+      let tongGiaTri = 0;
+      let tongChietKhau = 0;
 
-      matches.forEach(row => {
-        const tr = table.insertRow();
-        headers.forEach(h => {
-          const td = tr.insertCell();
-          td.innerText = row[h];
+      // Tạo các hàng
+      results.forEach(row => {
+        const tr = document.createElement('tr');
+        // Nếu hoa hồng Shopee là 0, thì chiết khấu phải là 0
+        if (parseFloat(row["Hoa hồng Shopee trên sản phẩm(₫)"]) === 0) {
+          row["Chiết Khấu 2%"] = 0;
+        }
+
+        columns.forEach(col => {
+          const td = document.createElement('td');
+          td.textContent = row[col];
+          tr.appendChild(td);
         });
 
-        totalValue += Number(row["Giá trị đơn hàng (₫)"]) || 0;
-        totalDiscount += Number(row["Chiết Khấu 2%"]) || 0;
+        tableBody.appendChild(tr);
+
+        tongGiaTri += parseFloat(row["Giá trị đơn hàng (₫)"]) || 0;
+        tongChietKhau += parseFloat(row["Chiết Khấu 2%"]) || 0;
       });
 
-      const tfoot = table.createTFoot();
-      const trFoot = tfoot.insertRow();
-      headers.forEach(h => {
-        const td = trFoot.insertCell();
-        if (h === "Giá trị đơn hàng (₫)") {
-          td.innerText = totalValue.toLocaleString("vi-VN");
-        } else if (h === "Chiết Khấu 2%") {
-          td.innerText = totalDiscount.toLocaleString("vi-VN");
+      // Tạo footer
+      columns.forEach(col => {
+        const td = document.createElement('td');
+        if (col === "Giá trị đơn hàng (₫)") {
+          td.textContent = tongGiaTri.toLocaleString();
+        } else if (col === "Chiết Khấu 2%") {
+          td.textContent = tongChietKhau.toLocaleString();
         } else {
-          td.innerText = "";
+          td.textContent = '';
         }
+        tableFooter.appendChild(td);
       });
-
-      resultDiv.appendChild(table);
     }
   </script>
+
 </body>
 </html>
