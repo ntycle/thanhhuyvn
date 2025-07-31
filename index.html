@@ -62,7 +62,18 @@
 
   <div id="result"></div>
 
-function search() {
+  <script>
+    let data = [];
+
+    fetch('data.json')
+      .then(res => res.json())
+      .then(json => data = json)
+      .catch(err => {
+        document.getElementById("result").innerHTML = "<p class='not-found'>❌ Không thể tải file dữ liệu.</p>";
+        console.error("Lỗi tải JSON:", err);
+      });
+
+    function search() {
   const rawInput = document.getElementById("orderId").value;
   const ids = rawInput
     .toUpperCase()
@@ -121,5 +132,9 @@ function search() {
 
   resultDiv.appendChild(table);
 }
+
+      resultDiv.appendChild(table);
+    }
+  </script>
 </body>
 </html>
