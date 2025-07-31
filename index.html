@@ -94,10 +94,13 @@
       }
 
       const table = document.createElement("table");
-      const headers = Object.keys(matches[0]);
+      
+      // Danh sách cột cần hiển thị (bỏ Hoa hồng Shopee)
+      const allKeys = Object.keys(matches[0]);
+      const visibleHeaders = allKeys.filter(k => k !== "Hoa hồng Shopee trên sản phẩm(₫)");
 
       const thead = table.insertRow();
-      headers.forEach(h => {
+      visibleHeaders.forEach(h => {
         const th = document.createElement("th");
         th.innerText = h;
         thead.appendChild(th);
@@ -107,7 +110,6 @@
       let totalDiscount = 0;
 
       matches.forEach(row => {
-        // Nếu Hoa hồng Shopee = 0 thì Chiết Khấu cũng là 0
         const hoaHong = Number(row["Hoa hồng Shopee trên sản phẩm(₫)"]) || 0;
         let discount = Number(row["Chiết Khấu 2%"]) || 0;
 
@@ -120,7 +122,7 @@
         row["Chiết Khấu 2%"] = discount;
 
         const tr = table.insertRow();
-        headers.forEach(h => {
+        visibleHeaders.forEach(h => {
           const td = tr.insertCell();
           td.innerText = row[h];
         });
@@ -131,7 +133,7 @@
 
       const tfoot = table.createTFoot();
       const trFoot = tfoot.insertRow();
-      headers.forEach(h => {
+      visibleHeaders.forEach(h => {
         const td = trFoot.insertCell();
         if (h === "Giá trị đơn hàng (₫)") {
           td.innerText = totalValue.toLocaleString("vi-VN");
