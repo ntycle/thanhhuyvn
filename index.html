@@ -1,66 +1,56 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Tra cứu đơn hàng</title>
   <meta charset="UTF-8">
-  <style>
-    body { font-family: sans-serif; padding: 20px; }
-    table, th, td { border: 1px solid #ccc; border-collapse: collapse; padding: 8px; }
-    table { width: 100%; margin-top: 20px; }
-    input { padding: 8px; width: 300px; }
-    button { padding: 8px 12px; }
-  </style>
+  <title>Tra cứu đơn hàng</title>
 </head>
 <body>
-  <h2>Tra cứu đơn hàng</h2>
-  <input type="text" id="orderIdInput" placeholder="Nhập ID đơn hàng">
-  <button onclick="traCuu()">Tìm</button>
+  <input type="text" id="orderId" placeholder="Nhập ID đơn hàng">
+  <button onclick="search()">Tìm</button>
   <div id="result"></div>
 
   <script>
     let data = [];
 
-    async function loadData() {
-      const res = await fetch("data.json");
-      data = await res.json();
-    }
+    // Load data.json từ cùng thư mục
+    fetch('data.json')
+      .then(response => response.json())
+      .then(json => data = json);
 
-    function traCuu() {
-      const id = document.getElementById("orderIdInput").value.trim();
-      const ketQua = data.filter(row => row.IDDonHang === id);
+    function search() {
+      const id = document.getElementById("orderId").value.trim().toUpperCase(); // chuẩn hóa input
+      const results = data.filter(item => item["ID đơn hàng"].toUpperCase() === id);
 
       const resultDiv = document.getElementById("result");
-      if (ketQua.length === 0) {
-        resultDiv.innerHTML = "<p style='color:red'>Không tìm thấy đơn hàng.</p>";
+      resultDiv.innerHTML = "";
+
+      if (results.length === 0) {
+        resultDiv.innerHTML = "<p>❌ Không tìm thấy đơn hàng.</p>";
         return;
       }
 
-      let table = `<table><tr>
-        <th>Thời gian click</th>
-        <th>Thời gian đặt hàng</th>
-        <th>ID đơn hàng</th>
-        <th>Tên item</th>
-        <th>Trạng thái</th>
-        <th>Giá trị (₫)</th>
-        <th>Chiết khấu 2%</th>
-      </tr>`;
+      // Tạo bảng kết quả
+      const table = document.createElement("table");
+      table.border = "1";
+      const header = Object.keys(results[0]);
 
-      for (const row of ketQua) {
-        table += `<tr>
-          <td>${row.ThoiGianClick}</td>
-          <td>${row.ThoiGianDatHang}</td>
-          <td>${row.IDDonHang}</td>
-          <td>${row.TenItem}</td>
-          <td>${row.TrangThai}</td>
-          <td>${row.GiaTri}</td>
-          <td>${row.ChietKhau}</td>
-        </tr>`;
-      }
-      table += "</table>";
-      resultDiv.innerHTML = table;
+      const thead = table.insertRow();
+      header.forEach(h => {
+        const cell = document.createElement("th");
+        cell.textContent = h;
+        thead.appendChild(cell);
+      });
+
+      results.forEach(row => {
+        const tr = table.insertRow();
+        header.forEach(h => {
+          const td = tr.insertCell();
+          td.textContent = row[h];
+        });
+      });
+
+      resultDiv.appendChild(table);
     }
-
-    loadData();
   </script>
 </body>
 </html>
