@@ -36,28 +36,30 @@ function search() {
   let totalValue = 0;
   let totalDiscount = 0;
 
-matches.forEach(row => {
-  const tr = table.insertRow();
-  headers.forEach(h => {
-    const td = tr.insertCell();
+  matches.forEach(row => {
+    const tr = table.insertRow();
+    headers.forEach(h => {
+      const td = tr.insertCell();
 
-    // Nếu là cột Chiết Khấu 2%, thì giới hạn hiển thị là 20.000
-    if (h === "Chiết Khấu 2%") {
-      const value = Math.min(Number(row[h]) || 0, 20000);
-      td.innerText = value.toLocaleString("vi-VN");
-      totalDiscount += value;
-    }
-    // Các cột khác xử lý bình thường
-    else if (h === "Giá trị đơn hàng (₫)") {
-      const value = Number(row[h]) || 0;
-      td.innerText = value.toLocaleString("vi-VN");
-      totalValue += value;
-    }
-    else {
-      td.innerText = row[h];
-    }
+      if (h === "Chiết Khấu 2%") {
+        const hoaHongRaw = row["Hoa hồng Shopee trên sản phẩm(₫)"]?.toString().replace(/\./g, "") || "0";
+        const hoaHong = Number(hoaHongRaw) || 0;
+        const chietKhau = Number(row[h]) || 0;
+        const value = hoaHong === 0 ? 0 : Math.min(chietKhau, 20000);
+
+        td.innerText = value.toLocaleString("vi-VN");
+        totalDiscount += value;
+      }
+      else if (h === "Giá trị đơn hàng (₫)") {
+        const value = Number(row[h]) || 0;
+        td.innerText = value.toLocaleString("vi-VN");
+        totalValue += value;
+      }
+      else {
+        td.innerText = row[h];
+      }
+    });
   });
-});
 
   const tfoot = table.createTFoot();
   const trFoot = tfoot.insertRow();
@@ -65,8 +67,10 @@ matches.forEach(row => {
     const td = trFoot.insertCell();
     if (h === "Giá trị đơn hàng (₫)") {
       td.innerText = totalValue.toLocaleString("vi-VN");
+      td.style.fontWeight = "bold";
     } else if (h === "Chiết Khấu 2%") {
       td.innerText = totalDiscount.toLocaleString("vi-VN");
+      td.style.fontWeight = "bold";
     } else {
       td.innerText = "";
     }
