@@ -1,5 +1,25 @@
 [
   {
+    "﻿Thời gian Click": "2025-08-01 14:29:39",
+    "Thời Gian Đặt Hàng": "2025-08-05 10:21:23",
+    "ID đơn hàng": "2508051TWYKCPM",
+    "Tên Item": "Kem vic  chính hãng 100%",
+    "Trạng thái đặt hàng": "Đang chờ xử lý",
+    "Giá trị đơn hàng (₫)": 191250.0,
+    "Hoa hồng Shopee trên sản phẩm(₫)": "17.212",
+    "Chiết Khấu 2%": 3825.0
+  },
+  {
+    "﻿Thời gian Click": "2025-08-05 08:58:36",
+    "Thời Gian Đặt Hàng": "2025-08-05 09:09:05",
+    "ID đơn hàng": "2508051PVPHM7V",
+    "Tên Item": "Khay 16 hộp lắp ráp tung tung tung sahur",
+    "Trạng thái đặt hàng": "Đang chờ xử lý",
+    "Giá trị đơn hàng (₫)": 100100.0,
+    "Hoa hồng Shopee trên sản phẩm(₫)": "9.009",
+    "Chiết Khấu 2%": 2002.0
+  },
+  {
     "﻿Thời gian Click": "2025-08-01 14:28:47",
     "Thời Gian Đặt Hàng": "2025-08-04 23:34:13",
     "ID đơn hàng": "2508050PRPHA5D",
@@ -104,7 +124,7 @@
     "Thời Gian Đặt Hàng": "2025-08-04 01:04:33",
     "ID đơn hàng": "250804UENP6K9D",
     "Tên Item": "Bát treo Oval siêu bền | Đơn vị 1 cái | Móc treo giữa tăng chỉnh | Bát đỡ thanh treo tủ quần áo | Móc treo tăng chỉnh",
-    "Trạng thái đặt hàng": "Đang chờ xử lý",
+    "Trạng thái đặt hàng": "Hoàn thành",
     "Giá trị đơn hàng (₫)": 50000.0,
     "Hoa hồng Shopee trên sản phẩm(₫)": "4.500",
     "Chiết Khấu 2%": 1000.0
@@ -213,26 +233,6 @@
     "﻿Thời gian Click": "2025-07-31 20:36:01",
     "Thời Gian Đặt Hàng": "2025-08-01 09:50:07",
     "ID đơn hàng": "250801MTMPYTE3",
-    "Tên Item": "[200g] Đậu phộng CHOUCHOU ÔNG TÂY 30 Vị Phú Quốc - Tự chọn vị",
-    "Trạng thái đặt hàng": "Hoàn thành",
-    "Giá trị đơn hàng (₫)": 130666.0,
-    "Hoa hồng Shopee trên sản phẩm(₫)": "11.760",
-    "Chiết Khấu 2%": 2613.0
-  },
-  {
-    "﻿Thời gian Click": "2025-07-31 20:36:01",
-    "Thời Gian Đặt Hàng": "2025-08-01 09:50:07",
-    "ID đơn hàng": "250801MTMPYTE3",
-    "Tên Item": "[300g] Đậu phộng CHOUCHOU ÔNG TÂY 30 Vị Phú Quốc - Tự chọn vị",
-    "Trạng thái đặt hàng": "Hoàn thành",
-    "Giá trị đơn hàng (₫)": 93333.0,
-    "Hoa hồng Shopee trên sản phẩm(₫)": "8.400",
-    "Chiết Khấu 2%": 1867.0
-  },
-  {
-    "﻿Thời gian Click": "2025-07-31 20:36:01",
-    "Thời Gian Đặt Hàng": "2025-08-01 09:50:07",
-    "ID đơn hàng": "250801MTMPYTE3",
     "Tên Item": "Đậu phộng CHOUCHOU ÔNG TÂY 30 Vị Phú Quốc - vị Vanilla",
     "Trạng thái đặt hàng": "Hoàn thành",
     "Giá trị đơn hàng (₫)": 65335.0,
@@ -248,6 +248,26 @@
     "Giá trị đơn hàng (₫)": 130666.0,
     "Hoa hồng Shopee trên sản phẩm(₫)": "11.760",
     "Chiết Khấu 2%": 2613.0
+  },
+  {
+    "﻿Thời gian Click": "2025-07-31 20:36:01",
+    "Thời Gian Đặt Hàng": "2025-08-01 09:50:07",
+    "ID đơn hàng": "250801MTMPYTE3",
+    "Tên Item": "[200g] Đậu phộng CHOUCHOU ÔNG TÂY 30 Vị Phú Quốc - Tự chọn vị",
+    "Trạng thái đặt hàng": "Hoàn thành",
+    "Giá trị đơn hàng (₫)": 130666.0,
+    "Hoa hồng Shopee trên sản phẩm(₫)": "11.760",
+    "Chiết Khấu 2%": 2613.0
+  },
+  {
+    "﻿Thời gian Click": "2025-07-31 20:36:01",
+    "Thời Gian Đặt Hàng": "2025-08-01 09:50:07",
+    "ID đơn hàng": "250801MTMPYTE3",
+    "Tên Item": "[300g] Đậu phộng CHOUCHOU ÔNG TÂY 30 Vị Phú Quốc - Tự chọn vị",
+    "Trạng thái đặt hàng": "Hoàn thành",
+    "Giá trị đơn hàng (₫)": 93333.0,
+    "Hoa hồng Shopee trên sản phẩm(₫)": "8.400",
+    "Chiết Khấu 2%": 1867.0
   },
   {
     "﻿Thời gian Click": "2025-07-31 12:24:29",
