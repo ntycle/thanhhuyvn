@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Khuyến Mãi Highlands Coffee</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f8f8f8;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #a10000;
+    }
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      max-width: 1200px;
+      margin: auto;
+    }
+    .card {
+      position: relative;
+      overflow: hidden;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      cursor: pointer;
+      transition: transform 0.3s;
+    }
+    .card:hover {
+      transform: scale(1.03);
+    }
+    .card img {
+      width: 100%;
+      height: auto;
+      display: block;
+      transition: 0.3s ease;
+    }
+    .card::after {
+      content: "Xem chi tiết";
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0,0,0,0.6);
+      color: white;
+      text-align: center;
+      padding: 10px;
+      transform: translateY(100%);
+      transition: transform 0.3s;
+    }
+    .card:hover::after {
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+<h1>MÃ GIẢM GIÁ HIGHLANDS COFFEE 08/2025</h1>
+
+<div class="grid-container">
+  <div class="card">
+    <img src="images/1.png" alt="Giảm 30k">
+  </div>
+  <div class="card">
+    <img src="images/2.png" alt="Mua 2 tặng 1">
+  </div>
+  <div class="card">
+    <img src="images/3.png" alt="Free topping">
+  </div>
+  <div class="card">
+    <img src="images/4.png" alt="Tặng bánh">
+  </div>
+  <div class="card">
+    <img src="images/5.png" alt="Mua 3 tặng 1">
+  </div>
+  <div class="card">
+    <img src="images/6.png" alt="Giảm 40k">
+  </div>
+  <div class="card">
+    <img src="images/7.png" alt="Mua 1 tặng 1">
+  </div>
+  <div class="card">
+    <img src="images/8.png" alt="Deal 1đ">
+  </div>
+</div>
+
+</body>
+</html>
