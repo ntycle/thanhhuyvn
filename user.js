@@ -4,7 +4,7 @@ import {
   signOut, onAuthStateChanged, updateProfile
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
-  getFirestore, doc, getDoc, setDoc, updateDoc,
+  getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc,
   collection, query, where, getDocs,
   serverTimestamp, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -123,7 +123,10 @@ function renderMyOrders() {
     
     const isManual = o["Tên Item"] === "Không có thông tin";
     const thaoTac = isManual 
-      ? `<button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none; font-size:11px; padding:3px 10px; cursor: pointer;" onclick="searchSingleId('${o["ID đơn hàng"]}')">🔄 Tìm Lại</button>` 
+      ? `<div style="display:flex;gap:4px">
+           <button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none; font-size:11px; padding:3px 8px; cursor: pointer;" onclick="searchSingleId('${o["ID đơn hàng"]}')">🔄 Tìm Lại</button>
+           <button class="btn-out" style="color: var(--red); border-color: var(--red); background: none; font-size:11px; padding:3px 8px; cursor: pointer;" onclick="deleteMyOrder('${o._id}', this)">🗑️ Xóa</button>
+         </div>` 
       : `<span class="tag-mine" style="font-size:11px;padding:3px 10px">✅ Đã gán</span>`;
       
     return `<tr>${dataCells}<td>${paymentBadge(o.thanhToan)}</td><td>${thaoTac}</td></tr>`;
@@ -223,7 +226,10 @@ function renderSearchResults(orders, container) {
     let actionCell = "";
     if (isMine) {
       actionCell = isManual
-        ? `<td><button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none; padding:4px 10px; font-size:12px; cursor: pointer;" onclick="searchSingleId('${o["ID đơn hàng"]}')">🔄 Tìm Lại</button></td>`
+        ? `<td><div style="display:flex;gap:4px">
+             <button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none; padding:4px 8px; font-size:12px; cursor: pointer;" onclick="searchSingleId('${o["ID đơn hàng"]}')">🔄 Tìm Lại</button>
+             <button class="btn-out" style="color: var(--red); border-color: var(--red); background: none; padding:4px 8px; font-size:12px; cursor: pointer;" onclick="deleteMyOrder('${o._id}', this)">🗑️ Xóa</button>
+           </div></td>`
         : `<td><span class="tag-mine">✅ Của tôi</span></td>`;
     } else if (isClaimed) {
       actionCell = `<td><span class="tag-other">🔒 Đã gán</span></td>`;
@@ -316,6 +322,23 @@ window.saveMissingOrder = async function(id, btn) {
       btn.disabled = false; btn.textContent = "💾 Lưu lại đơn hàng";
       alert("Lỗi: " + e.message);
     }
+  }
+};
+
+window.deleteMyOrder = async function(id, btn) {
+  if (!confirm("Bạn có chắc chắn muốn xóa lưu nháp đơn hàng này không?")) return;
+  const oldHtml = btn.innerHTML;
+  btn.disabled = true; btn.innerHTML = "⏳";
+  try {
+    await deleteDoc(doc(db, "orders", id));
+    await refreshMyOrders();
+    // Refresh search results if we are currently looking at search
+    if (document.getElementById("main-search").style.display === "block" && document.getElementById("orderId").value.trim() !== "") {
+      doSearch();
+    }
+  } catch(e) {
+    btn.disabled = false; btn.innerHTML = oldHtml;
+    alert("Lỗi xóa: " + e.message);
   }
 };
 
