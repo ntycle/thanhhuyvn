@@ -281,9 +281,13 @@ const auth = getAuth(app);
 const db   = getFirestore(app);
 
 // Các field bị ẩn khỏi bảng
-const EXCLUDE = new Set(["Hoa hồng Shopee trên sản phẩm(₫)", "userId", "createdAt", "updatedAt", "claimedAt", "_id", "thanhToan"]);
+const EXCLUDE = new Set([
+  "Hoa hồng Shopee trên sản phẩm(₫)",
+  "Chiết Khấu 2%",   // field cũ, đã được xử lý riêng qua calcDisc
+  "userId", "createdAt", "updatedAt", "claimedAt", "_id", "thanhToan"
+]);
 
-// Thứ tự cột cố định hiển thị cho user
+// Thứ tự cột cố định — luôn hiển thị theo đúng thứ tự này
 const COL_ORDER = [
   "ID đơn hàng",
   "Thời gian Click",
@@ -335,27 +339,28 @@ async function refreshMyOrders() {
   renderMyOrders();
 }
 
-function calcDisc(o) {
-  const hh = Number((o["Hoa hồng Shopee trên sản phẩm(₫)"] || "0").toString().replace(/\./g,"")) || 0;
-  const ck = Number(o["Chiết Khấu 2%"]) || 0;
-  return hh === 0 ? 0 : Math.min(ck, 20000);
-}
-
-// Trả về danh sách cột theo thứ tự cố định, chỉ lấy các cột có tồn tại trong dữ liệu
-function getOrderedHeaders(order) {
-  const available = new Set(Object.keys(order));
-  const cols = COL_ORDER.filter(c => available.has(c));
-  // Thêm các cột khác chưa được liệt kê (trừ EXCLUDE)
-  Object.keys(order).forEach(k => {
-    if (!EXCLUDE.has(k) && !cols.includes(k)) cols.push(k);
-  });
-  return cols;
-}
-
 function paymentBadge(val) {
   if (val === "Đã Thanh Toán")   return `<span class="tag-paid">💚 Đã Thanh Toán</span>`;
   if (val === "Chưa Thanh Toán") return `<span class="tag-unpaid">🟡 Chưa Thanh Toán</span>`;
   return `<span class="tag-nopay">–</span>`;
+}
+
+function calcDisc(o) {
+  const hh = Number((o["Hoa hồng Shopee trên sản phẩm(₫)"] || "0").toString().replace(/\./g,"")) || 0;
+  const ck = Number(o["Chiết Khấu"]) || Number(o["Chiết Khấu 2%"]) || 0;
+  return hh === 0 ? 0 : Math.min(ck, 20000);
+}
+
+// Render một cell theo field name — thứ tự cố định bội COL_ORDER
+function renderCell(h, o, val, disc) {
+  if (h === "Giá trị đơn hàng (₫)") return `<td>${val.toLocaleString("vi-VN")}</td>`;
+  if (h === "Chiết Khấu")         return `<td>${disc.toLocaleString("vi-VN")}</td>`;
+  if (h === "Tên Item") {
+    const full = String(o[h] ?? "");
+    const short = full.length > 50 ? full.slice(0, 50) + "\u2026" : full;
+    return `<td class="col-name"><span title="${full.replace(/"/g,'&quot;')}">${short}</span></td>`;
+  }
+  return `<td>${o[h] ?? ""}</td>`;
 }
 
 function renderMyOrders() {
@@ -366,37 +371,30 @@ function renderMyOrders() {
     </div>`;
     return;
   }
-  const headers = getOrderedHeaders(myOrders[0]);
   let totalVal = 0, totalDisc = 0;
+
+  // Header cố định từ COL_ORDER — không phụ thuộc vào field order của Firestore
+  const theadRow = COL_ORDER.map(h => `<th>${h}</th>`).join("") + `<th>Thanh toán</th><th>Thao tác</th>`;
 
   const rows = myOrders.map(o => {
     const val  = Number(o["Giá trị đơn hàng (₫)"]) || 0;
     const disc = calcDisc(o);
     totalVal += val; totalDisc += disc;
-    return `<tr>
-      ${headers.map(h => {
-        if (h === "Giá trị đơn hàng (₫)") return `<td>${val.toLocaleString("vi-VN")}</td>`;
-        if (h === "Chiết Khấu" || h === "Chiết Khấu 2%") return `<td>${disc.toLocaleString("vi-VN")}</td>`;
-        if (h === "Tên Item") {
-          const full = o[h] ?? "";
-          const short = full.length > 50 ? full.slice(0, 50) + "\u2026" : full;
-          return `<td class="col-name"><span title="${full.replace(/"/g,'&quot;')}">${short}</span></td>`;
-        }
-        return `<td>${o[h] ?? ""}</td>`;
-      }).join("")}
-      <td>${paymentBadge(o.thanhToan)}</td>
-      <td><button class="btn-unclaim" onclick="unclaimOrder('${o._id}')">✕ Bỏ gán</button></td>
-    </tr>`;
+    // Mỗi cell được render theo đúng thứ tự COL_ORDER — lookup bằng field name
+    const dataCells = COL_ORDER.map(h => renderCell(h, o, val, disc)).join("");
+    return `<tr>${dataCells}<td>${paymentBadge(o.thanhToan)}</td><td><button class="btn-unclaim" onclick="unclaimOrder('${o._id}')">&#10005; Bỏ gán</button></td></tr>`;
   }).join("");
 
+  const tfootRow = COL_ORDER.map(h => {
+    if (h === "Giá trị đơn hàng (₫)") return `<td>${totalVal.toLocaleString("vi-VN")}</td>`;
+    if (h === "Chiết Khấu")         return `<td>${totalDisc.toLocaleString("vi-VN")}</td>`;
+    return `<td>${h === COL_ORDER[0] ? "TỔNG" : ""}</td>`;
+  }).join("") + `<td></td><td></td>`;
+
   el.innerHTML = `<div class="result-wrap"><table>
-    <thead><tr>${headers.map(h=>`<th>${h}</th>`).join("")}<th>Thanh toán</th><th>Thao tác</th></tr></thead>
+    <thead><tr>${theadRow}</tr></thead>
     <tbody>${rows}</tbody>
-    <tfoot><tr>${headers.map(h => {
-      if (h === "Giá trị đơn hàng (₫)") return `<td>${totalVal.toLocaleString("vi-VN")}</td>`;
-      if (h === "Chiết Khấu" || h === "Chiết Khấu 2%") return `<td>${totalDisc.toLocaleString("vi-VN")}</td>`;
-      return `<td>${h === headers[0] ? "TỔNG" : ""}</td>`;
-    }).join("")}<td></td><td></td></tr></tfoot>
+    <tfoot><tr>${tfootRow}</tr></tfoot>
   </table></div>`;
 }
 
@@ -447,8 +445,10 @@ window.doSearch = async function() {
 };
 
 function renderSearchResults(orders, container) {
-  const headers = getOrderedHeaders(orders[0]);
+  // Header và row đều dùng COL_ORDER cố định — không phụ thuộc vào Firestore field order
   let totalVal = 0, totalDisc = 0;
+
+  const theadRow = COL_ORDER.map(h => `<th>${h}</th>`).join("") + `<th>Thanh toán</th><th>Trạng thái</th>`;
 
   const rows = orders.map(o => {
     const val  = Number(o["Giá trị đơn hàng (₫)"]) || 0;
@@ -463,30 +463,21 @@ function renderSearchResults(orders, container) {
         ? `<td><span class="tag-other">🔒 Đã gán</span></td>`
         : `<td><button class="btn-claim" onclick="claimOrder('${o._id}', this)">📌 Gán cho tôi</button></td>`;
 
-    return `<tr>
-      ${headers.map(h => {
-        if (h === "Giá trị đơn hàng (₫)") return `<td>${val.toLocaleString("vi-VN")}</td>`;
-        if (h === "Chiết Khấu" || h === "Chiết Khấu 2%") return `<td>${disc.toLocaleString("vi-VN")}</td>`;
-        if (h === "Tên Item") {
-          const full = o[h] ?? "";
-          const short = full.length > 50 ? full.slice(0, 50) + "\u2026" : full;
-          return `<td class="col-name"><span title="${full.replace(/"/g,'&quot;')}">${short}</span></td>`;
-        }
-        return `<td>${o[h] ?? ""}</td>`;
-      }).join("")}
-      <td>${paymentBadge(o.thanhToan)}</td>
-      ${actionCell}
-    </tr>`;
+    // Mỗi cell được render theo đúng thứ tự COL_ORDER
+    const dataCells = COL_ORDER.map(h => renderCell(h, o, val, disc)).join("");
+    return `<tr>${dataCells}<td>${paymentBadge(o.thanhToan)}</td>${actionCell}</tr>`;
   }).join("");
 
+  const tfootRow = COL_ORDER.map(h => {
+    if (h === "Giá trị đơn hàng (₫)") return `<td>${totalVal.toLocaleString("vi-VN")}</td>`;
+    if (h === "Chiết Khấu")         return `<td>${totalDisc.toLocaleString("vi-VN")}</td>`;
+    return `<td>${h === COL_ORDER[0] ? "TỔNG" : ""}</td>`;
+  }).join("") + `<td></td><td></td>`;
+
   container.innerHTML = `<div class="card" style="padding:0"><div class="result-wrap"><table>
-    <thead><tr>${headers.map(h=>`<th>${h}</th>`).join("")}<th>Thanh toán</th><th>Trạng thái</th></tr></thead>
+    <thead><tr>${theadRow}</tr></thead>
     <tbody>${rows}</tbody>
-    <tfoot><tr>${headers.map(h => {
-      if (h === "Giá trị đơn hàng (₫)") return `<td>${totalVal.toLocaleString("vi-VN")}</td>`;
-      if (h === "Chiết Khấu" || h === "Chiết Khấu 2%") return `<td>${totalDisc.toLocaleString("vi-VN")}</td>`;
-      return `<td>${h === headers[0] ? "TỔNG" : ""}</td>`;
-    }).join("")}<td></td><td></td></tr></tfoot>
+    <tfoot><tr>${tfootRow}</tr></tfoot>
   </table></div></div>`;
 }
 
