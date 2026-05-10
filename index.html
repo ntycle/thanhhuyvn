@@ -84,7 +84,7 @@
     }
     .tab-nav button.active { color: var(--orange); border-bottom-color: var(--orange); }
 
-    .container { max-width: 960px; margin: 0 auto; padding: 22px 16px; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 22px 20px; }
 
     .card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; margin-bottom: 18px; }
     .card-title { font-size: 15px; font-weight: 700; color: var(--blue); margin-bottom: 14px; }
@@ -110,13 +110,16 @@
     .btn-search:disabled { background: #aaa; cursor: not-allowed; }
 
     /* TABLE */
-    .result-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .result-wrap { overflow-x: auto; width: 100%; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 700px; }
     th { background: var(--blue); color: white; padding: 9px 12px; text-align: left; font-weight: 600; white-space: nowrap; }
     td { border-bottom: 1px solid var(--border); padding: 9px 12px; vertical-align: middle; }
+    td.col-name { max-width: 220px; }
+    td.col-name span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; cursor: default; }
     tbody tr:last-child td { border-bottom: none; }
     tbody tr:hover td { background: #f9f9f9; }
     tfoot td { font-weight: 700; background: #e8f4ff; color: var(--blue); }
+    @media (max-width: 900px) { td.col-name { max-width: 150px; } td.col-name span { max-width: 150px; } }
 
     /* CLAIM STATES */
     .btn-claim {
@@ -154,10 +157,16 @@
     .spinner { display: inline-block; width: 26px; height: 26px; border: 3px solid var(--border); border-top-color: var(--orange); border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 8px; display: block; margin: 0 auto 10px; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    @media (max-width: 600px) {
+    @media (max-width: 768px) {
       .auth-body { padding: 18px; }
       .tab-nav button { padding: 12px 14px; font-size: 13px; }
       .summary-stats { gap: 14px; }
+      .container { padding: 14px 10px; }
+      .summary-bar { padding: 14px 16px; }
+    }
+    @media (max-width: 480px) {
+      .tab-nav button { padding: 10px 10px; font-size: 12px; }
+      .summary-stats { flex-wrap: wrap; gap: 10px; }
     }
   </style>
 </head>
@@ -336,6 +345,11 @@ function renderMyOrders() {
       ${headers.map(h => {
         if (h === "Giá trị đơn hàng (₫)") return `<td>${val.toLocaleString("vi-VN")}</td>`;
         if (h === "Chiết Khấu 2%")         return `<td>${disc.toLocaleString("vi-VN")}</td>`;
+        if (h === "Tên Item") {
+          const full = o[h] ?? "";
+          const short = full.length > 50 ? full.slice(0, 50) + "\u2026" : full;
+          return `<td class="col-name"><span title="${full.replace(/"/g,'&quot;')}">${short}</span></td>`;
+        }
         return `<td>${o[h] ?? ""}</td>`;
       }).join("")}
       <td><button class="btn-unclaim" onclick="unclaimOrder('${o._id}')">✕ Bỏ gán</button></td>
@@ -369,8 +383,19 @@ window.doSearch = async function() {
     let found = [];
     for (let i = 0; i < ids.length; i += 30) {
       const chunk = ids.slice(i, i + 30);
-      const snap  = await getDocs(query(collection(db, "orders"), where("ID đơn hàng", "in", chunk)));
-      snap.docs.forEach(d => found.push({ _id: d.id, ...d.data() }));
+      // Query by document ID (orderID is used as doc ID by admin upload)
+      // Try querying by field first; if permission error try doc IDs
+      try {
+        const snap = await getDocs(query(collection(db, "orders"), where("ID đơn hàng", "in", chunk)));
+        snap.docs.forEach(d => found.push({ _id: d.id, ...d.data() }));
+      } catch(qErr) {
+        if (qErr.code === "permission-denied") {
+          // Fallback: try fetching by document ID directly
+          const promises = chunk.map(id => getDoc(doc(db, "orders", id)));
+          const snaps = await Promise.all(promises);
+          snaps.forEach(s => { if (s.exists()) found.push({ _id: s.id, ...s.data() }); });
+        } else throw qErr;
+      }
     }
 
     if (!found.length) {
@@ -379,7 +404,10 @@ window.doSearch = async function() {
     }
     renderSearchResults(found, resultDiv);
   } catch(e) {
-    resultDiv.innerHTML = `<div class="not-found">❌ Lỗi: ${e.message}</div>`;
+    const hint = e.code === "permission-denied"
+      ? `<br><small>💡 Lỗi quyền truy cập – liên hệ admin để cập nhật Firestore Security Rules.</small>`
+      : "";
+    resultDiv.innerHTML = `<div class="not-found">❌ Lỗi: ${e.message}${hint}</div>`;
   } finally {
     btn.disabled = false; btn.textContent = "🔍 Tìm đơn hàng";
   }
@@ -406,6 +434,11 @@ function renderSearchResults(orders, container) {
       ${headers.map(h => {
         if (h === "Giá trị đơn hàng (₫)") return `<td>${val.toLocaleString("vi-VN")}</td>`;
         if (h === "Chiết Khấu 2%")         return `<td>${disc.toLocaleString("vi-VN")}</td>`;
+        if (h === "Tên Item") {
+          const full = o[h] ?? "";
+          const short = full.length > 50 ? full.slice(0, 50) + "\u2026" : full;
+          return `<td class="col-name"><span title="${full.replace(/"/g,'&quot;')}">${short}</span></td>`;
+        }
         return `<td>${o[h] ?? ""}</td>`;
       }).join("")}
       ${actionCell}

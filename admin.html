@@ -514,16 +514,46 @@ window.confirmUpload = async function() {
   msgEl.innerHTML = `<div class="msg msg-info"><span class="spinner"></span>Đang import ${pendingData.length} đơn hàng...</div>`;
   try {
     const CHUNK = 400;
+    let countNew = 0, countUpdated = 0;
+
     for (let i = 0; i < pendingData.length; i += CHUNK) {
       const batch = writeBatch(db);
-      pendingData.slice(i, i+CHUNK).forEach(order => {
-        const ref = doc(collection(db, "orders"));
-        // Store without userId — free pool
-        batch.set(ref, { ...order, userId: null, claimedAt: null, createdAt: serverTimestamp() });
-      });
+      const slice = pendingData.slice(i, i + CHUNK);
+
+      // Check existing docs to distinguish new vs update
+      await Promise.all(slice.map(async order => {
+        const orderId = (order["ID đơn hàng"] || "").toString().trim();
+        if (!orderId) {
+          // No order ID — create with auto ID (fallback)
+          const ref = doc(collection(db, "orders"));
+          batch.set(ref, { ...order, userId: null, claimedAt: null, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+          countNew++;
+          return;
+        }
+
+        const ref = doc(db, "orders", orderId);
+        const snap = await getDoc(ref);
+
+        if (snap.exists()) {
+          // Đơn đã tồn tại: chỉ cập nhật các field đơn hàng (trạng thái, giá trị...)
+          // GIỮ NGUYÊN userId & claimedAt (dùng merge)
+          const { userId, claimedAt, createdAt, ...orderFields } = order;
+          batch.set(ref, { ...orderFields, updatedAt: serverTimestamp() }, { merge: true });
+          countUpdated++;
+        } else {
+          // Đơn mới: tạo với userId = null (chưa gán)
+          batch.set(ref, { ...order, userId: null, claimedAt: null, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+          countNew++;
+        }
+      }));
+
       await batch.commit();
     }
-    msgEl.innerHTML = `<div class="msg msg-ok">✅ Import thành công <strong>${pendingData.length}</strong> đơn hàng vào pool chung!</div>`;
+
+    msgEl.innerHTML = `<div class="msg msg-ok">
+      ✅ Import thành công <strong>${pendingData.length}</strong> đơn hàng!
+      <br><small>🆕 Thêm mới: <strong>${countNew}</strong> &nbsp;|  🔄 Cập nhật trạng thái: <strong>${countUpdated}</strong></small>
+    </div>`;
     document.getElementById("upload-preview").innerHTML = "";
     pendingData = null;
     await loadOrders(); renderDashboard();
