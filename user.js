@@ -100,6 +100,13 @@ function renderCell(h, o, val, disc) {
     const short = full.length > 50 ? full.slice(0, 50) + "\u2026" : full;
     return `<td class="col-name"><span title="${full.replace(/"/g, '&quot;')}">${short}</span></td>`;
   }
+  if (h === "Trạng thái đặt hàng") {
+    const st = o[h] || "";
+    if (st.trim().toLowerCase() === "hoàn thành") {
+      return `<td><span class="tag-mine" style="font-size:11px;padding:3px 10px">${st}</span></td>`;
+    }
+    return `<td>${st}</td>`;
+  }
   return `<td>${o[h] || ""}</td>`;
 }
 
