@@ -84,6 +84,19 @@
     .badge-user    { background: #e3f2fd; color: #1565c0; }
     .badge-claimed { background: #e8f5e9; color: #2e7d32; }
     .badge-free    { background: #f3f3f3; color: #888; }
+    .badge-paid    { background: #e8f5e9; color: #2e7d32; }
+    .badge-unpaid  { background: #fff3e0; color: #c75000; }
+    .badge-nopay   { background: #f3f3f3; color: #888; }
+
+    /* PAYMENT SELECT */
+    select.pay-sel {
+      padding: 3px 8px; border: 1.5px solid var(--border); border-radius: 6px;
+      font-size: 12px; font-family: inherit; cursor: pointer; outline: none;
+      background: white; transition: border-color 0.2s;
+    }
+    select.pay-sel:focus { border-color: var(--blue); }
+    select.pay-sel.paid   { border-color: #2e7d32; background: #f1fff5; color: #2e7d32; font-weight: 700; }
+    select.pay-sel.unpaid { border-color: #c75000; background: #fff9f5; color: #c75000; font-weight: 700; }
 
     /* FORM */
     .fg { margin-bottom: 14px; }
@@ -203,8 +216,8 @@
             </div>
             <div style="overflow-x:auto">
               <table>
-                <thead><tr><th>ID Đơn hàng</th><th>Giá trị (₫)</th><th>Trạng thái</th><th>Người gán</th><th>Thao tác</th></tr></thead>
-                <tbody id="orders-tbody"><tr><td colspan="5" style="text-align:center;padding:24px;color:#999"><span class="spinner"></span>Đang tải...</td></tr></tbody>
+                <thead><tr><th>ID Đơn hàng</th><th>Giá trị (₫)</th><th>Trạng thái gán</th><th>Thanh toán</th><th>Người gán</th><th>Thao tác</th></tr></thead>
+                <tbody id="orders-tbody"><tr><td colspan="6" style="text-align:center;padding:24px;color:#999"><span class="spinner"></span>Đang tải...</td></tr></tbody>
               </table>
             </div>
           </div>
@@ -413,18 +426,27 @@ function populateUserFilter() {
 function renderOrders(list = null) {
   const orders = list ?? allOrders;
   const tbody  = document.getElementById("orders-tbody");
-  if (!orders.length) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:#999">Không có đơn hàng</td></tr>`; return; }
+  if (!orders.length) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:#999">Không có đơn hàng</td></tr>`; return; }
   tbody.innerHTML = orders.map(o => {
     const val     = Number(o["Giá trị đơn hàng (₫)"]) || 0;
     const claimed = !!o.userId;
+    // Build payment dropdown (admin only)
+    const payVal = o.thanhToan || "";
+    const payClass = payVal === "Đã Thanh Toán" ? "paid" : payVal === "Chưa Thanh Toán" ? "unpaid" : "";
+    const paySel = `<select class="pay-sel ${payClass}" onchange="setPayment('${o._id}', this)">
+      <option value=""${payVal === "" ? " selected" : ""}>– Chưa cập nhật</option>
+      <option value="Chưa Thanh Toán"${payVal === "Chưa Thanh Toán" ? " selected" : ""}>Chưa Thanh Toán</option>
+      <option value="Đã Thanh Toán"${payVal === "Đã Thanh Toán" ? " selected" : ""}>Đã Thanh Toán</option>
+    </select>`;
     return `<tr>
       <td><code>${o["ID đơn hàng"]||""}</code></td>
       <td>${val.toLocaleString("vi-VN")}</td>
       <td><span class="badge badge-${claimed?"claimed":"free"}">${claimed ? "✅ Đã gán" : "⏳ Chưa gán"}</span></td>
+      <td>${paySel}</td>
       <td>${getUserName(o.userId)}</td>
       <td style="display:flex;gap:6px">
         ${claimed ? `<button class="btn btn-outline btn-xs" onclick="resetClaim('${o._id}')">↩ Reset</button>` : ""}
-        <button class="btn btn-red btn-xs" onclick="deleteOrder('${o._id}')">🗑️</button>
+        <button class="btn btn-red btn-xs" onclick="deleteOrder('${o._id}')">&#128465;</button>
       </td>
     </tr>`;
   }).join("");
@@ -440,6 +462,23 @@ window.applyFilter = function() {
   if (uid)     f = f.filter(o => o.userId === uid);
   if (keyword) f = f.filter(o => (o["ID đơn hàng"]||"").toUpperCase().includes(keyword));
   renderOrders(f);
+};
+
+// ─── SET PAYMENT (admin only) ────────────────────────────────
+window.setPayment = async function(docId, sel) {
+  const val = sel.value;
+  // Update class for instant visual feedback
+  sel.className = "pay-sel " + (val === "Đã Thanh Toán" ? "paid" : val === "Chưa Thanh Toán" ? "unpaid" : "");
+  try {
+    await updateDoc(doc(db, "orders", docId), { thanhToan: val || null });
+    // Update local cache
+    const o = allOrders.find(o => o._id === docId);
+    if (o) o.thanhToan = val || null;
+  } catch(e) {
+    alert("❌ Lỗi cập nhật thanh toán: " + e.message);
+    // Revert select
+    sel.value = allOrders.find(o => o._id === docId)?.thanhToan || "";
+  }
 };
 
 // Reset claim on single order

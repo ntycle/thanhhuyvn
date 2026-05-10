@@ -131,6 +131,9 @@
     .btn-claim:disabled { background: #ccc; cursor: not-allowed; }
     .tag-mine   { display: inline-block; background: #e8f5e9; color: #2e7d32; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; }
     .tag-other  { display: inline-block; background: #fff3e0; color: #e65100; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+    .tag-paid   { display: inline-block; background: #e8f5e9; color: #2e7d32; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+    .tag-unpaid { display: inline-block; background: #fff3e0; color: #c75000; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+    .tag-nopay  { display: inline-block; background: #f3f3f3; color: #999;    padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; white-space: nowrap; }
 
     .not-found { background: white; border-radius: var(--radius); padding: 24px; text-align: center; box-shadow: var(--shadow); color: #c00; font-weight: 600; }
 
@@ -277,7 +280,19 @@ const app = initializeApp(cfg);
 const auth = getAuth(app);
 const db   = getFirestore(app);
 
-const EXCLUDE = new Set(["Hoa hồng Shopee trên sản phẩm(₫)", "userId", "createdAt", "updatedAt", "claimedAt", "_id"]);
+// Các field bị ẩn khỏi bảng
+const EXCLUDE = new Set(["Hoa hồng Shopee trên sản phẩm(₫)", "userId", "createdAt", "updatedAt", "claimedAt", "_id", "thanhToan"]);
+
+// Thứ tự cột cố định hiển thị cho user
+const COL_ORDER = [
+  "ID đơn hàng",
+  "Thời gian Click",
+  "Thời Gian Đặt Hàng",
+  "Tên Item",
+  "Giá trị đơn hàng (₫)",
+  "Chiết Khấu",
+  "Trạng thái đặt hàng",
+];
 
 let me = null, myName = "", myOrders = [];
 
@@ -326,6 +341,23 @@ function calcDisc(o) {
   return hh === 0 ? 0 : Math.min(ck, 20000);
 }
 
+// Trả về danh sách cột theo thứ tự cố định, chỉ lấy các cột có tồn tại trong dữ liệu
+function getOrderedHeaders(order) {
+  const available = new Set(Object.keys(order));
+  const cols = COL_ORDER.filter(c => available.has(c));
+  // Thêm các cột khác chưa được liệt kê (trừ EXCLUDE)
+  Object.keys(order).forEach(k => {
+    if (!EXCLUDE.has(k) && !cols.includes(k)) cols.push(k);
+  });
+  return cols;
+}
+
+function paymentBadge(val) {
+  if (val === "Đã Thanh Toán")   return `<span class="tag-paid">💚 Đã Thanh Toán</span>`;
+  if (val === "Chưa Thanh Toán") return `<span class="tag-unpaid">🟡 Chưa Thanh Toán</span>`;
+  return `<span class="tag-nopay">–</span>`;
+}
+
 function renderMyOrders() {
   const el = document.getElementById("mine-list");
   if (!myOrders.length) {
@@ -334,7 +366,7 @@ function renderMyOrders() {
     </div>`;
     return;
   }
-  const headers = Object.keys(myOrders[0]).filter(h => !EXCLUDE.has(h));
+  const headers = getOrderedHeaders(myOrders[0]);
   let totalVal = 0, totalDisc = 0;
 
   const rows = myOrders.map(o => {
@@ -344,7 +376,7 @@ function renderMyOrders() {
     return `<tr>
       ${headers.map(h => {
         if (h === "Giá trị đơn hàng (₫)") return `<td>${val.toLocaleString("vi-VN")}</td>`;
-        if (h === "Chiết Khấu 2%")         return `<td>${disc.toLocaleString("vi-VN")}</td>`;
+        if (h === "Chiết Khấu" || h === "Chiết Khấu 2%") return `<td>${disc.toLocaleString("vi-VN")}</td>`;
         if (h === "Tên Item") {
           const full = o[h] ?? "";
           const short = full.length > 50 ? full.slice(0, 50) + "\u2026" : full;
@@ -352,18 +384,19 @@ function renderMyOrders() {
         }
         return `<td>${o[h] ?? ""}</td>`;
       }).join("")}
+      <td>${paymentBadge(o.thanhToan)}</td>
       <td><button class="btn-unclaim" onclick="unclaimOrder('${o._id}')">✕ Bỏ gán</button></td>
     </tr>`;
   }).join("");
 
   el.innerHTML = `<div class="result-wrap"><table>
-    <thead><tr>${headers.map(h=>`<th>${h}</th>`).join("")}<th>Thao tác</th></tr></thead>
+    <thead><tr>${headers.map(h=>`<th>${h}</th>`).join("")}<th>Thanh toán</th><th>Thao tác</th></tr></thead>
     <tbody>${rows}</tbody>
     <tfoot><tr>${headers.map(h => {
       if (h === "Giá trị đơn hàng (₫)") return `<td>${totalVal.toLocaleString("vi-VN")}</td>`;
-      if (h === "Chiết Khấu 2%")         return `<td>${totalDisc.toLocaleString("vi-VN")}</td>`;
+      if (h === "Chiết Khấu" || h === "Chiết Khấu 2%") return `<td>${totalDisc.toLocaleString("vi-VN")}</td>`;
       return `<td>${h === headers[0] ? "TỔNG" : ""}</td>`;
-    }).join("")}<td></td></tr></tfoot>
+    }).join("")}<td></td><td></td></tr></tfoot>
   </table></div>`;
 }
 
@@ -414,7 +447,7 @@ window.doSearch = async function() {
 };
 
 function renderSearchResults(orders, container) {
-  const headers = Object.keys(orders[0]).filter(h => !EXCLUDE.has(h));
+  const headers = getOrderedHeaders(orders[0]);
   let totalVal = 0, totalDisc = 0;
 
   const rows = orders.map(o => {
@@ -433,7 +466,7 @@ function renderSearchResults(orders, container) {
     return `<tr>
       ${headers.map(h => {
         if (h === "Giá trị đơn hàng (₫)") return `<td>${val.toLocaleString("vi-VN")}</td>`;
-        if (h === "Chiết Khấu 2%")         return `<td>${disc.toLocaleString("vi-VN")}</td>`;
+        if (h === "Chiết Khấu" || h === "Chiết Khấu 2%") return `<td>${disc.toLocaleString("vi-VN")}</td>`;
         if (h === "Tên Item") {
           const full = o[h] ?? "";
           const short = full.length > 50 ? full.slice(0, 50) + "\u2026" : full;
@@ -441,18 +474,19 @@ function renderSearchResults(orders, container) {
         }
         return `<td>${o[h] ?? ""}</td>`;
       }).join("")}
+      <td>${paymentBadge(o.thanhToan)}</td>
       ${actionCell}
     </tr>`;
   }).join("");
 
   container.innerHTML = `<div class="card" style="padding:0"><div class="result-wrap"><table>
-    <thead><tr>${headers.map(h=>`<th>${h}</th>`).join("")}<th>Trạng thái</th></tr></thead>
+    <thead><tr>${headers.map(h=>`<th>${h}</th>`).join("")}<th>Thanh toán</th><th>Trạng thái</th></tr></thead>
     <tbody>${rows}</tbody>
     <tfoot><tr>${headers.map(h => {
       if (h === "Giá trị đơn hàng (₫)") return `<td>${totalVal.toLocaleString("vi-VN")}</td>`;
-      if (h === "Chiết Khấu 2%")         return `<td>${totalDisc.toLocaleString("vi-VN")}</td>`;
+      if (h === "Chiết Khấu" || h === "Chiết Khấu 2%") return `<td>${totalDisc.toLocaleString("vi-VN")}</td>`;
       return `<td>${h === headers[0] ? "TỔNG" : ""}</td>`;
-    }).join("")}<td></td></tr></tfoot>
+    }).join("")}<td></td><td></td></tr></tfoot>
   </table></div></div>`;
 }
 
