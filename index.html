@@ -1,133 +1,581 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Tra cứu đơn hàng Shopee</title>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <style>
-  .guide-links {
-  margin-bottom: 15px;
-  text-align: center;
-}
-.guide-links a {
-  color: #0a6ebd;
-  text-decoration: none;
-  font-weight: bold;
-  margin: 0 10px;
-  transition: color 0.2s;
-}
-.guide-links a:hover {
-  color: #0abd50;
-  text-decoration: underline;
-}
+    :root {
+      --orange: #EE4D2D;
+      --orange-light: #ff6b4a;
+      --orange-dark: #c73e24;
+      --blue: #0a6ebd;
+      --green: #0abd50;
+      --bg: #f5f5f5;
+      --white: #ffffff;
+      --text: #333;
+      --text-light: #777;
+      --border: #e0e0e0;
+      --shadow: 0 2px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+      --radius: 10px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background: #f8f8f8;
-      color: #333;
+      font-family: 'Be Vietnam Pro', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
     }
-    h1 {
-      color: #0a6ebd;
-      font-size: 24px;
-      margin-bottom: 20px;
+
+    /* ── HEADER ── */
+    .header {
+      background: var(--orange);
+      color: white;
+      padding: 0 20px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(238,77,45,0.3);
+      position: sticky; top: 0; z-index: 100;
     }
-    textarea, button {
-      padding: 10px;
-      font-size: 16px;
-      margin-top: 10px;
+    .header-logo {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .header-logo span { font-size: 22px; }
+    .header-user {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 14px;
+    }
+    .header-user .username {
+      font-weight: 600;
+      max-width: 150px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .btn-logout {
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.4);
+      color: white;
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s;
+    }
+    .btn-logout:hover { background: rgba(255,255,255,0.35); }
+
+    /* ── AUTH SCREEN ── */
+    #auth-screen {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #EE4D2D 0%, #ff8c00 100%);
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .auth-card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: var(--shadow-lg);
+      width: 100%; max-width: 420px;
+      overflow: hidden;
+    }
+    .auth-header {
+      background: linear-gradient(135deg, #EE4D2D, #ff6b4a);
+      color: white;
+      padding: 28px 32px 24px;
+      text-align: center;
+    }
+    .auth-header .logo { font-size: 36px; margin-bottom: 6px; }
+    .auth-header h2 { font-size: 20px; font-weight: 700; }
+    .auth-header p { font-size: 13px; opacity: 0.85; margin-top: 4px; }
+
+    .auth-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+    }
+    .auth-tab {
+      flex: 1; padding: 14px;
+      text-align: center;
+      font-size: 14px; font-weight: 600;
+      cursor: pointer;
+      color: var(--text-light);
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+      background: none; border-top: none; border-left: none; border-right: none;
+      font-family: inherit;
+    }
+    .auth-tab.active {
+      color: var(--orange);
+      border-bottom-color: var(--orange);
+    }
+    .auth-body { padding: 24px 32px 28px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block;
+      font-size: 13px; font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .form-group input {
       width: 100%;
-      box-sizing: border-box;
+      padding: 10px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.2s;
+      outline: none;
     }
-    button {
-      background-color: #0abd50;
+    .form-group input:focus { border-color: var(--orange); }
+    .btn-primary {
+      width: 100%;
+      background: var(--orange);
       color: white;
       border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
       cursor: pointer;
-      border-radius: 5px;
+      transition: background 0.2s;
+      margin-top: 4px;
     }
-    button:hover {
-      background-color: #094e8c;
+    .btn-primary:hover { background: var(--orange-dark); }
+    .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+    .auth-msg {
+      font-size: 13px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      margin-top: 14px;
+      display: none;
     }
+    .auth-msg.error { background: #fff0ee; color: #c00; border: 1px solid #ffc5bb; display: block; }
+    .auth-msg.success { background: #edfff4; color: #0a7a32; border: 1px solid #b3f0cc; display: block; }
+
+    /* ── MAIN APP ── */
+    #app-screen { display: none; }
+    .container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+
+    .welcome-banner {
+      background: linear-gradient(135deg, #EE4D2D, #ff8c00);
+      color: white;
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 20px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .welcome-banner h3 { font-size: 18px; font-weight: 700; }
+    .welcome-banner p { font-size: 13px; opacity: 0.85; margin-top: 3px; }
+    .welcome-icon { font-size: 40px; opacity: 0.8; }
+
+    .search-card {
+      background: white;
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+    .search-card h3 {
+      font-size: 15px; font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--blue);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .guide-links {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin-bottom: 14px;
+    }
+    .guide-links a {
+      color: var(--blue);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 4px 10px;
+      border: 1px solid var(--blue);
+      border-radius: 20px;
+      transition: all 0.2s;
+    }
+    .guide-links a:hover { background: var(--blue); color: white; }
+
+    textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    textarea:focus { border-color: var(--orange); }
+    .btn-search {
+      width: 100%;
+      background: var(--green);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background 0.2s;
+    }
+    .btn-search:hover { background: #09a344; }
+
+    /* ── TABLE ── */
+    .result-wrapper { overflow-x: auto; }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 25px;
       background: white;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
-      font-size: 14px;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: left;
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      overflow: hidden;
+      font-size: 13px;
     }
     th {
-      background-color: #0a6ebd;
+      background: var(--blue);
       color: white;
+      padding: 10px 12px;
+      text-align: left;
+      font-weight: 600;
+      white-space: nowrap;
     }
+    td {
+      border-bottom: 1px solid var(--border);
+      padding: 9px 12px;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f9f9f9; }
     tfoot td {
-      font-weight: bold;
+      font-weight: 700;
       background: #e8f4ff;
+      color: var(--blue);
     }
     .not-found {
-      color: red;
-      font-weight: bold;
-      margin-top: 20px;
+      background: white;
+      border-radius: var(--radius);
+      padding: 24px;
+      text-align: center;
+      box-shadow: var(--shadow);
+      color: #c00;
+      font-weight: 600;
     }
 
-    /* Mobile responsive */
-    @media (max-width: 768px) {
-      body {
-        margin: 10px;
-      }
-      h1 {
-        font-size: 20px;
-        margin-bottom: 15px;
-      }
-      textarea, button {
-        font-size: 14px;
-        padding: 8px;
-      }
-      table {
-        font-size: 12px;
-      }
-      th, td {
-        padding: 6px;
-      }
+    /* ── LOADING ── */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-light);
+      font-size: 14px;
     }
+    .spinner {
+      display: inline-block;
+      width: 28px; height: 28px;
+      border: 3px solid var(--border);
+      border-top-color: var(--orange);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-bottom: 10px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Small mobile */
-    @media (max-width: 480px) {
-      body {
-        margin: 5px;
-      }
-      h1 {
-        font-size: 18px;
-      }
-      textarea, button {
-        font-size: 13px;
-        padding: 6px;
-      }
-      table {
-        font-size: 11px;
-      }
-      th, td {
-        padding: 4px;
-      }
+    /* ── PENDING BADGE ── */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .badge-pending { background: #fff3e0; color: #e65100; }
+    .badge-active { background: #e8f5e9; color: #2e7d32; }
+
+    @media (max-width: 600px) {
+      .auth-body { padding: 20px; }
+      .welcome-banner { flex-direction: column; gap: 10px; text-align: center; }
+      .welcome-icon { display: none; }
     }
   </style>
 </head>
 <body>
-  <h1>Tra cứu đơn hàng Shopee - Cập nhật ngày 30-08-2025</h1>
-  <div class="guide-links">
-  <a href="https://s.shopee.vn/2g0gyIajUG" target="_blank">Lấy mã giảm giá Shopee</a> |
-   <a href="https://shorten.asia/mTn3wHfD" target="_blank">Lấy mã Highland Coffee</a> |
-  <a href="https://docs.google.com/forms/d/e/1FAIpQLSfIpQPRF5WcU8vNis5O9Gx0Rej3ekZ1XmXQn0BNIq74bMovpA/viewform?usp=sharing&ouid=117998528904525434443" target="_blank">Thông tin thanh toán</a>
-</div>
-  <textarea id="orderId" rows="4" placeholder="Nhập nhiều ID Đơn hàng cách nhau bằng dấu phẩy, dấu cách hoặc xuống dòng. ID có dạng 250601E7EMYD4X"></textarea>
-  <button onclick="search()">Tìm đơn hàng</button>
-  <div id="result"></div>
 
-<script src="app.min.js"></script>
+<!-- ══ AUTH SCREEN ══ -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="logo">🛍️</div>
+      <h2>Tra cứu đơn hàng Shopee</h2>
+      <p>Đăng nhập để xem đơn hàng của bạn</p>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchTab('login')">Đăng nhập</button>
+      <button class="auth-tab" onclick="switchTab('register')">Đăng ký</button>
+    </div>
+    <div class="auth-body">
+      <!-- Login -->
+      <div id="tab-login">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="login-email" placeholder="email@example.com"/>
+        </div>
+        <div class="form-group">
+          <label>Mật khẩu</label>
+          <input type="password" id="login-pass" placeholder="••••••••"/>
+        </div>
+        <button class="btn-primary" onclick="doLogin()">Đăng nhập</button>
+        <div id="login-msg" class="auth-msg"></div>
+      </div>
+      <!-- Register -->
+      <div id="tab-register" style="display:none">
+        <div class="form-group">
+          <label>Họ tên</label>
+          <input type="text" id="reg-name" placeholder="Nguyễn Văn A"/>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="reg-email" placeholder="email@example.com"/>
+        </div>
+        <div class="form-group">
+          <label>Mật khẩu</label>
+          <input type="password" id="reg-pass" placeholder="Ít nhất 6 ký tự"/>
+        </div>
+        <button class="btn-primary" onclick="doRegister()">Đăng ký tài khoản</button>
+        <div id="reg-msg" class="auth-msg"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP SCREEN ══ -->
+<div id="app-screen">
+  <div class="header">
+    <div class="header-logo"><span>🛍️</span> Shopee Affiliate</div>
+    <div class="header-user">
+      <span class="username" id="header-username"></span>
+      <button class="btn-logout" onclick="doLogout()">Đăng xuất</button>
+    </div>
+  </div>
+  <div class="container">
+    <div class="welcome-banner">
+      <div>
+        <h3>Xin chào, <span id="welcome-name"></span>! 👋</h3>
+        <p>Tra cứu đơn hàng được gán cho tài khoản của bạn</p>
+      </div>
+      <div class="welcome-icon">📦</div>
+    </div>
+
+    <div class="search-card">
+      <h3>🔍 Tra cứu đơn hàng</h3>
+      <div class="guide-links">
+        <a href="https://s.shopee.vn/2g0gyIajUG" target="_blank">🎟️ Mã giảm giá Shopee</a>
+        <a href="https://shorten.asia/mTn3wHfD" target="_blank">☕ Mã Highland Coffee</a>
+        <a href="https://docs.google.com/forms/d/e/1FAIpQLSfIpQPRF5WcU8vNis5O9Gx0Rej3ekZ1XmXQn0BNIq74bMovpA/viewform" target="_blank">💳 Thông tin thanh toán</a>
+      </div>
+      <textarea id="orderId" rows="3" placeholder="Nhập ID đơn hàng, cách nhau bằng dấu phẩy hoặc xuống dòng. VD: 250601E7EMYD4X"></textarea>
+      <button class="btn-search" onclick="search()">🔍 Tìm đơn hàng</button>
+    </div>
+
+    <div id="result"></div>
+  </div>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, collection, query, where, getDocs, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCD3bS8LTPnXU-9C0xVTRC-IzYfPe428x8",
+  authDomain: "shopeeafff-bfd62.firebaseapp.com",
+  projectId: "shopeeafff-bfd62",
+  storageBucket: "shopeeafff-bfd62.firebasestorage.app",
+  messagingSenderId: "1091380862349",
+  appId: "1:1091380862349:web:1c82d576edc1888e4a31c4",
+  measurementId: "G-SLLYE9F7EF"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let currentUser = null;
+let userOrders = [];
+
+// ── Auth state ──
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    currentUser = user;
+    // Load user profile from Firestore
+    const userDoc = await getDoc(doc(db, "users", user.uid));
+    const displayName = userDoc.exists() ? userDoc.data().name : user.email;
+    document.getElementById("header-username").textContent = displayName;
+    document.getElementById("welcome-name").textContent = displayName;
+
+    // Load orders for this user
+    await loadUserOrders(user.uid);
+
+    document.getElementById("auth-screen").style.display = "none";
+    document.getElementById("app-screen").style.display = "block";
+  } else {
+    currentUser = null;
+    document.getElementById("auth-screen").style.display = "flex";
+    document.getElementById("app-screen").style.display = "none";
+  }
+});
+
+async function loadUserOrders(uid) {
+  try {
+    const q = query(collection(db, "orders"), where("userId", "==", uid));
+    const snap = await getDocs(q);
+    userOrders = snap.docs.map(d => d.data());
+  } catch(e) {
+    userOrders = [];
+  }
+}
+
+// ── Tab switch ──
+window.switchTab = function(tab) {
+  document.getElementById("tab-login").style.display = tab === "login" ? "block" : "none";
+  document.getElementById("tab-register").style.display = tab === "register" ? "block" : "none";
+  document.querySelectorAll(".auth-tab").forEach((el, i) => {
+    el.classList.toggle("active", (tab === "login" && i === 0) || (tab === "register" && i === 1));
+  });
+};
+
+// ── Login ──
+window.doLogin = async function() {
+  const email = document.getElementById("login-email").value.trim();
+  const pass = document.getElementById("login-pass").value;
+  const msg = document.getElementById("login-msg");
+  msg.className = "auth-msg"; msg.textContent = "";
+  if (!email || !pass) { msg.className = "auth-msg error"; msg.textContent = "Vui lòng nhập đầy đủ thông tin."; return; }
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e) {
+    msg.className = "auth-msg error";
+    msg.textContent = e.code === "auth/invalid-credential" ? "❌ Email hoặc mật khẩu không đúng." : "❌ " + e.message;
+  }
+};
+
+// ── Register ──
+window.doRegister = async function() {
+  const name = document.getElementById("reg-name").value.trim();
+  const email = document.getElementById("reg-email").value.trim();
+  const pass = document.getElementById("reg-pass").value;
+  const msg = document.getElementById("reg-msg");
+  msg.className = "auth-msg"; msg.textContent = "";
+  if (!name || !email || !pass) { msg.className = "auth-msg error"; msg.textContent = "Vui lòng nhập đầy đủ thông tin."; return; }
+  if (pass.length < 6) { msg.className = "auth-msg error"; msg.textContent = "Mật khẩu phải ít nhất 6 ký tự."; return; }
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    await updateProfile(cred.user, { displayName: name });
+    // Save to Firestore
+    await setDoc(doc(db, "users", cred.user.uid), {
+      name, email, role: "user",
+      createdAt: serverTimestamp()
+    });
+    msg.className = "auth-msg success";
+    msg.textContent = "✅ Đăng ký thành công! Đang đăng nhập...";
+  } catch(e) {
+    msg.className = "auth-msg error";
+    msg.textContent = e.code === "auth/email-already-in-use" ? "❌ Email này đã được dùng." : "❌ " + e.message;
+  }
+};
+
+// ── Logout ──
+window.doLogout = async function() {
+  await signOut(auth);
+  document.getElementById("result").innerHTML = "";
+  document.getElementById("orderId").value = "";
+};
+
+// ── Search ──
+window.search = function() {
+  const rawInput = document.getElementById("orderId").value;
+  const ids = rawInput.toUpperCase().split(/[\s,]+/).filter(Boolean);
+  const resultDiv = document.getElementById("result");
+  resultDiv.innerHTML = "";
+
+  if (ids.length === 0) return;
+
+  // Filter from user's orders only
+  const matches = userOrders.filter(item =>
+    ids.includes((item["ID đơn hàng"] || "").toUpperCase())
+  );
+
+  if (matches.length === 0) {
+    resultDiv.innerHTML = `<div class="not-found">❌ Không tìm thấy đơn hàng khớp với: <b>${ids.join(", ")}</b><br><small style="color:#999;font-weight:400">Lưu ý: bạn chỉ có thể tra cứu đơn hàng được gán cho tài khoản của mình.</small></div>`;
+    return;
+  }
+
+  const excludeKeys = ["Hoa hồng Shopee trên sản phẩm(₫)", "userId", "updatedAt", "createdAt"];
+  const headers = Object.keys(matches[0]).filter(h => !excludeKeys.includes(h));
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "result-wrapper";
+  const table = document.createElement("table");
+
+  const thead = document.createElement("thead");
+  const theadRow = thead.insertRow();
+  headers.forEach(h => {
+    const th = document.createElement("th");
+    th.innerText = h;
+    theadRow.appendChild(th);
+  });
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+  let totalValue = 0, totalDiscount = 0;
+
+  matches.forEach(row => {
+    const tr = tbody.insertRow();
+    headers.forEach(h => {
+      const td = tr.insertCell();
+      if (h === "Chiết Khấu 2%") {
+        const hoaHongRaw = row["Hoa hồng Shopee trên sản phẩm(₫)"]?.toString().replace(/\./g, "") || "0";
+        const hoaHong = Number(hoaHongRaw) || 0;
+        const chietKhau = Number(row[h]) || 0;
+        const value = hoaHong === 0 ? 0 : Math.min(chietKhau, 20000);
+        td.innerText = value.toLocaleString("vi-VN");
+        totalDiscount += value;
+      } else if (h === "Giá trị đơn hàng (₫)") {
+        const value = Number(row[h]) || 0;
+        td.innerText = value.toLocaleString("vi-VN");
+        totalValue += value;
+      } else {
+        td.innerText = row[h] ?? "";
+      }
+    });
+  });
+  table.appendChild(tbody);
+
+  const tfoot = table.createTFoot();
+  const trFoot = tfoot.insertRow();
+  headers.forEach(h => {
+    const td = trFoot.insertCell();
+    if (h === "Giá trị đơn hàng (₫)") {
+      td.innerText = totalValue.toLocaleString("vi-VN");
+    } else if (h === "Chiết Khấu 2%") {
+      td.innerText = totalDiscount.toLocaleString("vi-VN");
+    } else {
+      td.innerText = h === headers[0] ? "TỔNG" : "";
+    }
+  });
+
+  wrapper.appendChild(table);
+  resultDiv.appendChild(wrapper);
+};
+</script>
 </body>
 </html>
