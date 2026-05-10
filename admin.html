@@ -570,7 +570,16 @@ window.confirmUpload = async function() {
           return;
         }
 
-        const ref = doc(db, "orders", orderId);
+        // Tạo document ID duy nhất bằng: OrderID + Hash(Tên Item) để tránh ghi đè khi 1 id có nhiều sản phẩm
+        const itemName = (order["Tên Item"] || "").toString().trim();
+        let hash = 0;
+        for (let j = 0; j < itemName.length; j++) {
+          hash = ((hash << 5) - hash) + itemName.charCodeAt(j);
+          hash |= 0;
+        }
+        const docId = `${orderId}_${Math.abs(hash).toString(16)}`;
+
+        const ref = doc(db, "orders", docId);
         const snap = await getDoc(ref);
 
         if (snap.exists()) {
