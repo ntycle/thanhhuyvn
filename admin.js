@@ -53,6 +53,7 @@ async function loadOrders() {
   const snap = await getDocs(collection(db, "orders"));
   allOrders = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
   renderOrders();
+  renderUsers();
 }
 window.loadOrders = loadOrders;
 
