@@ -120,7 +120,13 @@ function renderMyOrders() {
     const disc = calcDisc(o);
     totalVal += val; totalDisc += disc;
     const dataCells = COL_ORDER.map(h => renderCell(h, o, val, disc)).join("");
-    return `<tr>${dataCells}<td>${paymentBadge(o.thanhToan)}</td><td><span class="tag-mine" style="font-size:11px;padding:3px 10px">✅ Đã gán</span></td></tr>`;
+    
+    const isManual = o["Tên Item"] === "Không có thông tin";
+    const thaoTac = isManual 
+      ? `<button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none; font-size:11px; padding:3px 10px; cursor: pointer;" onclick="searchSingleId('${o["ID đơn hàng"]}')">🔄 Tìm Lại</button>` 
+      : `<span class="tag-mine" style="font-size:11px;padding:3px 10px">✅ Đã gán</span>`;
+      
+    return `<tr>${dataCells}<td>${paymentBadge(o.thanhToan)}</td><td>${thaoTac}</td></tr>`;
   }).join("");
 
   const tfootRow = COL_ORDER.map(h => {
@@ -210,13 +216,20 @@ function renderSearchResults(orders, container) {
     const disc = calcDisc(o);
     totalVal += val; totalDisc += disc;
 
+    const isManual  = o["Tên Item"] === "Không có thông tin";
     const isMine    = o.userId === me;
     const isClaimed = !!o.userId;
-    const actionCell = isMine
-      ? `<td><span class="tag-mine">✅ Của tôi</span></td>`
-      : isClaimed
-        ? `<td><span class="tag-other">🔒 Đã gán</span></td>`
-        : `<td><button class="btn-claim" onclick="claimOrder('${o._id}', this)">📌 Gán cho tôi</button></td>`;
+    
+    let actionCell = "";
+    if (isMine) {
+      actionCell = isManual
+        ? `<td><button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none; padding:4px 10px; font-size:12px; cursor: pointer;" onclick="searchSingleId('${o["ID đơn hàng"]}')">🔄 Tìm Lại</button></td>`
+        : `<td><span class="tag-mine">✅ Của tôi</span></td>`;
+    } else if (isClaimed) {
+      actionCell = `<td><span class="tag-other">🔒 Đã gán</span></td>`;
+    } else {
+      actionCell = `<td><button class="btn-claim" onclick="claimOrder('${o._id}', this)">📌 Gán cho tôi</button></td>`;
+    }
 
     const dataCells = COL_ORDER.map(h => renderCell(h, o, val, disc)).join("");
     return `<tr>${dataCells}<td>${paymentBadge(o.thanhToan)}</td>${actionCell}</tr>`;
@@ -307,6 +320,7 @@ window.saveMissingOrder = async function(id, btn) {
 };
 
 window.searchSingleId = function(id) {
+  showMainTab('search');
   document.getElementById("orderId").value = id;
   // Cuộn lên phần nhập tìm kiếm nếu cần thiết
   const card = document.getElementById("orderId").closest(".card");
