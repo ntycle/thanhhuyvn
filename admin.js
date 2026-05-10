@@ -93,7 +93,7 @@ function renderDashboard() {
 // ─── USERS ─────────────────────────────────────────────────
 function renderUsers() {
   const tbody = document.getElementById("users-tbody");
-  if (!allUsers.length) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:#999">Chưa có user</td></tr>`; return; }
+  if (!allUsers.length) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:#999">Chưa có user</td></tr>`; return; }
   tbody.innerHTML = allUsers.map(u => {
     const cnt  = allOrders.filter(o => o.userId === u.id).length;
     let date = "–";
@@ -106,6 +106,7 @@ function renderUsers() {
       <td><span class="badge badge-${u.role === "admin" ? "admin" : "user"}">${u.role === "admin" ? "Admin" : "User"}</span></td>
       <td>${cnt}</td>
       <td>${date}</td>
+      <td>${u.refEmail || "–"}</td>
       <td>${u.role !== "admin"
         ? `<button class="btn btn-red btn-xs" onclick="resetUserClaims('${u.id}','${u.name||u.email}')">↩ Reset đơn</button>`
         : ""}</td>
