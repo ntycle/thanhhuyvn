@@ -382,7 +382,7 @@ function renderMyOrders() {
     totalVal += val; totalDisc += disc;
     // Mỗi cell được render theo đúng thứ tự COL_ORDER — lookup bằng field name
     const dataCells = COL_ORDER.map(h => renderCell(h, o, val, disc)).join("");
-    return `<tr>${dataCells}<td>${paymentBadge(o.thanhToan)}</td><td><button class="btn-unclaim" onclick="unclaimOrder('${o._id}')">&#10005; Bỏ gán</button></td></tr>`;
+    return `<tr>${dataCells}<td>${paymentBadge(o.thanhToan)}</td><td><span class="tag-mine" style="font-size:11px;padding:3px 10px">✅ Đã gán</span></td></tr>`;
   }).join("");
 
   const tfootRow = COL_ORDER.map(h => {
