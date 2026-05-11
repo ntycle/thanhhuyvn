@@ -50,12 +50,11 @@
       align-items: center;
       justify-content: center;
       gap: 40px;
-      width: 100%;
-      max-width: 1000px;
+      width: fit-content;
+      max-width: 95vw;
     }
 
     .auth-banner {
-      flex: 1.2;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -63,7 +62,7 @@
 
     .auth-banner img {
       max-width: 100%;
-      width: 100%;
+      max-height: 90vh; /* Ngăn ảnh quá cao so với màn hình */
       height: auto;
       object-fit: contain;
       border-radius: 16px;
@@ -77,7 +76,6 @@
       border-radius: 16px;
       box-shadow: var(--shadow-lg);
       width: 100%;
-      flex: 1;
       max-width: 420px;
       overflow: hidden;
     }
