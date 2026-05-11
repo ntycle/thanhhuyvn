@@ -45,13 +45,46 @@
       padding: 20px;
     }
 
+    .auth-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 40px;
+      width: 100%;
+      max-width: 1000px;
+    }
+
+    .auth-banner {
+      flex: 1.2;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .auth-banner img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 16px;
+      box-shadow: var(--shadow-lg);
+    }
+
     .auth-card {
       background: white;
       border-radius: 16px;
       box-shadow: var(--shadow-lg);
       width: 100%;
+      flex: 1;
       max-width: 420px;
       overflow: hidden;
+    }
+
+    @media (max-width: 850px) {
+      .auth-container {
+        flex-direction: column;
+      }
+      .auth-banner {
+        display: none;
+      }
     }
 
     .auth-top {
@@ -620,7 +653,11 @@
 
   <!-- AUTH -->
   <div id="auth-screen">
-    <div class="auth-card">
+    <div class="auth-container">
+      <div class="auth-banner">
+        <img src="banner.png" alt="Banner Shopee Affiliate">
+      </div>
+      <div class="auth-card">
       <div class="auth-top">
         <div class="logo">🛍️</div>
         <h2>Tra cứu đơn hàng Shopee</h2>
@@ -651,6 +688,7 @@
           <div id="reg-msg" class="amsg"></div>
         </div>
       </div>
+    </div>
     </div>
   </div>
 
