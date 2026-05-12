@@ -233,6 +233,28 @@
             <div style="overflow-x:auto">
               <table>
                 <thead><tr><th>Họ tên</th><th>Email</th><th>Vai trò</th><th>Đơn đã gán</th><th>Ngày tạo</th><th>Người giới thiệu</th><th>Thao tác</th></tr></thead>
+                <tbody id="users-tbody"><tr><td colspan="7" style="text-align:center;padding:24px;color:#999"><span class="spinner"></span>Đang tải...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ADD USER INLINE -->
+          <div class="panel" id="add-user-panel" style="display:none">
+            <div class="panel-header"><h2>👤 Tạo User mới</h2><button class="btn btn-outline btn-sm" onclick="document.getElementById('add-user-panel').style.display='none'">✕ Đóng</button></div>
+            <div class="panel-body" style="max-width:420px">
+              <div class="fg"><label>Họ tên</label><input type="text" id="nu-name" placeholder="Nguyễn Văn A"/></div>
+              <div class="fg"><label>Email</label><input type="email" id="nu-email" placeholder="user@example.com"/></div>
+              <div class="fg"><label>Mật khẩu</label><input type="password" id="nu-pass" placeholder="Ít nhất 6 ký tự"/></div>
+              <button class="btn btn-blue" onclick="createUser()">Tạo tài khoản</button>
+              <div id="nu-msg"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- UPLOAD -->
+        <div id="tab-upload" class="tab-content">
+          <div class="panel">
+            <div class="panel-header"><h2>📤 Upload file JSON — Pool đơn hàng chung</h2></div>
             <div class="panel-body">
               <p style="font-size:13px;color:var(--text-light);margin-bottom:16px;line-height:1.6">
                 Upload file <code>data.json</code> cùng format cũ. Đơn hàng sẽ vào <b>pool chung</b> — không gán cho ai cả.<br>
@@ -260,6 +282,6 @@
 </div>
 
 
-<script type="module" src="admin.js"></script>
+<script type="module" src="admin.min.js"></script>
 </body>
 </html>

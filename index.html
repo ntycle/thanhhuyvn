@@ -709,7 +709,6 @@
       <div class="header-logo">🛍️ Shopee Affiliate</div>
       <div class="header-right">
         <span class="uname" id="header-uname"></span>
-        <button class="btn-out" onclick="document.getElementById('pwd-modal').style.display='flex'">Đổi Mật Khẩu</button>
         <button class="btn-out" onclick="doLogout()">Đăng xuất</button>
       </div>
     </div>
@@ -771,18 +770,7 @@
     </div>
   </div>
 
-  <!-- PASSWORD MODAL -->
-  <div id="pwd-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
-    <div class="card" style="width:100%; max-width:400px; position:relative; margin: 20px;">
-      <div class="card-title">🔒 Đổi mật khẩu</div>
-      <button onclick="document.getElementById('pwd-modal').style.display='none'; document.getElementById('pwd-msg').style.display='none';" style="position:absolute; top:20px; right:20px; background:none; border:none; font-size:18px; cursor:pointer; color: var(--text-light);">✕</button>
-      <div class="fg"><label>Mật khẩu mới</label><input type="password" id="pwd-new" placeholder="Nhập mật khẩu mới (ít nhất 6 ký tự)"/></div>
-      <button class="btn-main" onclick="updateUserPassword(event)">Cập nhật mật khẩu</button>
-      <div id="pwd-msg" class="amsg"></div>
-    </div>
-  </div>
-
-  <script type="module" src="user.js"></script>
+  <script type="module" src="user.min.js"></script>
 </body>
 
 </html>
