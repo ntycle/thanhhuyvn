@@ -684,8 +684,8 @@
               onkeydown="if(event.key==='Enter')doLogin()" /></div>
           <div class="fg"><label>Mật khẩu</label><input type="password" id="login-pass" placeholder="••••••••"
               onkeydown="if(event.key==='Enter')doLogin()" /></div>
+          <div style="text-align: right; margin-bottom: 14px;"><a href="#" onclick="showForgotPassword()" style="font-size: 13px; color: var(--blue); text-decoration: none;">Quên mật khẩu?</a></div>
           <button class="btn-main" onclick="doLogin()">Đăng nhập</button>
-		  <div style="text-align: right; margin-bottom: 14px;"><a href="#" onclick="showForgotPassword()" style="font-size: 13px; color: var(--blue); text-decoration: none;">Quên mật khẩu?</a></div>
           <div id="login-msg" class="amsg"></div>
         </div>
         <div id="tab-register" style="display:none">
@@ -780,7 +780,7 @@
     </div>
   </div>
 
-  <script type="module" src="user.min.js"></script>
+  <script type="module" src="user.js"></script>
 </body>
 
 </html>
