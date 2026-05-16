@@ -61,13 +61,11 @@ onAuthStateChanged(auth, async (user) => {
 // ─── MY ORDERS ────────────────────────────────────────────
 
 /**
- * Tự động xóa bản nháp "Không có thông tin" khi cùng ID đơn hàng
- * đã có bản ghi thật (từ 2 bản ghi trùng ID trở lên).
- * Đồng thời tự động gán đơn thật cho user hiện tại nếu chưa được gán.
- * Trả về true nếu có thay đổi (cần reload lại danh sách).
+ * [Bước 1] Dọn dẹp trùng ID trong chính myOrders:
+ * Nếu user có ≥2 bản ghi cùng "ID đơn hàng" và một trong đó là nháp
+ * "Không có thông tin" → xóa nháp, gán đơn thật (nếu chưa có userId).
  */
 async function cleanupDuplicateDrafts(orders) {
-  // Nhóm các đơn theo "ID đơn hàng"
   const groups = {};
   for (const o of orders) {
     const orderId = (o["ID đơn hàng"] || "").trim();
@@ -76,48 +74,79 @@ async function cleanupDuplicateDrafts(orders) {
     groups[orderId].push(o);
   }
 
-  const toDelete = [];   // _id của bản nháp cần xóa
-  const toClaim  = [];   // _id của đơn thật cần gán cho user
-
-  for (const [orderId, group] of Object.entries(groups)) {
+  const toDelete = [], toClaim = [];
+  for (const [, group] of Object.entries(groups)) {
     if (group.length >= 2) {
-      const drafts = group.filter(o => o["Tên Item"] === "Không có thông tin");
-      const reals  = group.filter(o => o["Tên Item"] !== "Không có thông tin");
-
-      for (const draft of drafts) {
-        toDelete.push(draft._id);
-      }
-
-      // Với mỗi đơn thật chưa được gán → gán cho user hiện tại
-      for (const real of reals) {
-        if (!real.userId) {
-          toClaim.push(real._id);
-        }
-      }
+      group.filter(o => o["Tên Item"] === "Không có thông tin").forEach(d => toDelete.push(d._id));
+      group.filter(o => o["Tên Item"] !== "Không có thông tin" && !o.userId).forEach(r => toClaim.push(r._id));
     }
   }
 
-  if (toDelete.length === 0 && toClaim.length === 0) return false;
-
-  // Xóa bản nháp thừa
-  if (toDelete.length > 0) {
+  if (!toDelete.length && !toClaim.length) return false;
+  if (toDelete.length) {
     await Promise.all(toDelete.map(id => deleteDoc(doc(db, "orders", id))));
-    console.log(`[cleanup] Đã xóa ${toDelete.length} bản nháp trùng ID:`, toDelete);
+    console.log(`[cleanup] Xóa ${toDelete.length} nháp trùng ID:`, toDelete);
   }
-
-  // Gán đơn thật chưa có chủ về cho user hiện tại
-  if (toClaim.length > 0) {
+  if (toClaim.length) {
     await Promise.all(toClaim.map(id =>
-      updateDoc(doc(db, "orders", id), {
-        userId: me,
-        claimedAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      })
+      updateDoc(doc(db, "orders", id), { userId: me, claimedAt: serverTimestamp(), updatedAt: serverTimestamp() })
     ));
-    console.log(`[cleanup] Đã tự động gán ${toClaim.length} đơn thật cho user:`, toClaim);
+    console.log(`[cleanup] Gán ${toClaim.length} đơn thật (nội bộ) cho user:`, toClaim);
+  }
+  return true;
+}
+
+/**
+ * [Bước 2] Với mỗi bản nháp "Không có thông tin" còn lại trong myOrders,
+ * chủ động query Firestore để tìm đơn thật cùng "ID đơn hàng"
+ * — kể cả đơn thật chưa có userId (không nằm trong myOrders).
+ * Nếu tìm thấy → xóa nháp + tự động gán đơn thật về user.
+ * Không cần user search thủ công.
+ * Trả về true nếu có thay đổi.
+ */
+async function autoClaimRealOrders(orders) {
+  const drafts = orders.filter(o => o["Tên Item"] === "Không có thông tin");
+  if (!drafts.length) return false;
+
+  let changed = false;
+
+  // Xử lý tuần tự để tránh race condition
+  for (const draft of drafts) {
+    const orderId = (draft["ID đơn hàng"] || "").trim();
+    if (!orderId) continue;
+
+    // Tìm tất cả đơn có cùng "ID đơn hàng" trong toàn bộ Firestore
+    const snap = await getDocs(
+      query(collection(db, "orders"), where("ID đơn hàng", "==", orderId))
+    );
+
+    // Lọc ra đơn thật (không phải bản nháp này, không phải "Không có thông tin")
+    const reals = snap.docs
+      .map(d => ({ _id: d.id, ...d.data() }))
+      .filter(o => o._id !== draft._id && o["Tên Item"] !== "Không có thông tin");
+
+    if (!reals.length) continue; // Chưa có đơn thật → bỏ qua
+
+    // Có đơn thật → xóa bản nháp
+    await deleteDoc(doc(db, "orders", draft._id));
+    console.log(`[auto-claim] Xóa nháp "${orderId}" (${draft._id})`);
+
+    // Gán các đơn thật chưa có chủ về user hiện tại
+    for (const real of reals) {
+      if (!real.userId) {
+        await updateDoc(doc(db, "orders", real._id), {
+          userId: me,
+          claimedAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+        console.log(`[auto-claim] Gán đơn thật "${orderId}" (${real._id}) cho user`);
+      }
+    }
+
+    changed = true;
   }
 
-  return true;
+  return changed;
 }
 
 async function refreshMyOrders() {
@@ -125,9 +154,19 @@ async function refreshMyOrders() {
   const snap = await getDocs(q);
   myOrders   = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
 
-  // Dọn dẹp bản nháp trùng ID — nếu có xóa thì tải lại danh sách
+  // Bước 1: Dọn trùng ID trong myOrders
   const cleaned = await cleanupDuplicateDrafts(myOrders);
-  if (cleaned) {
+
+  // Bước 2: Với mỗi nháp còn lại, chủ động tìm đơn thật trong Firestore
+  //         → xóa nháp + tự gán đơn thật về user (không cần search thủ công)
+  const autoClaimed = await autoClaimRealOrders(
+    cleaned
+      ? (await getDocs(query(collection(db, "orders"), where("userId", "==", me)))).docs.map(d => ({ _id: d.id, ...d.data() }))
+      : myOrders
+  );
+
+  // Reload lần cuối nếu có bất kỳ thay đổi nào
+  if (cleaned || autoClaimed) {
     const snap2 = await getDocs(query(collection(db, "orders"), where("userId", "==", me)));
     myOrders = snap2.docs.map(d => ({ _id: d.id, ...d.data() }));
   }
