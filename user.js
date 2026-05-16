@@ -200,21 +200,23 @@ function calcDisc(o) {
 
 // Render một cell theo field name — thứ tự cố định bởi COL_ORDER
 function renderCell(h, o, val, disc) {
-  if (h === "Giá trị đơn hàng (₫)") return `<td>${val.toLocaleString("vi-VN")}</td>`;
-  if (h === "Chiết Khấu")           return `<td>${disc.toLocaleString("vi-VN")}</td>`;
+  if (h === "Giá trị đơn hàng (₫)") return `<td data-label="Giá trị">${val.toLocaleString("vi-VN")}</td>`;
+  if (h === "Chiết Khấu")           return `<td data-label="Chiết khấu">${disc.toLocaleString("vi-VN")}</td>`;
   if (h === "Tên Item") {
     const full  = String(o[h] || "");
     const short = full.length > 50 ? full.slice(0, 50) + "\u2026" : full;
-    return `<td class="col-name"><span title="${full.replace(/"/g, '&quot;')}">${short}</span></td>`;
+    return `<td class="col-name" data-label="Tên sản phẩm"><span title="${full.replace(/"/g, '&quot;')}">${short}</span></td>`;
   }
   if (h === "Trạng thái đặt hàng") {
     const st = o[h] || "";
     if (st.trim().toLowerCase() === "hoàn thành") {
-      return `<td><span class="tag-mine" style="font-size:11px;padding:3px 10px">${st}</span></td>`;
+      return `<td data-label="Trạng thái"><span class="tag-mine" style="font-size:11px;padding:3px 10px">${st}</span></td>`;
     }
-    return `<td>${st}</td>`;
+    return `<td data-label="Trạng thái">${st}</td>`;
   }
-  return `<td>${o[h] || ""}</td>`;
+  if (h === "ID đơn hàng")          return `<td data-label="Mã đơn">${o[h] || ""}</td>`;
+  if (h === "Thời Gian Đặt Hàng")   return `<td data-label="Ngày đặt">${o[h] || ""}</td>`;
+  return `<td data-label="${h}">${o[h] || ""}</td>`;
 }
 
 function renderMyOrders() {
@@ -243,7 +245,7 @@ function renderMyOrders() {
          </div>` 
       : `<span class="tag-mine" style="font-size:11px;padding:3px 10px">✅ Đã gán</span>`;
       
-    return `<tr>${dataCells}<td>${paymentBadge(o.thanhToan)}</td><td>${thaoTac}</td></tr>`;
+    return `<tr>${dataCells}<td data-label="Thanh toán">${paymentBadge(o.thanhToan)}</td><td data-label="Thao tác">${thaoTac}</td></tr>`;
   }).join("");
 
   const tfootRow = COL_ORDER.map(h => {
@@ -256,7 +258,12 @@ function renderMyOrders() {
     <thead><tr>${theadRow}</tr></thead>
     <tbody>${rows}</tbody>
     <tfoot><tr>${tfootRow}</tr></tfoot>
-  </table></div>`;
+  </table></div>
+  <div class="mobile-summary">
+    <span>📦 Tổng: ${myOrders.length} đơn</span>
+    <span>💰 ${totalVal.toLocaleString("vi-VN")}₫</span>
+    <span>🎁 CK: ${totalDisc.toLocaleString("vi-VN")}₫</span>
+  </div>`;
 }
 
 // ─── SEARCH ──────────────────────────────────────────────
@@ -340,19 +347,19 @@ function renderSearchResults(orders, container) {
     let actionCell = "";
     if (isMine) {
       actionCell = isManual
-        ? `<td><div style="display:flex;gap:4px">
+        ? `<td data-label="Thao tác"><div style="display:flex;gap:4px">
              <button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none; padding:4px 8px; font-size:12px; cursor: pointer;" onclick="searchSingleId('${o["ID đơn hàng"]}')">🔄 Tìm Lại</button>
              <button class="btn-out" style="color: var(--red); border-color: var(--red); background: none; padding:4px 8px; font-size:12px; cursor: pointer;" onclick="deleteMyOrder('${o._id}', this)">🗑️ Xóa</button>
            </div></td>`
-        : `<td><span class="tag-mine">✅ Của tôi</span></td>`;
+        : `<td data-label="Trạng thái"><span class="tag-mine">✅ Của tôi</span></td>`;
     } else if (isClaimed) {
-      actionCell = `<td><span class="tag-other">🔒 Đã gán</span></td>`;
+      actionCell = `<td data-label="Trạng thái"><span class="tag-other">🔒 Đã gán</span></td>`;
     } else {
-      actionCell = `<td><button class="btn-claim" onclick="claimOrder('${o._id}', this)">📌 Gán cho tôi</button></td>`;
+      actionCell = `<td data-label="Thao tác"><button class="btn-claim" onclick="claimOrder('${o._id}', this)">📌 Gán cho tôi</button></td>`;
     }
 
     const dataCells = COL_ORDER.map(h => renderCell(h, o, val, disc)).join("");
-    return `<tr>${dataCells}<td>${paymentBadge(o.thanhToan)}</td>${actionCell}</tr>`;
+    return `<tr>${dataCells}<td data-label="Thanh toán">${paymentBadge(o.thanhToan)}</td>${actionCell}</tr>`;
   }).join("");
 
   const tfootRow = COL_ORDER.map(h => {
@@ -365,7 +372,12 @@ function renderSearchResults(orders, container) {
     <thead><tr>${theadRow}</tr></thead>
     <tbody>${rows}</tbody>
     <tfoot><tr>${tfootRow}</tr></tfoot>
-  </table></div></div>`;
+  </table></div></div>
+  <div class="mobile-summary">
+    <span>📦 ${orders.length} đơn</span>
+    <span>💰 ${totalVal.toLocaleString("vi-VN")}₫</span>
+    <span>🎁 CK: ${totalDisc.toLocaleString("vi-VN")}₫</span>
+  </div>`;
 }
 
 // ─── CLAIM ───────────────────────────────────────────────

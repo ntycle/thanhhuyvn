@@ -657,6 +657,95 @@
         gap: 10px;
       }
     }
+
+    /* ── MOBILE CARD LAYOUT (≤640px) ── */
+    @media (max-width: 640px) {
+      /* Ẩn bảng, bỏ overflow ngang */
+      .result-wrap {
+        overflow-x: unset;
+      }
+
+      .result-wrap table {
+        min-width: unset;
+        width: 100%;
+      }
+
+      /* Ẩn header & footer của table */
+      .result-wrap thead,
+      .result-wrap tfoot {
+        display: none;
+      }
+
+      /* Mỗi <tr> thành 1 card */
+      .result-wrap tbody,
+      .result-wrap tr {
+        display: block;
+        width: 100%;
+      }
+
+      .result-wrap tbody tr {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        margin-bottom: 12px;
+        box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+        overflow: hidden;
+        background: white;
+      }
+
+      /* Mỗi <td> thành 1 hàng label : value */
+      .result-wrap td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 9px 14px;
+        border-bottom: 1px solid #f3f3f3;
+        font-size: 13px;
+        gap: 8px;
+        min-height: 38px;
+      }
+
+      .result-wrap td:last-child {
+        border-bottom: none;
+      }
+
+      /* Tên field từ data-label */
+      .result-wrap td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--text-light);
+        font-size: 11px;
+        min-width: 90px;
+        flex-shrink: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+
+      /* Ẩn td không có data-label (ô trống) */
+      .result-wrap td[data-label=""] {
+        display: none;
+      }
+
+      /* col-name không giới hạn width trên mobile */
+      td.col-name,
+      td.col-name span {
+        max-width: unset;
+        white-space: normal;
+        word-break: break-word;
+      }
+
+      /* Summary tổng ở cuối */
+      .mobile-summary {
+        background: #e8f4ff;
+        border-radius: 10px;
+        padding: 12px 16px;
+        margin-top: 4px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--blue);
+      }
+    }
   </style>
 </head>
 
@@ -780,7 +869,7 @@
     </div>
   </div>
 
-  <script type="module" src="user.min.js"></script>
+  <script type="module" src="user.js"></script>
 </body>
 
 </html>
