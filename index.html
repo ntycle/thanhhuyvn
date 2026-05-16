@@ -658,16 +658,26 @@
       }
     }
 
+    /* Ẩn mobile summary trên desktop */
+    .mobile-summary { display: none; }
+
     /* ── MOBILE CARD LAYOUT (≤640px) ── */
     @media (max-width: 640px) {
-      /* Ẩn bảng, bỏ overflow ngang */
+      /* Bỏ overflow ngang */
       .result-wrap {
         overflow-x: unset;
       }
 
+      /* QUAN TRỌNG: table phải là display:block để td::before hoạt động */
+      .result-wrap table,
+      .result-wrap tbody,
+      .result-wrap tr {
+        display: block;
+        width: 100%;
+      }
+
       .result-wrap table {
         min-width: unset;
-        width: 100%;
       }
 
       /* Ẩn header & footer của table */
@@ -677,12 +687,6 @@
       }
 
       /* Mỗi <tr> thành 1 card */
-      .result-wrap tbody,
-      .result-wrap tr {
-        display: block;
-        width: 100%;
-      }
-
       .result-wrap tbody tr {
         border: 1px solid var(--border);
         border-radius: 10px;
@@ -694,7 +698,7 @@
 
       /* Mỗi <td> thành 1 hàng label : value */
       .result-wrap td {
-        display: flex;
+        display: flex !important;
         justify-content: space-between;
         align-items: center;
         padding: 9px 14px;
@@ -702,48 +706,55 @@
         font-size: 13px;
         gap: 8px;
         min-height: 38px;
+        width: 100%;
+        box-sizing: border-box;
       }
 
       .result-wrap td:last-child {
         border-bottom: none;
       }
 
-      /* Tên field từ data-label */
+      /* Tên field hiển thị bên trái từ data-label */
       .result-wrap td::before {
         content: attr(data-label);
-        font-weight: 600;
+        font-weight: 700;
         color: var(--text-light);
         font-size: 11px;
-        min-width: 90px;
+        min-width: 95px;
         flex-shrink: 0;
         text-transform: uppercase;
-        letter-spacing: 0.3px;
+        letter-spacing: 0.4px;
       }
 
-      /* Ẩn td không có data-label (ô trống) */
+      /* Ẩn td không có data-label */
       .result-wrap td[data-label=""] {
-        display: none;
+        display: none !important;
       }
 
-      /* col-name không giới hạn width trên mobile */
+      /* col-name tự xuống hàng trên mobile */
       td.col-name,
       td.col-name span {
         max-width: unset;
         white-space: normal;
         word-break: break-word;
+        display: block;
+        overflow: unset;
+        text-overflow: unset;
       }
 
-      /* Summary tổng ở cuối */
+      /* Summary tổng ở cuối — chỉ hiện trên mobile */
       .mobile-summary {
+        display: flex;
         background: #e8f4ff;
         border-radius: 10px;
         padding: 12px 16px;
         margin-top: 4px;
-        display: flex;
         justify-content: space-between;
         font-size: 13px;
         font-weight: 700;
         color: var(--blue);
+        flex-wrap: wrap;
+        gap: 6px;
       }
     }
   </style>
