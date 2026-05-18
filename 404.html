@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đang chuyển hướng...</title>
+  <style>
+    body { font-family: sans-serif; background: #f5f5f5; color: #333; text-align: center; padding-top: 100px; }
+    .spinner { display: inline-block; width: 40px; height: 40px; border: 4px solid #ddd; border-top-color: #EE4D2D; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="spinner"></div>
+  <h2>Đang kiểm tra liên kết...</h2>
+  <p id="msg">Vui lòng đợi giây lát.</p>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const cfg = {
+      apiKey: "AIzaSyCD3bS8LTPnXU-9C0xVTRC-IzYfPe428x8",
+      authDomain: "shopeeafff-bfd62.firebaseapp.com",
+      projectId: "shopeeafff-bfd62",
+      storageBucket: "shopeeafff-bfd62.firebasestorage.app",
+      messagingSenderId: "1091380862349",
+      appId: "1:1091380862349:web:1c82d576edc1888e4a31c4"
+    };
+
+    const app = initializeApp(cfg);
+    const db = getFirestore(app);
+
+    const pathParam = window.location.pathname.substring(1).replace(/\/$/, "");
+    
+    if (pathParam.length === 10) {
+      getDoc(doc(db, "shortlinks", pathParam)).then(snap => {
+        if (snap.exists()) {
+          const data = snap.data();
+          // Cập nhật lượt nhấn
+          updateDoc(doc(db, "shortlinks", pathParam), { clicks: (data.clicks || 0) + 1 }).catch(() => {});
+          // Chuyển hướng
+          window.location.href = data.url;
+        } else {
+          showError();
+        }
+      }).catch((e) => {
+        showError();
+      });
+    } else {
+      showError();
+    }
+
+    function showError() {
+      document.querySelector(".spinner").style.display = "none";
+      document.querySelector("h2").innerHTML = "❌ Lỗi 404: Không tìm thấy trang";
+      const msg = document.getElementById("msg");
+      msg.innerHTML = "Liên kết không tồn tại hoặc đã bị xóa.<br><br><a href='/' style='color:#0a6ebd;text-decoration:none;font-weight:bold;'>← Quay về Trang chủ</a>";
+    }
+  </script>
+</body>
+</html>

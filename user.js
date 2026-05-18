@@ -21,18 +21,6 @@ const app  = initializeApp(cfg);
 const auth = getAuth(app);
 const db   = getFirestore(app);
 
-// ─── CHECK SHORTLINK REDIRECT ──────────────────────────────
-const pathParam = window.location.pathname.substring(1).replace(/\/$/, "");
-if (pathParam.length === 10) {
-  getDoc(doc(db, "shortlinks", pathParam)).then(snap => {
-    if (snap.exists()) {
-      const data = snap.data();
-      updateDoc(doc(db, "shortlinks", pathParam), { clicks: (data.clicks || 0) + 1 }).catch(() => {});
-      window.location.href = data.url;
-    }
-  }).catch(() => {});
-}
-
 // Các field bị ẩn khỏi bảng
 const EXCLUDE = new Set([
   "Hoa hồng Shopee trên sản phẩm(₫)",
