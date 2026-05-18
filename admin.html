@@ -168,6 +168,7 @@
         <div class="nav-item" data-tab="orders"    onclick="showTab('orders')"><span class="nav-icon">📦</span> Đơn hàng</div>
         <div class="nav-item" data-tab="users"     onclick="showTab('users')"><span class="nav-icon">👥</span> Users</div>
         <div class="nav-item" data-tab="upload"    onclick="showTab('upload')"><span class="nav-icon">📤</span> Upload JSON</div>
+        <div class="nav-item" data-tab="shortlinks" onclick="showTab('shortlinks')"><span class="nav-icon">🔗</span> Rút gọn Link</div>
       </nav>
       <div class="sidebar-foot">
         <div class="aname" id="adm-name">Admin</div>
@@ -276,12 +277,36 @@
           </div>
         </div>
 
+        <!-- SHORTLINKS -->
+        <div id="tab-shortlinks" class="tab-content">
+          <div class="panel">
+            <div class="panel-header"><h2>🔗 Công cụ Rút gọn Link</h2></div>
+            <div class="panel-body" style="max-width:600px">
+              <div class="fg">
+                <label>Link gốc cần rút gọn</label>
+                <input type="url" id="sl-url" placeholder="https://shopee.vn/..." onkeydown="if(event.key==='Enter')createShortLink()"/>
+              </div>
+              <button class="btn btn-blue" onclick="createShortLink()">Tạo Link Rút Gọn</button>
+              <div id="sl-msg"></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><h2>📋 Danh sách Link đã tạo</h2></div>
+            <div style="overflow-x:auto">
+              <table>
+                <thead><tr><th>Link rút gọn</th><th>Link gốc</th><th>Ngày tạo</th><th>Lượt click</th><th>Thao tác</th></tr></thead>
+                <tbody id="shortlinks-tbody"><tr><td colspan="5" style="text-align:center;padding:24px;color:#999"><span class="spinner"></span>Đang tải...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
       </div>
     </main>
   </div>
 </div>
 
 
-<script type="module" src="admin.min.js"></script>
+<script type="module" src="admin.js"></script>
 </body>
 </html>
