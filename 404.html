@@ -15,48 +15,62 @@
   <h2>Đang kiểm tra liên kết...</h2>
   <p id="msg">Vui lòng đợi giây lát.</p>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  <script>
+    (function() {
+      var pathStr = window.location.pathname.substring(1).replace(/\/$/, "");
+      var spinner = document.querySelector(".spinner");
+      var title = document.querySelector("h2");
+      var msg = document.getElementById("msg");
 
-    const cfg = {
-      apiKey: "AIzaSyCD3bS8LTPnXU-9C0xVTRC-IzYfPe428x8",
-      authDomain: "shopeeafff-bfd62.firebaseapp.com",
-      projectId: "shopeeafff-bfd62",
-      storageBucket: "shopeeafff-bfd62.firebasestorage.app",
-      messagingSenderId: "1091380862349",
-      appId: "1:1091380862349:web:1c82d576edc1888e4a31c4"
-    };
+      function showErr() {
+        spinner.style.display = "none";
+        title.innerHTML = "❌ Lỗi 404";
+        msg.innerHTML = "Liên kết không tồn tại hoặc đã bị xóa.<br><br><a href='/' style='color:#0a6ebd;text-decoration:none;font-weight:bold;'>← Quay về Trang chủ</a>";
+      }
 
-    const app = initializeApp(cfg);
-    const db = getFirestore(app);
+      if (pathStr.length === 10) {
+        var project = "shopeeafff-bfd62";
+        // Dùng thẳng REST API thay cho việc tải toàn bộ 300KB thư viện Firebase SDK
+        var docUrl = "https://firestore.googleapis.com/v1/projects/" + project + "/databases/(default)/documents/shortlinks/" + pathStr;
+        
+        // 1. Tải URL đích (Nhẹ và nhanh nhất có thể)
+        fetch(docUrl).then(function(res) {
+          if (!res.ok) throw new Error("Not found");
+          return res.json();
+        }).then(function(data) {
+          var targetUrl = "";
+          if (data && data.fields && data.fields.url && data.fields.url.stringValue) {
+            targetUrl = data.fields.url.stringValue;
+          }
+          
+          if (targetUrl) {
+            // 2. Gửi request cộng click ngầm phía background (dùng keepalive không cản trở việc chuyển trang)
+            var commitUrl = "https://firestore.googleapis.com/v1/projects/" + project + "/databases/(default)/documents:commit";
+            fetch(commitUrl, {
+              method: "POST",
+              keepalive: true,
+              body: JSON.stringify({
+                writes: [{
+                  transform: {
+                    document: "projects/" + project + "/databases/(default)/documents/shortlinks/" + pathStr,
+                    fieldTransforms: [{ fieldPath: "clicks", increment: { integerValue: "1" } }]
+                  }
+                }]
+              })
+            }).catch(function(){});
 
-    const pathParam = window.location.pathname.substring(1).replace(/\/$/, "");
-    
-    if (pathParam.length === 10) {
-      getDoc(doc(db, "shortlinks", pathParam)).then(snap => {
-        if (snap.exists()) {
-          const data = snap.data();
-          // Cập nhật lượt nhấn
-          updateDoc(doc(db, "shortlinks", pathParam), { clicks: (data.clicks || 0) + 1 }).catch(() => {});
-          // Chuyển hướng
-          window.location.href = data.url;
-        } else {
-          showError();
-        }
-      }).catch((e) => {
-        showError();
-      });
-    } else {
-      showError();
-    }
-
-    function showError() {
-      document.querySelector(".spinner").style.display = "none";
-      document.querySelector("h2").innerHTML = "❌ Lỗi 404: Không tìm thấy trang";
-      const msg = document.getElementById("msg");
-      msg.innerHTML = "Liên kết không tồn tại hoặc đã bị xóa.<br><br><a href='/' style='color:#0a6ebd;text-decoration:none;font-weight:bold;'>← Quay về Trang chủ</a>";
-    }
+            // 3. Đá sang link mới ngay lập tức. Dùng replace để triệt tiêu trang 404 khỏi lịch sử back của trình duyệt.
+            window.location.replace(targetUrl);
+          } else {
+            showErr();
+          }
+        }).catch(function(e) {
+          showErr();
+        });
+      } else {
+        showErr();
+      }
+    })();
   </script>
 </body>
 </html>
