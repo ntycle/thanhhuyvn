@@ -57,13 +57,18 @@ async function loadOrders() {
 }
 
 async function loadShortLinks() {
-  const snap = await getDocs(collection(db, "shortlinks"));
-  allShortLinks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  allShortLinks.sort((a, b) => {
-    let tA = a.createdAt?.seconds || 0;
-    let tB = b.createdAt?.seconds || 0;
-    return tB - tA;
-  });
+  try {
+    const snap = await getDocs(collection(db, "shortlinks"));
+    allShortLinks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    allShortLinks.sort((a, b) => {
+      let tA = a.createdAt?.seconds || 0;
+      let tB = b.createdAt?.seconds || 0;
+      return tB - tA;
+    });
+  } catch (e) {
+    console.error("Error loading shortlinks", e);
+    allShortLinks = [];
+  }
   renderShortLinks();
 }
 
