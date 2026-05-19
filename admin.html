@@ -260,6 +260,14 @@
               <h2>💳 Danh Sách Yêu Cầu Thanh Toán</h2>
               <button class="btn btn-outline btn-sm" onclick="loadPaymentRequests()">🔄 Làm mới</button>
             </div>
+            <div class="filter-bar">
+              <select id="filter-pay-status" onchange="renderPaymentRequests()">
+                <option value="">-- Tất cả trạng thái --</option>
+                <option value="pending">Đang chờ</option>
+                <option value="approved">Đã duyệt</option>
+              </select>
+              <input type="text" id="filter-pay-search" placeholder="Tìm theo Mã YC, User..." oninput="renderPaymentRequests()"/>
+            </div>
             <div style="overflow-x:auto">
               <table>
                 <thead><tr><th>Mã Yêu Cầu</th><th>User</th><th>Số đơn</th><th>Tổng CK</th><th>Ngày gửi</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
@@ -322,7 +330,6 @@
     </main>
   </div>
 </div>
-
 
   <!-- MODAL EDIT BANK -->
   <div class="overlay" id="edit-bank-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">

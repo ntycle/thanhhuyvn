@@ -433,7 +433,23 @@ function renderPaymentRequests() {
   const tbody = document.getElementById("payments-tbody");
   if (!allPaymentRequests.length) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:#999">Không có yêu cầu nào</td></tr>`; return; }
   
-  tbody.innerHTML = allPaymentRequests.map(r => {
+  const stFilter = document.getElementById("filter-pay-status")?.value || "";
+  const txtFilter = (document.getElementById("filter-pay-search")?.value || "").toLowerCase();
+
+  const filtered = allPaymentRequests.filter(r => {
+    if (stFilter && r.status !== stFilter) return false;
+    if (txtFilter) {
+      const q = txtFilter;
+      const uid = (r.requestId || "").toLowerCase();
+      const uname = (r.userName || getUserName(r.userId) || "").toLowerCase();
+      if (!uid.includes(q) && !uname.includes(q)) return false;
+    }
+    return true;
+  });
+
+  if (!filtered.length) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:#999">Không tìm thấy yêu cầu nào</td></tr>`; return; }
+
+  tbody.innerHTML = filtered.map(r => {
     let date = "–";
     if (r.createdAt && typeof r.createdAt.toDate === "function") {
       date = r.createdAt.toDate().toLocaleString("vi-VN");
@@ -454,8 +470,10 @@ function renderPaymentRequests() {
     let qrBtn = qrUrl ? `<button class="btn btn-outline btn-xs" style="color:var(--orange); border-color:var(--orange); margin-right:4px;" onclick="showQR('${qrUrl}')">📷 Lấy QR</button>` : '';
 
     let actionBtn = r.status === "pending" ? 
-      `${qrBtn}<button class="btn btn-green btn-xs" onclick="approvePayment('${r.id}')">✅ Duyệt thanh toán</button>` : 
-      `<span style="color:#aaa;font-size:12px;font-style:italic">Đã xử lý</span>`;
+      `${qrBtn}<button class="btn btn-green btn-xs" onclick="approvePayment('${r.id}')">✅ Duyệt thanh toán</button>
+       <button class="btn btn-red btn-xs" onclick="deletePayment('${r.id}')" style="margin-left:4px;">🗑️ Xoá</button>` : 
+      `<span style="color:#aaa;font-size:12px;font-style:italic">Đã xử lý</span>
+       <button class="btn btn-red btn-xs" onclick="deletePayment('${r.id}')" style="margin-left:4px;">🗑️ Xoá</button>`;
       
     const orderCodes = (r.orderIds || []).map(id => id.split('_')[0]);
     const uniqueCodes = [...new Set(orderCodes)].filter(Boolean);
@@ -599,4 +617,17 @@ function showAuthErr(text) {
 window.showQR = function(url) {
   document.getElementById("qr-img-preview").src = url;
   document.getElementById("qr-modal").style.display = "flex";
+};
+
+window.deletePayment = async function(reqId) {
+  if (!confirm("⚠️ CẢNH BÁO: Bạn có chắc chắn muốn XOÁ yêu cầu thanh toán này không?\\n\\nLưu ý: Thao tác này chỉ xoá phiếu yêu cầu trên hệ thống. Các đơn hàng bên trong yêu cầu sẽ KHÔNG bị mất, chúng vẫn ở trạng thái hiện tại (Đang chờ xử lý).")) return;
+  
+  try {
+    const { deleteDoc, doc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    await deleteDoc(doc(db, "payment_requests", reqId));
+    alert("✅ Đã xoá yêu cầu thanh toán thành công!");
+    await loadPaymentRequests();
+  } catch(e) {
+    alert("❌ Lỗi khi xoá: " + e.message);
+  }
 };
