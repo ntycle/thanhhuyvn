@@ -441,8 +441,18 @@ function renderPaymentRequests() {
     
     let stBadge = r.status === "approved" ? `<span class="badge badge-paid">✅ Đã duyệt</span>` : `<span class="badge badge-unpaid">⏳ Đang chờ</span>`;
     
+    const uInfo = allUsers.find(x => x.id === r.userId) || {};
+    const bankAcc = uInfo.bankAccount || "";
+    const bankName = uInfo.bankName || "";
+    const amount = r.totalValue || 0;
+    const uname = (r.userName || "USER").replace(/\s+/g, '');
+    const desc = encodeURIComponent(`${uname}_${r.requestId}`);
+    const qrUrl = (bankAcc && bankName) ? `https://qr.sepay.vn/img?acc=${bankAcc}&bank=${bankName}&amount=${amount}&des=${desc}&template=compact` : '';
+    
+    let qrBtn = qrUrl ? `<a href="${qrUrl}" target="_blank" class="btn btn-outline btn-xs" style="color:var(--orange); border-color:var(--orange); display:inline-block; text-decoration:none; margin-right:4px;">📷 Lấy QR</a>` : '';
+
     let actionBtn = r.status === "pending" ? 
-      `<button class="btn btn-green btn-xs" onclick="approvePayment('${r.id}')">✅ Duyệt thanh toán</button>` : 
+      `${qrBtn}<button class="btn btn-green btn-xs" onclick="approvePayment('${r.id}')">✅ Duyệt thanh toán</button>` : 
       `<span style="color:#aaa;font-size:12px;font-style:italic">Đã xử lý</span>`;
       
     const orderCodes = (r.orderIds || []).map(id => id.split('_')[0]);
