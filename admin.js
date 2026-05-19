@@ -445,11 +445,11 @@ function renderPaymentRequests() {
     const bankAcc = uInfo.bankAccount || "";
     const bankName = uInfo.bankName || "";
     const amount = r.totalValue || 0;
-    const uname = (r.userName || "USER").replace(/\s+/g, '');
-    const desc = encodeURIComponent(`${uname}_${r.requestId}`);
+    const userName = (r.userName || "USER").trim();
+    const desc = encodeURIComponent(`${userName}_${r.requestId}`);
     const qrUrl = (bankAcc && bankName) ? `https://qr.sepay.vn/img?acc=${bankAcc}&bank=${bankName}&amount=${amount}&des=${desc}&template=compact` : '';
     
-    let qrBtn = qrUrl ? `<a href="${qrUrl}" target="_blank" class="btn btn-outline btn-xs" style="color:var(--orange); border-color:var(--orange); display:inline-block; text-decoration:none; margin-right:4px;">📷 Lấy QR</a>` : '';
+    let qrBtn = qrUrl ? `<button class="btn btn-outline btn-xs" style="color:var(--orange); border-color:var(--orange); margin-right:4px;" onclick="showQR('${qrUrl}')">📷 Lấy QR</button>` : '';
 
     let actionBtn = r.status === "pending" ? 
       `${qrBtn}<button class="btn btn-green btn-xs" onclick="approvePayment('${r.id}')">✅ Duyệt thanh toán</button>` : 
@@ -593,3 +593,8 @@ function showAuthErr(text) {
   const m = document.getElementById("adm-msg");
   m.className = "amsg err"; m.textContent = text;
 }
+
+window.showQR = function(url) {
+  document.getElementById("qr-img-preview").src = url;
+  document.getElementById("qr-modal").style.display = "flex";
+};
