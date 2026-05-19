@@ -446,7 +446,9 @@ function renderPaymentRequests() {
     const bankName = uInfo.bankName || "";
     const amount = r.totalValue || 0;
     const userName = (r.userName || "USER").trim();
-    const desc = encodeURIComponent(`${userName}_${r.requestId}`);
+    // Thay thế dấu gạch ngang/underscore bằng khoảng trắng vì VietQR xoá kí tự đặc biệt làm dính chữ
+    const neatId = (r.requestId || "").replace(/_/g, ' '); 
+    const desc = encodeURIComponent(`${userName} ${neatId}`);
     const qrUrl = (bankAcc && bankName) ? `https://qr.sepay.vn/img?acc=${bankAcc}&bank=${bankName}&amount=${amount}&des=${desc}&template=compact` : '';
     
     let qrBtn = qrUrl ? `<button class="btn btn-outline btn-xs" style="color:var(--orange); border-color:var(--orange); margin-right:4px;" onclick="showQR('${qrUrl}')">📷 Lấy QR</button>` : '';
