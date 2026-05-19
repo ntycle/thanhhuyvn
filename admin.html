@@ -167,6 +167,7 @@
         <div class="nav-item active" data-tab="dashboard" onclick="showTab('dashboard')"><span class="nav-icon">📊</span> Dashboard</div>
         <div class="nav-item" data-tab="orders"    onclick="showTab('orders')"><span class="nav-icon">📦</span> Đơn hàng</div>
         <div class="nav-item" data-tab="users"     onclick="showTab('users')"><span class="nav-icon">👥</span> Users</div>
+        <div class="nav-item" data-tab="payments"  onclick="showTab('payments')"><span class="nav-icon">💳</span> Yêu Cầu Thanh Toán</div>
         <div class="nav-item" data-tab="upload"    onclick="showTab('upload')"><span class="nav-icon">📤</span> Upload JSON</div>
         <div class="nav-item" data-tab="shortlinks" onclick="showTab('shortlinks')"><span class="nav-icon">🔗</span> Rút gọn Link</div>
       </nav>
@@ -252,6 +253,22 @@
           </div>
         </div>
 
+        <!-- PAYMENTS -->
+        <div id="tab-payments" class="tab-content">
+          <div class="panel">
+            <div class="panel-header">
+              <h2>💳 Danh Sách Yêu Cầu Thanh Toán</h2>
+              <button class="btn btn-outline btn-sm" onclick="loadPaymentRequests()">🔄 Làm mới</button>
+            </div>
+            <div style="overflow-x:auto">
+              <table>
+                <thead><tr><th>Mã Yêu Cầu</th><th>User</th><th>Số đơn</th><th>Tổng CK</th><th>Ngày gửi</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+                <tbody id="payments-tbody"><tr><td colspan="7" style="text-align:center;padding:24px;color:#999"><span class="spinner"></span>Đang tải...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         <!-- UPLOAD -->
         <div id="tab-upload" class="tab-content">
           <div class="panel">
@@ -307,6 +324,6 @@
 </div>
 
 
-<script type="module" src="admin.min.js"></script>
+<script type="module" src="admin.js"></script>
 </body>
 </html>
