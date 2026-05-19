@@ -38,7 +38,7 @@ const COL_ORDER = [
   "Trạng thái đặt hàng",
 ];
 
-let me = null, myName = "", myOrders = [];
+let me = null, myName = "", myOrders = [], myBankInfo = null;
 
 // ─── AUTH STATE ───────────────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
