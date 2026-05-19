@@ -45,22 +45,11 @@ onAuthStateChanged(auth, async (user) => {
   if (user) {
     me = user.uid;
     const snap = await getDoc(doc(db, "users", user.uid));
-    const uData = snap.exists() ? snap.data() : {};
-    myName = uData.name || user.email;
-    
+    myName = snap.exists() ? snap.data().name : user.email;
     document.getElementById("header-uname").textContent = myName;
     document.getElementById("welcome-name").textContent = myName;
     document.getElementById("auth-screen").style.display = "none";
     document.getElementById("app-screen").style.display = "block";
-    
-    // Check bank info
-    if (uData.bankAccount) {
-      myBankInfo = { bankFullName: uData.bankFullName, bankName: uData.bankName, bankAccount: uData.bankAccount };
-    } else {
-      myBankInfo = null;
-      loadBanksList();
-    }
-    
     await refreshMyOrders();
   } else {
     me = null;
@@ -491,11 +480,6 @@ window.searchSingleId = function (id) {
 
 // ─── PAYMENT REQUEST ──────────────────────────────────────
 window.createPaymentRequest = async function () {
-  if (!myBankInfo) {
-    document.getElementById("bank-info-modal").style.display = "flex";
-    return;
-  }
-
   const eligibleOrders = myOrders.filter(o =>
     String(o["Trạng thái đặt hàng"] || "").trim().toLowerCase() === "hoàn thành" &&
     (!o.thanhToan || o.thanhToan === "" || o.thanhToan === "Chưa cập nhật") &&
@@ -636,64 +620,4 @@ window.doLogout = async function () {
   await signOut(auth);
   document.getElementById("search-result").innerHTML = "";
   document.getElementById("orderId").value = "";
-  document.getElementById("bank-fullname").value = "";
-  document.getElementById("bank-account").value = "";
-  document.getElementById("bank-fullname").disabled = false;
-  document.getElementById("bank-name").disabled = false;
-  document.getElementById("bank-account").disabled = false;
-  document.getElementById("btn-save-bank").style.display = "block";
-  document.getElementById("bank-info-msg").style.display = "none";
-  document.getElementById("btn-save-bank").textContent = "Lưu Thông Tin Mặc Định";
-};
-
-// ─── BANK API ─────────────────────────────────────────────
-let banksList = [];
-window.loadBanksList = async function() {
-  const select = document.getElementById("bank-name");
-  try {
-    let data;
-    try {
-      const r = await fetch("banks.json");
-      if (!r.ok) throw new Error();
-      data = await r.json();
-    } catch(e) {
-      const r2 = await fetch("https://api.vietqr.io/v2/banks");
-      data = await r2.json();
-    }
-    banksList = data.data || [];
-    select.innerHTML = '<option value="">-- Chọn ngân hàng --</option>' + banksList.map(b => `<option value="${b.short_name || b.shortName}">${b.name} (${b.short_name || b.shortName})</option>`).join("");
-  } catch(err) {
-    select.innerHTML = '<option value="">-- Lỗi tải danh sách ngân hàng --</option>';
-  }
-};
-
-window.saveBankInfo = async function() {
-  const fullname = document.getElementById("bank-fullname").value.trim().toUpperCase();
-  const bank = document.getElementById("bank-name").value;
-  const account = document.getElementById("bank-account").value.trim();
-  
-  if (!fullname || !bank || !account) {
-    alert("❌ Vui lòng điền đầy đủ cả 3 thông tin!");
-    return;
-  }
-  
-  if (!confirm("⚠️ Chú ý: Bạn chỉ được nhập thông tin thanh toán MỘT LẦN DUY NHẤT.\n\nNếu sai sót sẽ không nhận được tiền. Bạn có chắc chắn thông tin cung cấp là CHÍNH XÁC không?")) return;
-  
-  const btn = document.getElementById("btn-save-bank");
-  btn.disabled = true; btn.textContent = "⏳ Đang lưu...";
-  try {
-    await updateDoc(doc(db, "users", me), {
-      bankFullName: fullname,
-      bankName: bank,
-      bankAccount: account,
-      updatedAt: serverTimestamp()
-    });
-    myBankInfo = { bankFullName: fullname, bankName: bank, bankAccount: account };
-    alert("✅ Lưu thông tin thanh toán thành công!\nBạn có thể Yêu cầu thanh toán ngay bây giờ.");
-    document.getElementById("bank-info-modal").style.display = "none";
-  } catch (e) {
-    alert("❌ Lỗi lưu thông tin (có quyền bị giới hạn hoặc lỗi định dạng): " + e.message);
-  } finally {
-    btn.disabled = false; btn.textContent = "Lưu Thông Tin";
-  }
 };

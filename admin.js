@@ -110,74 +110,27 @@ function renderDashboard() {
 // ─── USERS ─────────────────────────────────────────────────
 function renderUsers() {
   const tbody = document.getElementById("users-tbody");
-  if (!allUsers.length) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:#999">Chưa có user</td></tr>`; return; }
+  if (!allUsers.length) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:#999">Chưa có user</td></tr>`; return; }
   tbody.innerHTML = allUsers.map(u => {
     const cnt  = allOrders.filter(o => o.userId === u.id).length;
     let date = "–";
     if (u.createdAt && typeof u.createdAt.toDate === "function") {
       date = u.createdAt.toDate().toLocaleDateString("vi-VN");
     }
-    
-    // Check if bank info exists
-    const bankStatus = u.bankAccount ? `<span class="badge badge-paid">✅ Đã điền</span>` : `<span class="badge badge-unpaid">Chưa có</span>`;
-    
     return `<tr>
       <td>${u.name || "–"}</td>
       <td>${u.email}</td>
       <td><span class="badge badge-${u.role === "admin" ? "admin" : "user"}">${u.role === "admin" ? "Admin" : "User"}</span></td>
       <td>${cnt}</td>
-      <td>${bankStatus}</td>
       <td>${date}</td>
       <td>${u.refEmail || "–"}</td>
       <td style="display:flex;gap:4px;">${u.role !== "admin"
-        ? `<button class="btn btn-outline btn-xs" style="color:var(--orange);border-color:var(--orange)" onclick="editUserBank('${u.id}')">💳 Bank</button>
-           <button class="btn btn-outline btn-xs" style="color:var(--blue);border-color:var(--blue)" onclick="sendResetEmailToUser('${u.email}', this)">🔑 Đổi MK</button>
+        ? `<button class="btn btn-outline btn-xs" style="color:var(--blue);border-color:var(--blue)" onclick="sendResetEmailToUser('${u.email}', this)">🔑 Đổi MK</button>
            <button class="btn btn-red btn-xs" onclick="resetUserClaims('${u.id}','${u.name||u.email}')">↩ Reset đơn</button>`
         : ""}</td>
     </tr>`;
   }).join("");
 }
-
-// ─── USER BANK ADMIN EDIT ──────────────────────────────────
-window.editUserBank = function(uid) {
-  const u = allUsers.find(x => x.id === uid);
-  if (!u) return;
-  document.getElementById("eb-uid").value = uid;
-  document.getElementById("eb-name").value = u.bankFullName || "";
-  document.getElementById("eb-bank").value = u.bankName || "";
-  document.getElementById("eb-account").value = u.bankAccount || "";
-  document.getElementById("edit-bank-modal").style.display = "flex";
-};
-
-window.saveUserBank = async function() {
-  const uid = document.getElementById("eb-uid").value;
-  const name = document.getElementById("eb-name").value.trim().toUpperCase();
-  const bank = document.getElementById("eb-bank").value.trim();
-  const acc = document.getElementById("eb-account").value.trim();
-  
-  if (!uid) return;
-  
-  const btn = document.querySelector("#edit-bank-modal .btn-green");
-  const oldText = btn.textContent;
-  btn.disabled = true; btn.textContent = "⏳...";
-  
-  try {
-    await updateDoc(doc(db, "users", uid), {
-      bankFullName: name,
-      bankName: bank,
-      bankAccount: acc,
-      updatedAt: serverTimestamp()
-    });
-    alert("✅ Cập nhật thông tin ngân hàng thành công!");
-    document.getElementById("edit-bank-modal").style.display = "none";
-    await loadUsers();
-    renderDashboard();
-  } catch(e) {
-    alert("❌ Lỗi: " + e.message);
-  } finally {
-    btn.disabled = false; btn.textContent = oldText;
-  }
-};
 
 window.openAddUser = function() {
   const p = document.getElementById("add-user-panel");
