@@ -398,10 +398,18 @@ function renderPaymentRequests() {
       `<button class="btn btn-green btn-xs" onclick="approvePayment('${r.id}')">✅ Duyệt thanh toán</button>` : 
       `<span style="color:#aaa;font-size:12px;font-style:italic">Đã xử lý</span>`;
       
+    const orderCodes = (r.orderIds || []).map(id => id.split('_')[0]);
+    const uniqueCodes = [...new Set(orderCodes)].filter(Boolean);
+      
     return `<tr>
       <td><code>${r.requestId}</code></td>
       <td>${r.userName || getUserName(r.userId)}</td>
-      <td>${r.totalCount}</td>
+      <td>
+        <div style="font-weight: 600;">${r.totalCount} đơn</div>
+        <div style="font-size: 11px; color: #666; max-width: 200px; white-space: normal; line-height: 1.5; margin-top: 4px;">
+          ${uniqueCodes.map(id => `<code>${id}</code>`).join(", ")}
+        </div>
+      </td>
       <td style="font-weight:600;color:var(--orange)">${(r.totalValue||0).toLocaleString("vi-VN")} đ</td>
       <td>${date}</td>
       <td>${stBadge}</td>
