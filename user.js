@@ -55,8 +55,9 @@ onAuthStateChanged(auth, async (user) => {
     
     // Check bank info
     if (uData.bankAccount) {
-      lockBankForm(uData.bankFullName, uData.bankName, uData.bankAccount);
+      myBankInfo = { bankFullName: uData.bankFullName, bankName: uData.bankName, bankAccount: uData.bankAccount };
     } else {
+      myBankInfo = null;
       loadBanksList();
     }
     
@@ -490,6 +491,11 @@ window.searchSingleId = function (id) {
 
 // ─── PAYMENT REQUEST ──────────────────────────────────────
 window.createPaymentRequest = async function () {
+  if (!myBankInfo) {
+    document.getElementById("bank-info-modal").style.display = "flex";
+    return;
+  }
+
   const eligibleOrders = myOrders.filter(o =>
     String(o["Trạng thái đặt hàng"] || "").trim().toLowerCase() === "hoàn thành" &&
     (!o.thanhToan || o.thanhToan === "" || o.thanhToan === "Chưa cập nhật") &&
@@ -682,31 +688,12 @@ window.saveBankInfo = async function() {
       bankAccount: account,
       updatedAt: serverTimestamp()
     });
-    alert("✅ Lưu thông tin thanh toán thành công!");
-    lockBankForm(fullname, bank, account);
+    myBankInfo = { bankFullName: fullname, bankName: bank, bankAccount: account };
+    alert("✅ Lưu thông tin thanh toán thành công!\nBạn có thể Yêu cầu thanh toán ngay bây giờ.");
+    document.getElementById("bank-info-modal").style.display = "none";
   } catch (e) {
     alert("❌ Lỗi lưu thông tin (có quyền bị giới hạn hoặc lỗi định dạng): " + e.message);
-    btn.disabled = false; btn.textContent = "Lưu Thông Tin Mặc Định";
+  } finally {
+    btn.disabled = false; btn.textContent = "Lưu Thông Tin";
   }
-};
-
-window.lockBankForm = function(fullname, bank, acc) {
-  document.getElementById("bank-fullname").value = fullname || "";
-  document.getElementById("bank-fullname").disabled = true;
-  
-  const bSelect = document.getElementById("bank-name");
-  if(![...bSelect.options].some(o => o.value === bank)) {
-    bSelect.innerHTML += `<option value="${bank}">${bank}</option>`;
-  }
-  bSelect.value = bank || "";
-  bSelect.disabled = true;
-  
-  document.getElementById("bank-account").value = acc || "";
-  document.getElementById("bank-account").disabled = true;
-  
-  document.getElementById("btn-save-bank").style.display = "none";
-  
-  const msg = document.getElementById("bank-info-msg");
-  msg.style.display = "block";
-  msg.innerHTML = "🔒 Thông tin đã được lưu cứng. Vui lòng liên hệ Admin nếu muốn đổi.";
 };
