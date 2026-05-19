@@ -234,8 +234,8 @@
             </div>
             <div style="overflow-x:auto">
               <table>
-                <thead><tr><th>Họ tên</th><th>Email</th><th>Vai trò</th><th>Đơn đã gán</th><th>Ngày tạo</th><th>Người giới thiệu</th><th>Thao tác</th></tr></thead>
-                <tbody id="users-tbody"><tr><td colspan="7" style="text-align:center;padding:24px;color:#999"><span class="spinner"></span>Đang tải...</td></tr></tbody>
+                <thead><tr><th>Họ tên</th><th>Email</th><th>Vai trò</th><th>Đơn đã gán</th><th>TT Ngân hàng</th><th>Ngày tạo</th><th>Người GT</th><th>Thao tác</th></tr></thead>
+                <tbody id="users-tbody"><tr><td colspan="8" style="text-align:center;padding:24px;color:#999"><span class="spinner"></span>Đang tải...</td></tr></tbody>
               </table>
             </div>
           </div>
@@ -324,6 +324,30 @@
 </div>
 
 
-<script type="module" src="admin.min.js"></script>
+  <!-- MODAL EDIT BANK -->
+  <div class="overlay" id="edit-bank-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+    <div class="panel" style="background:#fff; width:400px; padding:20px; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+      <h3 style="margin-top:0;">💳 Cập nhật TT Thanh toán</h3>
+      <input type="hidden" id="eb-uid" />
+      <div class="fg">
+        <label>Họ và Tên</label>
+        <input type="text" id="eb-name" placeholder="VD: NGUYEN VAN A" style="text-transform: uppercase;" />
+      </div>
+      <div class="fg">
+        <label>Ngân hàng nhận tiền</label>
+        <input type="text" id="eb-bank" placeholder="VD: Vietcombank" />
+      </div>
+      <div class="fg">
+        <label>Số tài khoản</label>
+        <input type="text" id="eb-account" placeholder="Nhập số tài khoản" />
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:20px;">
+        <button class="btn btn-outline" onclick="document.getElementById('edit-bank-modal').style.display='none'">Hủy</button>
+        <button class="btn btn-green" onclick="saveUserBank()">💾 Lưu thay đổi</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="admin.js"></script>
 </body>
 </html>
