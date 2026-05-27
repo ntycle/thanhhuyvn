@@ -241,10 +241,11 @@ function populateUserFilter() {
 function renderOrders(list) {
   const orders = list || allOrders;
   const tbody  = document.getElementById("orders-tbody");
-  if (!orders.length) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:#999">Không có đơn hàng</td></tr>`; return; }
+  if (!orders.length) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:#999">Không có đơn hàng</td></tr>`; return; }
   tbody.innerHTML = orders.map(o => {
     const val     = Number(o["Giá trị đơn hàng (₫)"]) || 0;
     const ck      = Number(o["Chiết Khấu"]) || Number(o["Chiết Khấu 2%"]) || 0;
+    const hh      = Number((o["Hoa hồng Shopee trên sản phẩm(₫)"] || "0").toString().replace(/\./g, "")) || 0;
     const claimed = !!o.userId;
     // Build payment dropdown (admin only)
     const payVal = o.thanhToan || "";
@@ -259,6 +260,7 @@ function renderOrders(list) {
       <td><code>${o["ID đơn hàng"]||""}</code></td>
       <td>${val.toLocaleString("vi-VN")}</td>
       <td style="color:var(--orange);font-weight:600">${ck.toLocaleString("vi-VN")} đ</td>
+      <td style="color:var(--green);font-weight:600">${hh.toLocaleString("vi-VN")} đ</td>
       <td><span class="badge badge-${claimed?"claimed":"free"}">${claimed ? "✅ Đã gán" : "⏳ Chưa gán"}</span></td>
       <td>${paySel}</td>
       <td>${getUserName(o.userId)}</td>
