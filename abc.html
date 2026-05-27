@@ -232,6 +232,9 @@
               <h2>👥 Danh sách Users</h2>
               <button class="btn btn-blue btn-sm" onclick="openAddUser()">+ Tạo User</button>
             </div>
+            <div class="filter-bar">
+              <input type="text" id="filter-user-search" placeholder="Tìm tên, email..." oninput="renderUsers()"/>
+            </div>
             <div style="overflow-x:auto">
               <table>
                 <thead><tr><th>Họ tên</th><th>Email</th><th>Vai trò</th><th>Đơn đã gán</th><th>TT Ngân hàng</th><th>Ngày tạo</th><th>Người GT</th><th>Thao tác</th></tr></thead>
