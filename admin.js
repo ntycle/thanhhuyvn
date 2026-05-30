@@ -490,7 +490,12 @@ function renderPaymentRequests() {
     const desc = encodeURIComponent(`SANDEAL THANH TOAN ${neatId}`);
     const qrUrl = (bankAcc && bankName) ? `https://qr.sepay.vn/img?acc=${bankAcc}&bank=${bankName}&amount=${amount}&des=${desc}&template=compact` : '';
     
-    let qrBtn = qrUrl ? `<button class="btn btn-outline btn-xs" style="color:var(--orange); border-color:var(--orange); margin-right:4px;" onclick="showQR('${qrUrl}')">📷 Lấy QR</button>` : '';
+    const safeUserName = userName.replace(/'/g, "\\'");
+    const safeBankFullName = (uInfo.bankFullName || "").replace(/'/g, "\\'");
+    const safeBankName = bankName.replace(/'/g, "\\'");
+    const safeBankAcc = bankAcc.replace(/'/g, "\\'");
+    
+    let qrBtn = qrUrl ? `<button class="btn btn-outline btn-xs" style="color:var(--orange); border-color:var(--orange); margin-right:4px;" onclick="showQR('${qrUrl}', '${safeUserName}', '${safeBankFullName}', '${safeBankName}', '${safeBankAcc}')">📷 Lấy QR</button>` : '';
 
     let actionBtn = r.status === "pending" ? 
       `${qrBtn}<button class="btn btn-green btn-xs" onclick="approvePayment('${r.id}')">✅ Duyệt thanh toán</button>
@@ -639,8 +644,14 @@ function showAuthErr(text) {
   m.className = "amsg err"; m.textContent = text;
 }
 
-window.showQR = function(url) {
+window.showQR = function(url, uname, bFullName, bName, bAcc) {
   document.getElementById("qr-img-preview").src = url;
+  if(document.getElementById("qr-username")) {
+    document.getElementById("qr-username").textContent = uname || "Không có";
+    document.getElementById("qr-bank-fullname").textContent = bFullName || "Không có";
+    document.getElementById("qr-bank-name").textContent = bName || "Không có";
+    document.getElementById("qr-bank-account").textContent = bAcc || "Không có";
+  }
   document.getElementById("qr-modal").style.display = "flex";
 };
 

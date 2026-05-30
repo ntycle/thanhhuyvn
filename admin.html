@@ -372,6 +372,12 @@
     <div class="panel" style="background:#fff; width:auto; padding:24px; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.3); text-align:center;" onclick="event.stopPropagation()">
       <h3 style="margin:0 0 16px 0;">📷 Quét mã chuyển khoản</h3>
       <img id="qr-img-preview" src="" style="max-width:350px; border-radius:8px; display:block; margin:0 auto;" />
+      <div id="qr-info" style="margin-top: 16px; text-align: left; font-size: 14px; background: #f9f9f9; padding: 12px; border-radius: 8px;">
+        <p style="margin-bottom:6px"><strong>Tên User:</strong> <span id="qr-username"></span></p>
+        <p style="margin-bottom:6px"><strong>Chủ tài khoản:</strong> <span id="qr-bank-fullname"></span></p>
+        <p style="margin-bottom:6px"><strong>Ngân hàng:</strong> <span id="qr-bank-name"></span></p>
+        <p style="margin-bottom:0"><strong>Số tài khoản:</strong> <span id="qr-bank-account"></span></p>
+      </div>
       <button class="btn btn-outline" style="margin-top:20px;" onclick="document.getElementById('qr-modal').style.display='none'">Đóng lại</button>
     </div>
   </div>
