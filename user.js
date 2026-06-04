@@ -246,6 +246,15 @@ function groupOrdersById(orders) {
     if (o.thanhToan && o.thanhToan !== "Chưa cập nhật") {
       groups[id].payment = o.thanhToan;
     }
+    
+    // Cập nhật trạng thái nhóm: ưu tiên hiển thị "Đang chờ xử lý" hoặc các trạng thái chưa hoàn thành
+    const itemStatus = (o["Trạng thái đặt hàng"] || "").trim();
+    const currentStatus = groups[id].status.trim().toLowerCase();
+    if (itemStatus.toLowerCase() === "đang chờ xử lý") {
+      groups[id].status = itemStatus;
+    } else if (currentStatus === "hoàn thành" && itemStatus.toLowerCase() !== "hoàn thành" && itemStatus !== "") {
+      groups[id].status = itemStatus;
+    }
   }
   return Object.values(groups);
 }
