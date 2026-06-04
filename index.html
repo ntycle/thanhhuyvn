@@ -540,6 +540,137 @@
       font-weight: 600;
     }
 
+    /* ORDER ACCORDION */
+    .order-group {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+      transition: box-shadow 0.2s;
+    }
+    .order-group:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .order-summary {
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      background: #fff;
+      user-select: none;
+      gap: 12px;
+    }
+    .order-summary-left {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .order-title {
+      font-weight: 700;
+      color: var(--blue);
+      font-size: 14px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .order-meta {
+      font-size: 12px;
+      color: var(--text-light);
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .order-summary-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .order-chevron {
+      font-size: 14px;
+      color: var(--text-light);
+      transition: transform 0.3s;
+    }
+    .order-group.open .order-chevron {
+      transform: rotate(180deg);
+    }
+    .order-details {
+      display: none;
+      border-top: 1px solid #f0f0f0;
+      background: #fafafa;
+      padding: 16px 18px;
+    }
+    .order-group.open .order-details {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .detail-lbl {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-light);
+      text-transform: uppercase;
+    }
+    .detail-val {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .detail-items-list {
+      margin-top: 16px;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      background: white;
+      overflow: hidden;
+    }
+    .detail-item-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-bottom: 1px solid #eee;
+      font-size: 13px;
+    }
+    .detail-item-row:last-child {
+      border-bottom: none;
+    }
+    .item-name-col {
+      flex: 1;
+      font-weight: 500;
+      padding-right: 12px;
+    }
+    .item-price-col {
+      text-align: right;
+      color: var(--orange);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .order-actions {
+      margin-top: 16px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
     /* MY ORDERS */
     .summary-bar {
       background: linear-gradient(135deg, #EE4D2D, #ff8c00);
@@ -801,7 +932,7 @@
             <div class="fg"><label>Mật khẩu</label><input type="password" id="reg-pass" placeholder="Ít nhất 6 ký tự" />
             </div>
             <div class="fg"><label>Người giới thiệu (Email)</label><input type="email" id="reg-ref"
-                placeholder="Email của người giới thiệu (nếu có)" />
+                placeholder="Email người giới thiệu (tùy chọn)" />
             </div>
             <button class="btn-main" onclick="doRegister()">Đăng ký tài khoản</button>
             <div id="reg-msg" class="amsg"></div>
