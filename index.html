@@ -660,12 +660,15 @@
       flex: 1;
       font-weight: 500;
       padding-right: 12px;
+      min-width: 0;
+      word-break: break-word;
     }
     .item-price-col {
       text-align: right;
       color: var(--orange);
       font-weight: 600;
       white-space: nowrap;
+      flex-shrink: 0;
     }
     .order-actions {
       margin-top: 16px;
@@ -1067,7 +1070,7 @@
     </div>
   </div>
 
-  <script type="module" src="user.js"></script>
+  <script type="module" src="user.min.js"></script>
 </body>
 
 </html>
