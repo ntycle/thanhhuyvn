@@ -259,17 +259,31 @@ function groupOrdersById(orders) {
   return Object.values(groups);
 }
 
+window.renderMyOrders = renderMyOrders;
 function renderMyOrders() {
   const el = document.getElementById("mine-list");
-  if (!myOrders.length) {
+  
+  let filteredOrders = myOrders;
+  const filterSelect = document.getElementById("order-filter");
+  if (filterSelect) {
+    const filterVal = filterSelect.value;
+    if (filterVal === "paid") {
+      filteredOrders = myOrders.filter(o => o.thanhToan === "Đã Thanh Toán");
+    } else if (filterVal === "unpaid") {
+      filteredOrders = myOrders.filter(o => o.thanhToan !== "Đã Thanh Toán");
+    }
+  }
+
+  if (!filteredOrders.length) {
+    const noFilterMatch = myOrders.length > 0;
     el.innerHTML = `<div style="padding:36px;text-align:center;color:#999;font-size:14px">
-      Chưa có đơn hàng nào.<br>Hãy sang tab <b>🔍 Tìm đơn hàng</b> để tìm và gán đơn về tài khoản!
+      ${noFilterMatch ? 'Không có đơn hàng nào phù hợp với bộ lọc hiện tại.' : 'Chưa có đơn hàng nào.<br>Hãy sang tab <b>🔍 Tìm đơn hàng</b> để tìm và gán đơn về tài khoản!'}
     </div>`;
     return;
   }
   
   let grandTotalVal = 0, grandTotalDisc = 0;
-  const groups = groupOrdersById(myOrders);
+  const groups = groupOrdersById(filteredOrders);
 
   const html = groups.map(g => {
     grandTotalVal += g.totalVal;
@@ -288,7 +302,7 @@ function renderMyOrders() {
            <button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none; font-size:11px; padding:3px 8px; cursor: pointer;" onclick="event.stopPropagation(); searchSingleId('${g.orderId}')">🔄 Tìm Lại</button>
            <button class="btn-out" style="color: var(--red); border-color: var(--red); background: none; font-size:11px; padding:3px 8px; cursor: pointer;" onclick="event.stopPropagation(); deleteMyOrder('${itemIdsStr}', this)">🗑️ Xóa</button>
          </div>`
-      : `<span class="tag-mine" style="font-size:11px;padding:3px 10px">✅ Đã gán</span>`;
+      : ``;
 
     const statusHtml = g.status.trim().toLowerCase() === "hoàn thành" 
       ? `<span class="tag-mine" style="font-size:11px;padding:3px 10px">${g.status}</span>`
@@ -337,7 +351,7 @@ function renderMyOrders() {
 
   el.innerHTML = `<div class="result-wrap">${html}</div>
   <div class="mobile-summary" style="display:flex;">
-    <span>📦 ${groups.length} đơn (${myOrders.length} SP)</span>
+    <span>📦 ${groups.length} đơn (${filteredOrders.length} SP)</span>
     <span>💰 ${grandTotalVal.toLocaleString("vi-VN")}₫</span>
     <span>🎁 CK: ${grandTotalDisc.toLocaleString("vi-VN")}₫</span>
   </div>`;
