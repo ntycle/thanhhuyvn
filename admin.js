@@ -408,9 +408,31 @@ window.confirmUpload = async function() {
         const snap = await getDoc(ref);
 
         if (snap.exists()) {
-          // Đơn đã tồn tại: chỉ cập nhật các field đơn hàng (trạng thái, giá trị...)
-          // GIỮ NGUYÊN userId & claimedAt (dùng merge)
+          // Đơn đã tồn tại: áp dụng logic State Machine cho cột Chiết Khấu
+          const oldData = snap.data();
+          const oldStatus = (oldData["Trạng thái đặt hàng"] || "").toString().trim();
+          const newStatus = (order["Trạng thái đặt hàng"] || "").toString().trim();
+
           const { userId, claimedAt, createdAt, ...orderFields } = order;
+
+          const isCancelled = newStatus === "Đã huỷ" || newStatus === "Đã hủy" || newStatus === "Hủy";
+          
+          if (isCancelled) {
+            // 1. Đơn huỷ -> Chiết khấu = 0
+            orderFields["Chiết Khấu"] = 0;
+            if (orderFields["Chiết Khấu 2%"] !== undefined) orderFields["Chiết Khấu 2%"] = 0;
+          } else if (oldStatus === "Chưa thanh toán" && newStatus === "Đang chờ xử lý") {
+            // 2. Chưa thanh toán -> Đang chờ xử lý -> Lấy từ JSON mới (không làm gì thêm vì orderFields đã chứa giá trị mới)
+          } else {
+            // 3. Các trường hợp khác -> Khoá cột Chiết Khấu (Giữ nguyên giá trị trên Database)
+            if (oldData["Chiết Khấu"] !== undefined) {
+              orderFields["Chiết Khấu"] = oldData["Chiết Khấu"];
+            }
+            if (oldData["Chiết Khấu 2%"] !== undefined) {
+              orderFields["Chiết Khấu 2%"] = oldData["Chiết Khấu 2%"];
+            }
+          }
+
           batch.set(ref, { ...orderFields, updatedAt: serverTimestamp() }, { merge: true });
           countUpdated++;
         } else {
