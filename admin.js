@@ -242,7 +242,7 @@ function populateUserFilter() {
 function renderOrders(list) {
   const orders = list || allOrders;
   const tbody  = document.getElementById("orders-tbody");
-  if (!orders.length) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:#999">Không có đơn hàng</td></tr>`; return; }
+  if (!orders.length) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:24px;color:#999">Không có đơn hàng</td></tr>`; return; }
   tbody.innerHTML = orders.map(o => {
     const val     = Number(o["Giá trị đơn hàng (₫)"]) || 0;
     const ck      = Number(o["Chiết Khấu"]) || Number(o["Chiết Khấu 2%"]) || 0;
@@ -262,6 +262,7 @@ function renderOrders(list) {
       <td>${val.toLocaleString("vi-VN")}</td>
       <td style="color:var(--orange);font-weight:600">${ck.toLocaleString("vi-VN")} đ</td>
       <td style="color:var(--green);font-weight:600">${hh.toLocaleString("vi-VN")} đ</td>
+      <td>${o["Trạng thái đặt hàng"] || "–"}</td>
       <td><span class="badge badge-${claimed?"claimed":"free"}">${claimed ? "✅ Đã gán" : "⏳ Chưa gán"}</span></td>
       <td>${paySel}</td>
       <td>${getUserName(o.userId)}</td>
@@ -273,6 +274,8 @@ function renderOrders(list) {
   }).join("");
 }
 
+let currentFilteredOrders = [];
+
 window.applyFilter = function() {
   const status  = document.getElementById("filter-status").value;
   const uid     = document.getElementById("filter-user").value;
@@ -282,7 +285,44 @@ window.applyFilter = function() {
   if (status === "free")    f = f.filter(o => !o.userId);
   if (uid)     f = f.filter(o => o.userId === uid);
   if (keyword) f = f.filter(o => (o["ID đơn hàng"]||"").toUpperCase().includes(keyword));
+  
+  currentFilteredOrders = f;
+  
+  const btnCopy = document.getElementById("btn-copy-orders");
+  if (btnCopy) {
+    if (uid && f.length > 0) {
+      btnCopy.style.display = "inline-block";
+    } else {
+      btnCopy.style.display = "none";
+    }
+  }
+  
   renderOrders(f);
+};
+
+window.copyFilteredOrders = function() {
+  if (!currentFilteredOrders || currentFilteredOrders.length === 0) return;
+  
+  const orderIds = currentFilteredOrders.map(o => o["ID đơn hàng"] || "").filter(Boolean);
+  const uniqueOrderIds = [...new Set(orderIds)];
+  
+  if (uniqueOrderIds.length === 0) {
+    alert("Không có mã đơn hàng nào để copy");
+    return;
+  }
+  
+  const textToCopy = uniqueOrderIds.join("\n");
+  navigator.clipboard.writeText(textToCopy).then(() => {
+    const btnCopy = document.getElementById("btn-copy-orders");
+    const oldText = btnCopy.textContent;
+    btnCopy.textContent = "✅ Đã copy " + uniqueOrderIds.length + " đơn";
+    setTimeout(() => {
+      btnCopy.textContent = "📋 Copy đơn hàng";
+    }, 2000);
+  }).catch(err => {
+    console.error("Lỗi copy", err);
+    alert("Không thể copy. Hãy thử lại!");
+  });
 };
 
 // ─── SET PAYMENT (admin only) ────────────────────────────────

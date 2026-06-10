@@ -224,11 +224,12 @@
               </select>
               <select id="filter-user" onchange="applyFilter()"><option value="">-- Lọc theo user --</option></select>
               <input type="text" id="filter-id" placeholder="Tìm ID đơn hàng..." oninput="applyFilter()"/>
+              <button id="btn-copy-orders" class="btn btn-blue btn-sm" style="display:none" onclick="copyFilteredOrders()">📋 Copy đơn hàng</button>
             </div>
             <div style="overflow-x:auto">
               <table>
-                <thead><tr><th>ID Đơn hàng</th><th>Giá trị (₫)</th><th>Chiết Khấu</th><th>HH Shopee</th><th>Trạng thái gán</th><th>Thanh toán</th><th>Người gán</th><th>Thao tác</th></tr></thead>
-                <tbody id="orders-tbody"><tr><td colspan="8" style="text-align:center;padding:24px;color:#999"><span class="spinner"></span>Đang tải...</td></tr></tbody>
+                <thead><tr><th>ID Đơn hàng</th><th>Giá trị (₫)</th><th>Chiết Khấu</th><th>HH Shopee</th><th>Trạng thái đơn hàng</th><th>Trạng thái gán</th><th>Thanh toán</th><th>Người gán</th><th>Thao tác</th></tr></thead>
+                <tbody id="orders-tbody"><tr><td colspan="9" style="text-align:center;padding:24px;color:#999"><span class="spinner"></span>Đang tải...</td></tr></tbody>
               </table>
             </div>
           </div>
