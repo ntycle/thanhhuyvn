@@ -21,19 +21,6 @@ const app = initializeApp(cfg);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// ─── ZALO INIT ────────────────────────────────────────────
-const initZalo = () => {
-  if (typeof window.Zalo !== 'undefined') {
-    window.Zalo.init({
-      version: '2.0',
-      appId: '1150083649033793704'
-    });
-  } else {
-    setTimeout(initZalo, 500);
-  }
-};
-initZalo();
-
 // Các field bị ẩn khỏi bảng
 const EXCLUDE = new Set([
   "Hoa hồng Shopee trên sản phẩm(₫)",
@@ -546,11 +533,104 @@ window.claimOrder = async function (docIdsStr, btn) {
 
     btn.parentNode.innerHTML = `<span class="tag-mine">✅ Của tôi</span>`;
     await refreshMyOrders();
-  } catch (e) {
-    btn.disabled = false; btn.textContent = "📌 Gán cho tôi";
-    alert("Lỗi: " + e.message);
+  } catch (err) {
+    btn.disabled = false; btn.textContent = "Lưu Thông Tin Mặc Định";
+    alert("❌ Lỗi lưu thông tin: " + err.message);
   }
 };
+
+// ─── ZALO OAUTH CALLBACK HANDLER ─────────────────────────
+const urlParams = new URLSearchParams(window.location.search);
+const zaloCode = urlParams.get('code');
+const zaloState = urlParams.get('state');
+
+if (zaloCode && zaloState === 'zalo_login') {
+  window.addEventListener('DOMContentLoaded', () => {
+    handleZaloOauth(zaloCode);
+  });
+}
+
+async function handleZaloOauth(code) {
+  const msgId = localStorage.getItem('zalo_msg_id') || 'login-msg';
+  const msg = document.getElementById(msgId);
+  if (msg) {
+    msg.className = "amsg";
+    msg.textContent = "⏳ Đang xác thực với Zalo...";
+    msg.style.display = "block";
+  }
+
+  const tokenUrl = "https://oauth.zaloapp.com/v4/access_token";
+  const body = new URLSearchParams();
+  body.append('app_id', '1150083649033793704');
+  body.append('grant_type', 'authorization_code');
+  body.append('code', code);
+
+  const headers = {
+    'Content-Type': 'application/x-www-form-urlencoded',
+    'secret_key': 'ctHh3WHFDLPI1IBSP5R7'
+  };
+
+  try {
+    let response = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: headers,
+      body: body.toString()
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch directly");
+    }
+
+    let data = await response.json();
+    if (data.access_token) {
+      getZaloUserProfile(data.access_token, msg);
+    } else {
+      throw new Error(data.error_name || "Lấy token thất bại");
+    }
+  } catch (err) {
+    try {
+      const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(tokenUrl);
+      let proxyResponse = await fetch(proxyUrl, {
+        method: 'POST',
+        headers: headers,
+        body: body.toString()
+      });
+      let proxyData = await proxyResponse.json();
+      if (proxyData.access_token) {
+        getZaloUserProfile(proxyData.access_token, msg);
+      } else {
+        throw new Error(proxyData.error_name || "Proxy: Lấy token thất bại");
+      }
+    } catch (proxyErr) {
+      if (msg) {
+        msg.className = "amsg err";
+        msg.textContent = "❌ Lỗi kết nối Zalo. Vui lòng kiểm tra lại cấu hình Domain Callback trên Zalo Developers.";
+      }
+    }
+  }
+}
+
+async function getZaloUserProfile(accessToken, msgEl) {
+  try {
+    const res = await fetch('https://graph.zalo.me/v2.0/me?fields=id,name,picture', {
+      headers: {
+        'access_token': accessToken
+      }
+    });
+    const data = await res.json();
+    if (data.id) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+      await handleZaloFirebaseLogin(data.id, data.name || "Người dùng Zalo", msgEl || document.createElement('div'));
+    } else {
+      throw new Error("Không lấy được profile");
+    }
+  } catch (err) {
+    if (msgEl) {
+      msgEl.className = "amsg err";
+      msgEl.textContent = "❌ Lỗi lấy thông tin Zalo: " + err.message;
+    }
+  }
+}
 
 window.saveMissingOrder = async function (id, btn) {
   btn.disabled = true; btn.textContent = "⏳...";
@@ -709,32 +789,17 @@ window.showForgotPassword = function () {
 window.doLoginZalo = function (msgId = "login-msg") {
   const msg = document.getElementById(msgId);
   msg.className = "amsg";
-  msg.textContent = "⏳ Đang kết nối Zalo...";
+  msg.textContent = "⏳ Đang chuyển hướng sang Zalo...";
   msg.style.display = "block";
   
-  if (typeof window.Zalo === 'undefined') {
-    msg.className = "amsg err";
-    msg.textContent = "❌ Lỗi: Không tải được SDK Zalo. Vui lòng thử lại.";
-    return;
-  }
-
-  window.Zalo.login({
-    success: function () {
-      window.Zalo.api('/me', 'GET', { fields: 'id,name,picture' }, async function (res) {
-        if (res && res.id) {
-          msg.textContent = "⏳ Đang xác thực với hệ thống...";
-          await handleZaloFirebaseLogin(res.id, res.name || "Người dùng Zalo", msg);
-        } else {
-          msg.className = "amsg err";
-          msg.textContent = "❌ Không lấy được thông tin từ Zalo.";
-        }
-      });
-    },
-    error: function () {
-      msg.className = "amsg err";
-      msg.textContent = "❌ Đăng nhập Zalo bị hủy hoặc lỗi.";
-    }
-  });
+  const appId = '1150083649033793704';
+  const redirectUrl = encodeURIComponent(window.location.origin + window.location.pathname);
+  const state = "zalo_login";
+  
+  // Lưu lại ID của message box để hiện thị lỗi sau khi redirect về
+  localStorage.setItem('zalo_msg_id', msgId);
+  
+  window.location.href = `https://oauth.zaloapp.com/v4/permission?app_id=${appId}&redirect_uri=${redirectUrl}&state=${state}`;
 };
 
 async function handleZaloFirebaseLogin(zaloId, name, msgEl) {
