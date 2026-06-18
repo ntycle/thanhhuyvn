@@ -21,6 +21,19 @@ const app = initializeApp(cfg);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// ─── ZALO INIT ────────────────────────────────────────────
+const initZalo = () => {
+  if (typeof window.Zalo !== 'undefined') {
+    window.Zalo.init({
+      version: '2.0',
+      appId: '1150083649033793704'
+    });
+  } else {
+    setTimeout(initZalo, 500);
+  }
+};
+initZalo();
+
 // Các field bị ẩn khỏi bảng
 const EXCLUDE = new Set([
   "Hoa hồng Shopee trên sản phẩm(₫)",
@@ -213,7 +226,7 @@ function paymentBadge(val) {
 function calcDisc(o) {
   const hh = Number((o["Hoa hồng Shopee trên sản phẩm(₫)"] || "0").toString().replace(/\./g, "")) || 0;
   const ck = Number(o["Chiết Khấu"]) || Number(o["Chiết Khấu 2%"]) || 0;
-  return hh === 0 ? 0 : Math.min(ck, 40000);
+  return hh === 0 ? 0 : Math.min(ck, Math.round(hh * 0.7));
 }
 
 window.toggleOrderGroup = function(el) {
@@ -693,6 +706,70 @@ window.showForgotPassword = function () {
 };
 
 // ─── AUTH ACTIONS ─────────────────────────────────────────
+window.doLoginZalo = function (msgId = "login-msg") {
+  const msg = document.getElementById(msgId);
+  msg.className = "amsg";
+  msg.textContent = "⏳ Đang kết nối Zalo...";
+  msg.style.display = "block";
+  
+  if (typeof window.Zalo === 'undefined') {
+    msg.className = "amsg err";
+    msg.textContent = "❌ Lỗi: Không tải được SDK Zalo. Vui lòng thử lại.";
+    return;
+  }
+
+  window.Zalo.login({
+    success: function () {
+      window.Zalo.api('/me', 'GET', { fields: 'id,name,picture' }, async function (res) {
+        if (res && res.id) {
+          msg.textContent = "⏳ Đang xác thực với hệ thống...";
+          await handleZaloFirebaseLogin(res.id, res.name || "Người dùng Zalo", msg);
+        } else {
+          msg.className = "amsg err";
+          msg.textContent = "❌ Không lấy được thông tin từ Zalo.";
+        }
+      });
+    },
+    error: function () {
+      msg.className = "amsg err";
+      msg.textContent = "❌ Đăng nhập Zalo bị hủy hoặc lỗi.";
+    }
+  });
+};
+
+async function handleZaloFirebaseLogin(zaloId, name, msgEl) {
+  const email = `${zaloId}@zalo.com`;
+  const pass = `ZaloAuth_${zaloId}_#`;
+  
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+    msgEl.className = "amsg ok"; 
+    msgEl.textContent = "✅ Đăng nhập thành công!";
+  } catch (e) {
+    if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password') {
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, email, pass);
+        await updateProfile(cred.user, { displayName: name });
+        await setDoc(doc(db, "users", cred.user.uid), {
+          name: name,
+          email: email,
+          role: "user",
+          createdAt: serverTimestamp(),
+          zaloId: zaloId
+        });
+        msgEl.className = "amsg ok"; 
+        msgEl.textContent = "✅ Đăng nhập thành công!";
+      } catch (err) {
+        msgEl.className = "amsg err";
+        msgEl.textContent = "❌ Lỗi tạo tài khoản: " + err.message;
+      }
+    } else {
+      msgEl.className = "amsg err";
+      msgEl.textContent = "❌ Lỗi đăng nhập: " + e.message;
+    }
+  }
+}
+
 window.doLogin = async function () {
   const email = document.getElementById("login-email").value.trim();
   const pass = document.getElementById("login-pass").value;
