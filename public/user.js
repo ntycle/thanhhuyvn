@@ -36,6 +36,9 @@ let me = null, myName = "", myOrders = [], myBankInfo = null;
 // ─── AUTH STATE ───────────────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
   if (user) {
+    document.documentElement.classList.remove("not-logged-in");
+    document.documentElement.classList.add("is-logged-in");
+    
     me = user.uid;
     const snap = await getDoc(doc(db, "users", user.uid));
     const uData = snap.exists() ? snap.data() : {};
@@ -43,8 +46,14 @@ onAuthStateChanged(auth, async (user) => {
 
     document.getElementById("header-uname").textContent = myName;
     document.getElementById("welcome-name").textContent = myName;
-    document.getElementById("auth-screen").style.display = "none";
-    document.getElementById("app-screen").style.display = "block"; localStorage.setItem("isLoggedIn", "true");
+    const elAuth = document.getElementById("auth-screen");
+    if (elAuth) elAuth.style.display = "none";
+    
+    const elApp = document.getElementById("app-screen");
+    if (elApp) {
+      elApp.style.display = "block"; 
+      localStorage.setItem("isLoggedIn", "true");
+    }
 
     // Check bank info
     if (uData.bankAccount) {
@@ -56,9 +65,18 @@ onAuthStateChanged(auth, async (user) => {
 
     await refreshMyOrders();
   } else {
+    document.documentElement.classList.remove("is-logged-in");
+    document.documentElement.classList.add("not-logged-in");
+
     me = null;
-    document.getElementById("auth-screen").style.display = "flex";
-    document.getElementById("app-screen").style.display = "none"; localStorage.removeItem("isLoggedIn");
+    const elAuth = document.getElementById("auth-screen");
+    if (elAuth) elAuth.style.display = "flex";
+    
+    const elApp = document.getElementById("app-screen");
+    if (elApp) {
+      elApp.style.display = "none"; 
+      localStorage.removeItem("isLoggedIn");
+    }
   }
 });
 
@@ -880,16 +898,36 @@ window.doForgotPassword = async function () {
 
 window.doLogout = async function () {
   await signOut(auth);
-  document.getElementById("search-result").innerHTML = "";
-  document.getElementById("orderId").value = "";
-  document.getElementById("bank-fullname").value = "";
-  document.getElementById("bank-account").value = "";
-  document.getElementById("bank-fullname").disabled = false;
-  document.getElementById("bank-name").disabled = false;
-  document.getElementById("bank-account").disabled = false;
-  document.getElementById("btn-save-bank").style.display = "block";
-  document.getElementById("bank-info-msg").style.display = "none";
-  document.getElementById("btn-save-bank").textContent = "Lưu Thông Tin Mặc Định";
+  
+  const searchResult = document.getElementById("search-result");
+  if (searchResult) searchResult.innerHTML = "";
+  
+  const orderId = document.getElementById("orderId");
+  if (orderId) orderId.value = "";
+  
+  const bankFullname = document.getElementById("bank-fullname");
+  if (bankFullname) {
+    bankFullname.value = "";
+    bankFullname.disabled = false;
+  }
+  
+  const bankAccount = document.getElementById("bank-account");
+  if (bankAccount) {
+    bankAccount.value = "";
+    bankAccount.disabled = false;
+  }
+  
+  const bankName = document.getElementById("bank-name");
+  if (bankName) bankName.disabled = false;
+  
+  const btnSaveBank = document.getElementById("btn-save-bank");
+  if (btnSaveBank) {
+    btnSaveBank.style.display = "block";
+    btnSaveBank.textContent = "Lưu Thông Tin Mặc Định";
+  }
+  
+  const bankInfoMsg = document.getElementById("bank-info-msg");
+  if (bankInfoMsg) bankInfoMsg.style.display = "none";
 };
 
 // ─── BANK API ─────────────────────────────────────────────
@@ -898,14 +936,8 @@ window.loadBanksList = async function () {
   const select = document.getElementById("bank-name");
   try {
     let data;
-    try {
-      const r = await fetch("banks.json");
-      if (!r.ok) throw new Error();
-      data = await r.json();
-    } catch (e) {
-      const r2 = await fetch("https://api.vietqr.io/v2/banks");
-      data = await r2.json();
-    }
+    const r2 = await fetch("https://api.vietqr.io/v2/banks");
+    data = await r2.json();
     banksList = data.data || [];
     select.innerHTML = '<option value="">-- Chọn ngân hàng --</option>' + banksList.map(b => `<option value="${b.short_name || b.shortName}">${b.name} (${b.short_name || b.shortName})</option>`).join("");
   } catch (err) {
