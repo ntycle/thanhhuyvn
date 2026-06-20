@@ -32,7 +32,7 @@ onAuthStateChanged(auth, async (user) => {
       document.getElementById("admin-panel").style.display = "block";
       loadAll();
     } else {
-      await signOut(auth);
+      // Bỏ `await signOut(auth);` để không kick văng user đang đăng nhập ở tab khác
       showAuthErr("❌ Tài khoản không có quyền admin.");
     }
   } else {
