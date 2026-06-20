@@ -390,7 +390,7 @@ window.doSearch = async function () {
     if (found.length) {
       renderSearchResults(found, resultDiv);
     } else {
-      resultDiv.innerHTML = `<div class="not-found" style="margin-bottom: 16px;">❌ Không tìm thấy đơn hàng nào có sẵn trong hệ thống.</div>`;
+      resultDiv.innerHTML = ""; // Remove redundant global error card
     }
 
     if (missingIds.length) {
@@ -399,8 +399,8 @@ window.doSearch = async function () {
         return `
         <div style="background:#fff3e0; padding: 14px 18px; border-radius: var(--radius); margin-top: 14px; border: 1px solid #ffcc80; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;">
           <div>
-            <div style="font-weight: 700; color: #e65100; margin-bottom: 4px;">ID: ${id}</div>
-            <div style="font-size: 13px; color: #e65100; opacity: 0.85;">Chưa có trong hệ thống</div>
+            <div style="font-weight: 700; color: #e65100; margin-bottom: 4px;">❌ Không tìm thấy ID: ${id}</div>
+            <div style="font-size: 13px; color: #e65100; opacity: 0.85;">Chưa có trong hệ thống, bạn có muốn lưu tạm?</div>
           </div>
           <div style="display: flex; gap: 8px;">
             ${isValidId ? `<button class="btn-claim" style="padding: 8px 16px; font-size: 13px;" onclick="saveMissingOrder('${id}', this)">💾 Lưu lại đơn hàng</button>` : `<span style="font-size: 12px; color: #c00; font-weight: bold; align-self: center; padding: 0 10px;">Không có thông tin đơn hàng</span>`}
