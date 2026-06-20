@@ -51,7 +51,6 @@ export default function Page() {
           <button class="menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('show')">☰</button>
           <h1 id="topbar-title">Dashboard</h1>
         </div>
-        <button class="btn-logout" onclick="adminLogout()">🚪 Đăng xuất</button>
       </div>
       <div class="content">
 
