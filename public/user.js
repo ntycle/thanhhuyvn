@@ -292,7 +292,7 @@ function renderMyOrders() {
 
     const thaoTac = isManual
       ? `<div style="display:flex;gap:4px">
-           <button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none; font-size:11px; padding:3px 8px; cursor: pointer;" onclick="event.stopPropagation(); searchSingleId('${g.orderId}')">🔄 Tìm Lại</button>
+
            <button class="btn-out" style="color: var(--red); border-color: var(--red); background: none; font-size:11px; padding:3px 8px; cursor: pointer;" onclick="event.stopPropagation(); deleteMyOrder('${itemIdsStr}', this)">🗑️ Xóa</button>
          </div>`
       : ``;
@@ -397,7 +397,6 @@ window.doSearch = async function () {
           </div>
           <div style="display: flex; gap: 8px;">
             ${isValidId ? `<button class="btn-claim" style="padding: 8px 16px; font-size: 13px;" onclick="saveMissingOrder('${id}', this)">💾 Lưu lại đơn hàng</button>` : `<span style="font-size: 12px; color: #c00; font-weight: bold; align-self: center; padding: 0 10px;">Không có thông tin đơn hàng</span>`}
-            <button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none;" onclick="searchSingleId('${id}')">🔄 Tìm lại</button>
           </div>
         </div>
       `}).join("");
@@ -439,7 +438,7 @@ function renderSearchResults(orders, container) {
     if (mineCount === g.items.length) {
       actionCell = isManual
         ? `<div style="display:flex;gap:4px">
-             <button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none; padding:4px 8px; font-size:12px; cursor: pointer;" onclick="event.stopPropagation(); searchSingleId('${g.orderId}')">🔄 Tìm Lại</button>
+
              <button class="btn-out" style="color: var(--red); border-color: var(--red); background: none; padding:4px 8px; font-size:12px; cursor: pointer;" onclick="event.stopPropagation(); deleteMyOrder('${itemIdsStr}', this)">🗑️ Xóa</button>
            </div>`
         : `<span class="tag-mine">✅ Của tôi</span>`;
