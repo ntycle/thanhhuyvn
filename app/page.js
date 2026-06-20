@@ -119,12 +119,76 @@ export default function Page() {
       <div id="main-mine" style="display:none">
         <div class="wallet-card">
           <div class="wallet-content">
-            <div class="wallet-greeting">
-              <h3>Xin chào, <span id="welcome-name"></span>!</h3>
+            <div class="wallet-greeting" style="display: flex; align-items: center; margin-bottom: 16px;">
+              <span style="font-size: 22px; margin-right: 6px; flex-shrink: 0;">👋</span>
+              <h3 style="margin: 0; font-size: 20px; font-weight: 700;">Xin chào, <span id="welcome-name"></span>!</h3>
             </div>
-            <p class="wallet-label">Số dư khả dụng</p>
-            <div class="wallet-balance" id="sum-avail">0</div>
             
+            <div class="wallet-top-section" style="display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; margin-bottom: 24px; gap: 16px;">
+              
+              <!-- LEFT INFO (Anchored extreme left) -->
+              <div class="wallet-left-info" style="display: flex; flex-direction: column; justify-content: center; align-items: flex-start; text-align: left;">
+                <p class="wallet-label" style="margin-bottom: 2px; font-size: 13px; font-weight: 500; opacity: 0.9;">Số dư khả dụng</p>
+                <div class="wallet-balance-container" style="display: flex; align-items: baseline; gap: 4px;">
+                  <div class="wallet-balance" id="sum-avail" style="margin-bottom: 0; font-size: 40px; line-height: 1;">0</div>
+                  <span style="font-size: 18px; text-decoration: underline; font-weight: 600; opacity: 0.9;">đ</span>
+                </div>
+              </div>
+              
+              <!-- CENTER DIVIDER (Dead center) -->
+              <div class="wallet-divider" style="width: 1px; height: 50px; background: rgba(255,255,255,0.3);"></div>
+              
+              <!-- RIGHT IMAGE (Responsive alignment) -->
+              <div class="wallet-right-image">
+                <svg width="85" height="85" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="wallet-back" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="rgba(255, 255, 255, 0.5)" />
+                      <stop offset="100%" stop-color="rgba(255, 255, 255, 0.15)" />
+                    </linearGradient>
+                    <linearGradient id="wallet-front" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="rgba(255, 255, 255, 0.8)" />
+                      <stop offset="100%" stop-color="rgba(255, 255, 255, 0.3)" />
+                    </linearGradient>
+                    <linearGradient id="wallet-dark" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="rgba(0, 0, 0, 0.15)" />
+                      <stop offset="100%" stop-color="rgba(0, 0, 0, 0.02)" />
+                    </linearGradient>
+                    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#000" flood-opacity="0.15"/>
+                    </filter>
+                  </defs>
+                  
+                  <!-- Back panel (inside of wallet showing slightly) -->
+                  <path d="M10,32 L84,32 C87.3,32 90,34.7 90,38 L90,68 C90,71.3 87.3,74 84,74 L10,74 C6.7,74 4,71.3 4,68 L4,38 C4,34.7 6.7,32 10,32 Z" fill="url(#wallet-back)" filter="url(#shadow)" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+                  
+                  <!-- Cash sticking out subtly from the top edge -->
+                  <rect x="18" y="25" width="58" height="15" rx="3" fill="#ffffff" opacity="0.95" stroke="rgba(255,255,255,0.8)" stroke-width="1.5" filter="url(#shadow)"/>
+                  <line x1="25" y1="30" x2="45" y2="30" stroke="rgba(238, 77, 45, 0.4)" stroke-width="2.5" stroke-linecap="round"/>
+                  
+                  <!-- Front main panel (Men's Bi-fold) -->
+                  <path d="M8,38 L86,38 C88.2,38 90,39.8 90,42 L90,72 C90,74.2 88.2,76 86,76 L8,76 C5.8,76 4,74.2 4,72 L4,42 C4,39.8 5.8,38 8,38 Z" fill="url(#wallet-front)" filter="url(#shadow)" stroke="rgba(255,255,255,0.6)" stroke-width="2"/>
+                  
+                  <!-- Vertical fold line typical of bi-fold wallets (centered) -->
+                  <line x1="47" y1="38" x2="47" y2="76" stroke="rgba(0,0,0,0.1)" stroke-width="5"/>
+                  <line x1="47" y1="38" x2="47" y2="76" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-dasharray="3,3"/>
+                  
+                  <!-- Subtle inner shadow/gradient for right side depth -->
+                  <path d="M47,38 L86,38 C88.2,38 90,39.8 90,42 L90,72 C90,74.2 88.2,76 86,76 L47,76 Z" fill="url(#wallet-dark)"/>
+                  
+                  <!-- Classic Leather Stitching around the edges -->
+                  <path d="M10,43 L84,43 L84,71 L10,71 Z" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1" stroke-dasharray="3,3" opacity="0.9"/>
+                  
+                  <!-- Small embossed logo/badge in the corner -->
+                  <rect x="74" y="62" width="8" height="6" rx="2" fill="rgba(255,255,255,0.9)" filter="url(#shadow)"/>
+                  <circle cx="78" cy="65" r="1.5" fill="rgba(238, 77, 45, 0.8)"/>
+                  
+                  <!-- Sparkles -->
+                  <path d="M10,12 L12,17 L17,19 L12,21 L10,26 L8,21 L3,19 L8,17 Z" fill="#ffffff" opacity="0.9"/>
+                  <path d="M85,15 L86,18 L89,19 L86,20 L85,23 L84,20 L81,19 L84,18 Z" fill="#ffffff" opacity="0.7"/>
+                </svg>
+              </div>
+            </div>
             <div class="wallet-stats-row">
               <div class="stat-item">
                 <div class="stat-label">Số đơn</div>

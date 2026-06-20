@@ -1526,3 +1526,120 @@
 .btn-withdraw-full::after {
   border-radius: 14px 14px 0 0;
 }
+
+/* ELEGANT PASTE BUTTON */
+.btn-paste {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+.btn-paste:hover {
+  background: #fff5f2;
+  color: #EE4D2D;
+  border-color: #ffccbc;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(238,77,45,0.08);
+}
+.btn-paste:active {
+  transform: translateY(0);
+}
+.btn-paste svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* MINIMALIST MOBILE PASTE BUTTON */
+.btn-paste-mobile {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  background: rgba(0,0,0,0.05);
+  border: none;
+  border-radius: 12px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+}
+.btn-paste-mobile:active {
+  background: rgba(0,0,0,0.1);
+}
+
+/* WALLET 3D IMAGE RESPONSIVE */
+@media (max-width: 600px) {
+  .wallet-top-section {
+    margin-bottom: 20px !important;
+  }
+  .wallet-greeting span {
+    font-size: 20px !important;
+    margin-right: 6px !important;
+  }
+  .wallet-greeting h3 {
+    font-size: 18px !important;
+  }
+  .wallet-label {
+    font-size: 13px !important;
+    margin-bottom: 4px !important;
+  }
+  .wallet-balance-container span {
+    font-size: 20px !important;
+  }
+  .wallet-divider {
+    margin: 8px 16px !important;
+  }
+  .wallet-right-image img {
+    width: 80px !important;
+  }
+  .wallet-right-image {
+    padding-right: 0 !important;
+  }
+}
+
+
+/* WALLET GRID RESPONSIVE OVERRIDES */
+@media (max-width: 600px) {
+  .wallet-top-section {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) !important;
+    gap: 8px !important;
+  }
+}
+
+/* WALLET RIGHT IMAGE RESPONSIVE ALIGNMENT */
+.wallet-right-image {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 16px;
+}
+
+@media (max-width: 400px) {
+  .wallet-right-image {
+    justify-content: center !important;
+    padding-right: 0 !important;
+  }
+  .wallet-right-image svg {
+    width: 75px !important;
+    height: 75px !important;
+  }
+}
+
+@media (max-width: 350px) {
+  .wallet-right-image svg {
+    width: 65px !important;
+    height: 65px !important;
+  }
+}
