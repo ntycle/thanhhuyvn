@@ -4,7 +4,8 @@ import { useEffect } from "react";
 export default function Page() {
   return (
     <>
-      <script dangerouslySetInnerHTML={{ __html: `window.ENV = {
+      <script dangerouslySetInnerHTML={{
+        __html: `window.ENV = {
       apiKey: '${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}',
       authDomain: '${process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}',
       projectId: '${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}',
@@ -13,7 +14,8 @@ export default function Page() {
       appId: '${process.env.NEXT_PUBLIC_FIREBASE_APP_ID}'
     };` }} />
       <script type="module" src="/user.js"></script>
-    <div dangerouslySetInnerHTML={{ __html: `
+      <div dangerouslySetInnerHTML={{
+        __html: `
 
   
   <!-- OPTIMIZATION: Instant Load via LocalStorage -->
@@ -123,8 +125,7 @@ export default function Page() {
           <div class="card-title">🔍 Tìm kiếm đơn hàng</div>
           <div class="guide-links">
             <a href="https://s.shopee.vn/4fswFcE0Mc" target="_blank">🎟️ Mã giảm giá Shopee</a>
-            <a href="https://shorten.asia/mTn3wHfD" target="_blank">☕ Mã Highland Coffee</a>
-            <a href="https://sandeal.io.vn/huongdan.html" target="_blank">Hướng dẫn sử dụng web</a>
+            <a href="https://shorten.asia/mTn3wHfD" target="_blank">☕ Mã Highland Coffee</a>            
             <a href="https://zalo.me/g/dnyqyk95ihelrtqn3cyg" target="_blank">Link nhóm Zalo</a>
           </div>
           <div style="position: relative; width: 100%;">
