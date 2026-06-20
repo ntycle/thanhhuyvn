@@ -188,10 +188,10 @@ async function refreshMyOrders() {
     }
   });
   document.getElementById("sum-count").textContent = count;
-  document.getElementById("sum-value").textContent = (totalVal / 1e6).toFixed(2) + "M₫";
-  document.getElementById("sum-disc").textContent = totalDisc.toLocaleString("vi-VN") + "₫";
+  document.getElementById("sum-value").textContent = (totalVal / 1e6).toFixed(2) + "M";
+  document.getElementById("sum-disc").textContent = totalDisc.toLocaleString("vi-VN");
   const elTotalAvailable = document.getElementById("sum-avail");
-  if (elTotalAvailable) elTotalAvailable.textContent = totalAvailable.toLocaleString("vi-VN") + "₫";
+  if (elTotalAvailable) elTotalAvailable.textContent = totalAvailable.toLocaleString("vi-VN");
 
   renderMyOrders();
 }

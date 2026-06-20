@@ -4,6 +4,7 @@ import { useEffect } from "react";
 export default function Page() {
   return (
     <div dangerouslySetInnerHTML={{ __html: `
+<div class="huongdan-body">
 <div class="guide-container">
     <div class="guide-header">
         <h1>📋 HƯỚNG DẪN THỰC HIỆN</h1>
@@ -112,6 +113,7 @@ export default function Page() {
      Bước 4 không có hình. File html tên huongdan.html khi lưu về sẽ hiển thị hoàn chỉnh. 
      Nếu file b1.png không tồn tại trong cùng thư mục, ảnh sẽ hiển thị placeholder với chữ b1.png (demo)
      nhưng vẫn giữ đúng hình thức gọi là b1.png, đảm bảo logic "kèm hình b1.png" ở các bước trừ bước 4. -->
+</div>
 ` }} />
   );
 }

@@ -117,38 +117,35 @@ export default function Page() {
 
       <!-- MY ORDERS TAB -->
       <div id="main-mine" style="display:none">
-        <div class="summary-bar">
-          <div>
-            <h3>Xin chào, <span id="welcome-name"></span>! 👋</h3>
-            <p>Các đơn hàng đã được gán về tài khoản của bạn</p>
-          </div>
-          <div class="summary-stats">
-            <div class="stat-box">
-              <div class="val" id="sum-count">0</div>
-              <div class="lbl">Đơn hàng</div>
+        <div class="wallet-card">
+          <div class="wallet-content">
+            <div class="wallet-greeting">
+              <h3>Xin chào, <span id="welcome-name"></span>!</h3>
             </div>
-            <div class="stat-box">
-              <div class="val" id="sum-value">0₫</div>
-              <div class="lbl">Tổng giá trị</div>
+            <p class="wallet-label">Số dư khả dụng</p>
+            <div class="wallet-balance" id="sum-avail">0</div>
+            
+            <div class="wallet-stats-row">
+              <div class="stat-item">
+                <div class="stat-label">Số đơn</div>
+                <div class="stat-value" id="sum-count">0</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Tổng giá trị</div>
+                <div class="stat-value" id="sum-value">0</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Chiết khấu</div>
+                <div class="stat-value" id="sum-disc">0</div>
+              </div>
             </div>
-            <div class="stat-box">
-              <div class="val" id="sum-disc">0₫</div>
-              <div class="lbl">Chiết khấu</div>
-            </div>
-            <div class="stat-box">
-              <div class="val" id="sum-avail">0₫</div>
-              <div class="lbl">Khả dụng</div>
-            </div>
-          </div>
-          <div style="width: 100%; margin-top: 16px; display: flex; justify-content: flex-end;">
-            <button class="btn-search"
-              style="width: auto; padding: 10px 24px; margin-top: 0; background: #fff; color: var(--orange); border: 2px solid white; box-shadow: var(--shadow);"
-              onclick="createPaymentRequest()">💳 Yêu Cầu Thanh Toán</button>
+            
+            <button class="btn-withdraw-full" onclick="createPaymentRequest()">💳 Yêu Cầu Thanh Toán</button>
           </div>
         </div>
         <div class="card" style="padding:0">
-          <div style="padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #fafafa; border-radius: var(--radius) var(--radius) 0 0;">
-            <div style="font-size: 15px; font-weight: 700; color: var(--blue);">Danh sách đơn hàng</div>
+          <div style="padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; background: #fafafa; border-radius: var(--radius) var(--radius) 0 0;">
+            <div style="font-size: 15px; font-weight: 700; color: var(--blue); white-space: nowrap;">Danh sách đơn hàng</div>
             <div style="display: flex; align-items: center; gap: 8px;">
               <span style="font-size: 13px; font-weight: 600; color: var(--text-light);">Lọc:</span>
               <select id="order-filter" onchange="window.renderMyOrders()" style="padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; outline: none; font-family: inherit; font-size: 13px; color: var(--text); background: white;">
@@ -204,6 +201,6 @@ export default function Page() {
 
   <script type="module" src="user.js"></script>
 ` }} />
-  </>
+    </>
   );
 }
