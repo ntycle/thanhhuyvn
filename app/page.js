@@ -15,6 +15,25 @@ export default function Page() {
       <script type="module" src="/user.js"></script>
     <div dangerouslySetInnerHTML={{ __html: `
 
+  
+  <!-- OPTIMIZATION: Instant Load via LocalStorage -->
+  <script>
+    try {
+      if (localStorage.getItem('isLoggedIn') === 'true') {
+        document.documentElement.classList.add('is-logged-in');
+      } else {
+        document.documentElement.classList.add('not-logged-in');
+      }
+    } catch(e) {}
+  </script>
+  <style>
+    html.is-logged-in #auth-screen { display: none !important; }
+    html.is-logged-in #app-screen { display: block !important; }
+    html.not-logged-in #auth-screen { display: flex !important; }
+    html.not-logged-in #app-screen { display: none !important; }
+    #auth-screen, #app-screen { display: none; } /* Default hide both to prevent flashes */
+  </style>
+
   <!-- AUTH -->
   <div id="auth-screen">
     <div class="auth-container">

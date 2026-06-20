@@ -51,7 +51,7 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById("header-uname").textContent = myName;
     document.getElementById("welcome-name").textContent = myName;
     document.getElementById("auth-screen").style.display = "none";
-    document.getElementById("app-screen").style.display = "block";
+    document.getElementById("app-screen").style.display = "block"; localStorage.setItem("isLoggedIn", "true");
 
     // Check bank info
     if (uData.bankAccount) {
@@ -65,7 +65,7 @@ onAuthStateChanged(auth, async (user) => {
   } else {
     me = null;
     document.getElementById("auth-screen").style.display = "flex";
-    document.getElementById("app-screen").style.display = "none";
+    document.getElementById("app-screen").style.display = "none"; localStorage.removeItem("isLoggedIn");
   }
 });
 
