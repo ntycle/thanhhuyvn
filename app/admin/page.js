@@ -1,156 +1,19 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin – Quản lý đơn hàng</title>
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-  <style>
-    :root {
-      --orange: #EE4D2D; --blue: #0a6ebd; --blue-dark: #085a9e;
-      --green: #0abd50; --red: #e53935;
-      --bg: #f0f2f5; --text: #222; --text-light: #666;
-      --border: #e0e0e0; --shadow: 0 2px 10px rgba(0,0,0,0.08); --radius: 10px;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Be Vietnam Pro', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+"use client";
+import { useEffect } from "react";
 
-    /* LOGIN */
-    #admin-auth { min-height: 100vh; background: linear-gradient(135deg, #1a2235, #2d3f5e); display: flex; align-items: center; justify-content: center; }
-    .login-card { background: white; border-radius: 14px; padding: 36px; width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-    .login-card h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
-    .login-card p { font-size: 13px; color: var(--text-light); margin-bottom: 22px; }
-
-    /* LAYOUT */
-    #admin-panel { display: none; }
-    .layout { display: flex; min-height: 100vh; }
-    .sidebar { width: 220px; background: #1a2235; color: white; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; }
-    .sidebar-logo { padding: 22px 20px 18px; font-size: 16px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 8px; }
-    .s-badge { background: var(--orange); font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 700; }
-    .sidebar-nav { flex: 1; padding: 12px 0; }
-    .nav-item {
-      display: flex; align-items: center; gap: 10px; padding: 11px 20px;
-      font-size: 14px; font-weight: 500; cursor: pointer; color: rgba(255,255,255,0.65);
-      border-left: 3px solid transparent; transition: all 0.2s;
-    }
-    .nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
-    .nav-item.active { background: rgba(238,77,45,0.15); color: white; border-left-color: var(--orange); }
-    .nav-icon { font-size: 17px; width: 22px; text-align: center; }
-    .sidebar-foot { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 12px; color: rgba(255,255,255,0.4); }
-    .sidebar-foot .aname { color: rgba(255,255,255,0.8); font-weight: 600; font-size: 13px; margin-bottom: 2px; }
-
-    .main { margin-left: 220px; flex: 1; }
-    .topbar { background: white; padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 4px rgba(0,0,0,0.08); position: sticky; top: 0; z-index: 40; }
-    .topbar h1 { font-size: 17px; font-weight: 700; }
-    .btn-logout { background: none; border: 1.5px solid var(--border); padding: 6px 16px; border-radius: 20px; font-size: 13px; cursor: pointer; font-family: inherit; color: var(--text-light); transition: all 0.2s; }
-    .btn-logout:hover { border-color: var(--red); color: var(--red); }
-    .content { padding: 24px; }
-
-    /* CARDS */
-    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 16px; margin-bottom: 24px; }
-    .stat-card { background: white; border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 16px; }
-    .stat-icon { font-size: 30px; }
-    .stat-label { font-size: 12px; color: var(--text-light); font-weight: 500; }
-    .stat-value { font-size: 24px; font-weight: 700; }
-
-    .panel { background: white; border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 24px; }
-    .panel-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
-    .panel-header h2 { font-size: 15px; font-weight: 700; }
-    .panel-body { padding: 20px; }
-
-    /* BTNS */
-    .btn { padding: 8px 18px; border-radius: 7px; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; border: none; transition: all 0.2s; }
-    .btn-blue { background: var(--blue); color: white; }
-    .btn-blue:hover { background: var(--blue-dark); }
-    .btn-green { background: var(--green); color: white; }
-    .btn-green:hover { background: #09a344; }
-    .btn-red { background: var(--red); color: white; }
-    .btn-red:hover { background: #c62828; }
-    .btn-outline { border: 1.5px solid var(--border); color: var(--text-light); }
-    .btn-outline:hover { border-color: var(--blue); color: var(--blue); }
-    .btn-sm { padding: 5px 12px; font-size: 12px; }
-    .btn-xs { padding: 3px 9px; font-size: 11px; border-radius: 20px; }
-
-    /* TABLE */
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th { background: #f8f9fa; padding: 10px 12px; text-align: left; font-weight: 600; color: var(--text-light); border-bottom: 1px solid var(--border); white-space: nowrap; }
-    td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: #fafafa; }
-
-    /* BADGES */
-    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
-    .badge-admin   { background: #fff3e0; color: #e65100; }
-    .badge-user    { background: #e3f2fd; color: #1565c0; }
-    .badge-claimed { background: #e8f5e9; color: #2e7d32; }
-    .badge-free    { background: #f3f3f3; color: #888; }
-    .badge-paid    { background: #e8f5e9; color: #2e7d32; }
-    .badge-unpaid  { background: #fff3e0; color: #c75000; }
-    .badge-nopay   { background: #f3f3f3; color: #888; }
-
-    /* PAYMENT SELECT */
-    select.pay-sel {
-      padding: 3px 8px; border: 1.5px solid var(--border); border-radius: 6px;
-      font-size: 12px; font-family: inherit; cursor: pointer; outline: none;
-      background: white; transition: border-color 0.2s;
-    }
-    select.pay-sel:focus { border-color: var(--blue); }
-    select.pay-sel.paid   { border-color: #2e7d32; background: #f1fff5; color: #2e7d32; font-weight: 700; }
-    select.pay-sel.unpaid { border-color: #c75000; background: #fff9f5; color: #c75000; font-weight: 700; }
-
-    /* FORM */
-    .fg { margin-bottom: 14px; }
-    .fg label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
-    .fg input, .fg select {
-      width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 7px;
-      font-size: 13px; font-family: inherit; outline: none; transition: border-color 0.2s;
-    }
-    .fg input:focus, .fg select:focus { border-color: var(--blue); }
-
-    /* UPLOAD */
-    .upload-area {
-      border: 2px dashed var(--border); border-radius: var(--radius);
-      padding: 32px; text-align: center; cursor: pointer; transition: all 0.2s;
-    }
-    .upload-area:hover, .upload-area.dragover { border-color: var(--blue); background: #f0f6ff; }
-    .upload-icon { font-size: 40px; margin-bottom: 10px; }
-    .upload-area p { font-size: 14px; color: var(--text-light); }
-
-    /* FILTER BAR */
-    .filter-bar { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-    .filter-bar input, .filter-bar select {
-      padding: 7px 12px; border: 1.5px solid var(--border); border-radius: 7px;
-      font-family: inherit; font-size: 13px; outline: none; transition: border-color 0.2s;
-    }
-    .filter-bar input:focus, .filter-bar select:focus { border-color: var(--blue); }
-    .filter-bar input { flex: 1; min-width: 160px; }
-
-    /* AUTH */
-    .amsg { font-size: 13px; padding: 10px; border-radius: 7px; margin-top: 12px; display: none; }
-    .amsg.err { background: #fff0ee; color: #c00; border: 1px solid #ffc5bb; display: block; }
-    .msg { padding: 10px 14px; border-radius: 7px; font-size: 13px; margin-top: 12px; }
-    .msg-ok  { background: #edfff4; color: #0a7a32; border: 1px solid #b3f0cc; }
-    .msg-err { background: #fff0ee; color: #c00; border: 1px solid #ffc5bb; }
-    .msg-info { background: #e8f4ff; color: #0a6ebd; border: 1px solid #b3d6ff; }
-
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-
-    .spinner-wrap { text-align: center; padding: 30px; color: var(--text-light); font-size: 14px; }
-    .spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid var(--border); border-top-color: var(--orange); border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 8px; vertical-align: middle; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .menu-btn { display: none; background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text); padding-right: 12px; line-height: 1; }
-    @media (max-width: 768px) { .sidebar { width: 200px; } .main { margin-left: 200px; } }
-    @media (max-width: 600px) { 
-      .sidebar { transform: translateX(-100%); transition: transform 0.3s ease; display: flex; }
-      .sidebar.show { transform: translateX(0); }
-      .main { margin-left: 0; } 
-      .menu-btn { display: inline-block; }
-    }
-  </style>
-</head>
-<body>
+export default function Page() {
+  return (
+    <>
+      <script dangerouslySetInnerHTML={{ __html: `window.ENV = {
+      apiKey: '${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}',
+      authDomain: '${process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}',
+      projectId: '${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}',
+      storageBucket: '${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}',
+      messagingSenderId: '${process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}',
+      appId: '${process.env.NEXT_PUBLIC_FIREBASE_APP_ID}'
+    };` }} />
+      <script type="module" src="/admin.js"></script>
+    <div dangerouslySetInnerHTML={{ __html: `
 
 <!-- LOGIN -->
 <div id="admin-auth">
@@ -383,6 +246,8 @@
     </div>
   </div>
 
-  <script type="module" src="admin.js"></script>
-</body>
-</html>
+  <script type="module" src="admin.min.js"></script>
+` }} />
+  </>
+  );
+}
