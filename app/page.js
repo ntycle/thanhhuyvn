@@ -49,7 +49,11 @@ export default function Page() {
       }
       
       if (!pasted) {
-        alert('Zalo chặn tự động dán. Ô nhập đã được chọn sẵn, bạn hãy CHẠM GIỮ vào ô nhập và chọn DÁN (Paste) nhé!');
+        if (/Zalo/i.test(navigator.userAgent)) {
+          alert('Zalo chặn tự động dán. Ô nhập đã được chọn sẵn, bạn hãy CHẠM GIỮ vào ô nhập và chọn DÁN (Paste) nhé!');
+        } else {
+          alert('Trình duyệt chưa cấp quyền dán tự động. Ô nhập đã được chọn, hãy ấn Ctrl+V (trên máy tính) hoặc Chạm Giữ -> Dán (trên điện thoại) nhé!');
+        }
       }
     };
   </script>
