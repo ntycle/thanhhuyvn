@@ -49,7 +49,7 @@ export default function Page() {
       }
       
       if (!pasted) {
-        alert('Zalo/Trình duyệt chặn tự động dán. Ô nhập đã được nhấp nháy sẵn, bạn hãy CHẠM GIỮ vào ô nhập và chọn DÁN (Paste) nhé!');
+        alert('Zalo chặn tự động dán. Ô nhập đã được chọn sẵn, bạn hãy CHẠM GIỮ vào ô nhập và chọn DÁN (Paste) nhé!');
       }
     };
   </script>
