@@ -272,7 +272,7 @@ export default function Page() {
               </select>
             </div>
           </div>
-          <div id="mine-list">
+          <div id="mine-list" style="background: white; padding: 14px; border-radius: 0 0 var(--radius) var(--radius);">
             <div class="spinner-wrap">
               <div class="spinner"></div>Đang tải...
             </div>
