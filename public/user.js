@@ -361,7 +361,7 @@ function renderMyOrders() {
   }).join("");
 
   el.innerHTML = `<div class="result-wrap">${html}</div>
-  <div class="mobile-summary" style="display:flex;">
+  <div class="mobile-summary">
     <span>📦 ${groups.length} đơn (${filteredOrders.length} SP)</span>
     <span>💰 ${grandTotalVal.toLocaleString("vi-VN")}₫</span>
     <span>🎁 CK: ${grandTotalDisc.toLocaleString("vi-VN")}₫</span>
@@ -513,10 +513,10 @@ function renderSearchResults(orders, container) {
     `;
   }).join("");
 
-  container.innerHTML = `<div class="card" style="padding:0; background:transparent; box-shadow:none;"><div class="result-wrap">
+  container.innerHTML = `<div class="card" style="padding:0; background:white; box-shadow:var(--shadow); border-radius: var(--radius);"><div class="result-wrap" style="padding: 14px;">
     ${html}
   </div></div>
-  <div class="mobile-summary" style="display:flex;">
+  <div class="mobile-summary">
     <span>📦 ${groups.length} đơn (${orders.length} SP)</span>
     <span>💰 ${grandTotalVal.toLocaleString("vi-VN")}₫</span>
     <span>🎁 CK: ${grandTotalDisc.toLocaleString("vi-VN")}₫</span>

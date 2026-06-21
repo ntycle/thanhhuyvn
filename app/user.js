@@ -368,7 +368,7 @@ function renderMyOrders() {
   }).join("");
 
   el.innerHTML = `<div class="result-wrap">${html}</div>
-  <div class="mobile-summary" style="display:flex;">
+  <div class="mobile-summary">
     <span>📦 ${groups.length} đơn (${filteredOrders.length} SP)</span>
     <span>💰 ${grandTotalVal.toLocaleString("vi-VN")}₫</span>
     <span>🎁 CK: ${grandTotalDisc.toLocaleString("vi-VN")}₫</span>
@@ -524,7 +524,7 @@ function renderSearchResults(orders, container) {
   container.innerHTML = `<div class="card" style="padding:0; background:transparent; box-shadow:none;"><div class="result-wrap">
     ${html}
   </div></div>
-  <div class="mobile-summary" style="display:flex;">
+  <div class="mobile-summary">
     <span>📦 ${groups.length} đơn (${orders.length} SP)</span>
     <span>💰 ${grandTotalVal.toLocaleString("vi-VN")}₫</span>
     <span>🎁 CK: ${grandTotalDisc.toLocaleString("vi-VN")}₫</span>

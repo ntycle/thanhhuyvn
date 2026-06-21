@@ -13,7 +13,7 @@ export default function Page() {
       messagingSenderId: '${process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}',
       appId: '${process.env.NEXT_PUBLIC_FIREBASE_APP_ID}'
     };` }} />
-      <script type="module" src="/user.js"></script>
+      <script type="module" src="/user.js?v=1.2"></script>
       <div dangerouslySetInnerHTML={{
         __html: `
 
