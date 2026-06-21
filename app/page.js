@@ -27,6 +27,31 @@ export default function Page() {
         document.documentElement.classList.add('not-logged-in');
       }
     } catch(e) {}
+
+    window.pasteOrderId = async function() {
+      const el = document.getElementById('orderId');
+      el.focus();
+      let pasted = false;
+      try {
+        pasted = document.execCommand('paste');
+      } catch(e) {}
+      
+      if (!pasted && navigator.clipboard && navigator.clipboard.readText) {
+        try {
+          const t = await navigator.clipboard.readText();
+          if (t) {
+            el.value = el.value ? el.value + ' ' + t : t;
+            pasted = true;
+          }
+        } catch(e) {
+          console.error('Clipboard API failed:', e);
+        }
+      }
+      
+      if (!pasted) {
+        alert('Zalo/Trình duyệt chặn tự động dán. Ô nhập đã được nhấp nháy sẵn, bạn hãy CHẠM GIỮ vào ô nhập và chọn DÁN (Paste) nhé!');
+      }
+    };
   </script>
   <style>
     html.is-logged-in #auth-screen { display: none !important; }
@@ -132,7 +157,7 @@ export default function Page() {
             <textarea id="orderId" rows="3"
               placeholder="Nhập ID đơn hàng, cách nhau bằng dấu phẩy hoặc xuống dòng&#10;VD: 250601E7EMYD4X, 250602ABCDE12F"></textarea>
             <button type="button" 
-              onclick="navigator.clipboard.readText().then(t => { const el = document.getElementById('orderId'); el.value = el.value ? el.value + ' ' + t : t; }).catch(e => alert('Trình duyệt chặn truy cập Clipboard. Vui lòng bấm Ctrl+V hoặc chạm giữ vào ô nhập rồi chọn Dán!'))" 
+              onclick="window.pasteOrderId()" 
               class="btn-paste-mobile"
               title="Dán từ bộ nhớ tạm">
               <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clipboard"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path></svg>
