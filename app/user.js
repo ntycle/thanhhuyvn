@@ -411,21 +411,40 @@ window.doSearch = async function () {
       resultDiv.innerHTML = ""; // Remove redundant global error card
     }
 
-    if (missingIds.length) {
-      const missingHtml = missingIds.map(id => {
-        const isValidId = /^[0-9A-Z]{14,15}$/.test(id);
-        return `
+    const validMissingIds = missingIds.filter(id => /^[0-9A-Z]{14,15}$/.test(id));
+    const invalidMissingIds = missingIds.filter(id => !/^[0-9A-Z]{14,15}$/.test(id));
+
+    if (validMissingIds.length > 0 || invalidMissingIds.length > 0) {
+      let missingHtml = "";
+      
+      if (validMissingIds.length > 0) {
+        missingHtml += validMissingIds.map(id => `
         <div style="background:#fff3e0; padding: 14px 18px; border-radius: var(--radius); margin-top: 14px; border: 1px solid #ffcc80; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;">
           <div>
             <div style="font-weight: 700; color: #e65100; margin-bottom: 4px;">❌ Không tìm thấy ID: ${id}</div>
             <div style="font-size: 13px; color: #e65100; opacity: 0.85;">Chưa có trong hệ thống, bạn có muốn lưu tạm?</div>
           </div>
           <div style="display: flex; gap: 8px;">
-            ${isValidId ? `<button class="btn-claim" style="padding: 8px 16px; font-size: 13px;" onclick="saveMissingOrder('${id}', this)">💾 Lưu lại đơn hàng</button>` : `<span style="font-size: 12px; color: #c00; font-weight: bold; align-self: center; padding: 0 10px;">Không có thông tin đơn hàng</span>`}
+            <button class="btn-claim" style="padding: 8px 16px; font-size: 13px;" onclick="saveMissingOrder('${id}', this)">💾 Lưu lại đơn hàng</button>
             <button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none;" onclick="searchSingleId('${id}')">🔄 Tìm lại</button>
           </div>
         </div>
-      `}).join("");
+        `).join("");
+      }
+
+      if (invalidMissingIds.length > 0) {
+        missingHtml += `
+        <div style="background:#fff3e0; padding: 14px 18px; border-radius: var(--radius); margin-top: 14px; border: 1px solid #ffcc80; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;">
+          <div>
+            <div style="font-weight: 700; color: #e65100; margin-bottom: 4px;">⚠️ Không có thông tin đơn hàng</div>
+            <div style="font-size: 13px; color: #e65100; opacity: 0.85;">Có vẻ bạn đã nhập đoạn văn bản hoặc nội dung không hợp lệ.</div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-claim" style="padding: 8px 16px; font-size: 13px; background: #e65100; color: #fff; border: none; cursor: pointer;" onclick="document.getElementById('orderId').value = ''; document.getElementById('orderId').focus(); document.getElementById('search-result').innerHTML = '';">🧹 Xoá văn bản</button>
+          </div>
+        </div>
+        `;
+      }
 
       const missingContainer = document.createElement("div");
       missingContainer.innerHTML = missingHtml;
