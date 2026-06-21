@@ -18,6 +18,10 @@ let allUsers = [], allOrders = [], allShortLinks = [], allPaymentRequests = [];
 // ─── AUTH ──────────────────────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
   if (user) {
+    if (user.uid !== "tMxGRweSVAT2j4kDvJVWw6osRYL2") {
+      showAuthErr("❌ Tài khoản không có quyền admin.");
+      return;
+    }
     const snap = await getDoc(doc(db, "users", user.uid));
     if (snap.exists() && snap.data().role === "admin") {
       document.getElementById("adm-name").textContent = snap.data().name || user.email;
