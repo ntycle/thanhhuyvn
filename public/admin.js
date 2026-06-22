@@ -239,7 +239,13 @@ function populateUserFilter() {
 function renderOrders(list) {
   const orders = list || allOrders;
   const tbody  = document.getElementById("orders-tbody");
-  if (!orders.length) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:24px;color:#999">Không có đơn hàng</td></tr>`; return; }
+  if (!orders.length) { tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:24px;color:#999">Không có đơn hàng</td></tr>`; return; }
+  
+  // Xoá check all khi render lại
+  const chkAll = document.getElementById("chk-all-orders");
+  if (chkAll) chkAll.checked = false;
+  if (window.updateDeleteSelectedButton) window.updateDeleteSelectedButton();
+  
   tbody.innerHTML = orders.map(o => {
     const val     = Number(o["Giá trị đơn hàng (₫)"]) || 0;
     const ck      = Number(o["Chiết Khấu"]) || Number(o["Chiết Khấu 2%"]) || 0;
@@ -255,6 +261,7 @@ function renderOrders(list) {
       <option value="Đã Thanh Toán"${payVal === "Đã Thanh Toán" ? " selected" : ""}>Đã Thanh Toán</option>
     </select>`;
     return `<tr>
+      <td style="text-align: center;"><input type="checkbox" class="chk-order" value="${o._id}" onchange="toggleOrderCheckbox()"></td>
       <td><code>${o["ID đơn hàng"]||""}</code></td>
       <td>${val.toLocaleString("vi-VN")}</td>
       <td style="color:var(--orange);font-weight:600">${ck.toLocaleString("vi-VN")} đ</td>
@@ -363,6 +370,66 @@ window.deleteOrder = async function(docId) {
   await loadOrders(); renderDashboard();
 };
 
+window.toggleAllOrders = function(source) {
+  const checkboxes = document.querySelectorAll('.chk-order');
+  checkboxes.forEach(cb => {
+    cb.checked = source.checked;
+  });
+  updateDeleteSelectedButton();
+};
+
+window.toggleOrderCheckbox = function() {
+  updateDeleteSelectedButton();
+  const checkboxes = document.querySelectorAll('.chk-order');
+  const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+  const chkAll = document.getElementById('chk-all-orders');
+  if (chkAll) chkAll.checked = checkboxes.length > 0 && allChecked;
+};
+
+window.updateDeleteSelectedButton = function() {
+  const checkedBoxes = document.querySelectorAll('.chk-order:checked');
+  const btn = document.getElementById('btn-delete-selected');
+  if (btn) {
+    if (checkedBoxes.length > 0) {
+      btn.style.display = 'inline-block';
+      btn.textContent = `🗑️ Xóa đã chọn (${checkedBoxes.length})`;
+    } else {
+      btn.style.display = 'none';
+    }
+  }
+};
+
+window.deleteSelectedOrders = async function() {
+  const checkedBoxes = document.querySelectorAll('.chk-order:checked');
+  if (checkedBoxes.length === 0) return;
+  if (!confirm(`Xóa ${checkedBoxes.length} đơn hàng đã chọn?`)) return;
+  
+  const CHUNK = 400;
+  const idsToDelete = Array.from(checkedBoxes).map(cb => cb.value);
+  
+  const btn = document.getElementById('btn-delete-selected');
+  const oldText = btn.textContent;
+  btn.textContent = "⏳ Đang xoá...";
+  btn.disabled = true;
+
+  try {
+    for (let i = 0; i < idsToDelete.length; i += CHUNK) {
+      const batch = writeBatch(db);
+      idsToDelete.slice(i, i + CHUNK).forEach(id => {
+        batch.delete(doc(db, "orders", id));
+      });
+      await batch.commit();
+    }
+    await loadOrders(); 
+    renderDashboard();
+  } catch (error) {
+    alert("❌ Lỗi khi xoá: " + error.message);
+  } finally {
+    btn.textContent = oldText;
+    btn.disabled = false;
+  }
+};
+
 window.clearAllOrders = async function() {
   if (!confirm("⚠️ Xóa TOÀN BỘ đơn hàng? Thao tác này không thể hoàn tác!")) return;
   if (!confirm("Xác nhận lần 2: Xóa tất cả đơn hàng?")) return;
@@ -446,12 +513,16 @@ window.confirmUpload = async function() {
             );
         }
         
-        // Nếu không thấy (đơn cũ trước khi có Item ID), tìm theo Tên Item
+        // Nếu không thấy (đơn cũ trước khi có Item ID hoặc JSON không có Item ID)
+        // Lấy 1 đơn cùng ID đơn hàng mà chưa được match ở lần duyệt này.
         if (!matchedDoc) {
-            matchedDoc = existingDocs.find(d => 
-               (d["Tên Item"] || "").toString().trim() === itemName 
-               && !usedDocIds.has(d._id)
-            );
+            matchedDoc = existingDocs.find(d => !usedDocIds.has(d._id));
+        }
+
+        // Đơn hàng ĐÃ CÓ trong database (đơn cũ), nhưng dư item trong JSON (không còn doc nào chưa dùng)
+        // Theo yêu cầu: không được thêm mới cho những id đơn hàng đã có. Bỏ qua tạo mới.
+        if (!matchedDoc && existingDocs.length > 0) {
+            return; // Skip (tương đương continue)
         }
 
         let docId = "";

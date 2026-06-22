@@ -11,8 +11,8 @@ export default function Page() {
       storageBucket: '${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}',
       messagingSenderId: '${process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}',
       appId: '${process.env.NEXT_PUBLIC_FIREBASE_APP_ID}'
-    };` }} />
-      <script type="module" src="/admin.js"></script>
+      };` }} />
+      <script type="module" src="/admin.js?v=202606221135"></script>
     <div dangerouslySetInnerHTML={{ __html: `
 
 <!-- LOGIN -->
@@ -75,6 +75,7 @@ export default function Page() {
               <h2>📦 Tất cả đơn hàng</h2>
               <div style="display:flex;gap:8px">
                 <button class="btn btn-outline btn-sm" onclick="loadOrders()">🔄 Làm mới</button>
+                <button class="btn btn-red btn-sm" onclick="deleteSelectedOrders()" id="btn-delete-selected" style="display:none;">🗑️ Xóa đã chọn</button>
                 <button class="btn btn-red btn-sm" onclick="clearAllOrders()">🗑️ Xóa tất cả</button>
               </div>
             </div>
@@ -90,7 +91,7 @@ export default function Page() {
             </div>
             <div style="overflow-x:auto">
               <table>
-                <thead><tr><th>ID Đơn hàng</th><th>Giá trị (₫)</th><th>Chiết Khấu</th><th>HH Shopee</th><th>Trạng thái đơn hàng</th><th>Trạng thái gán</th><th>Thanh toán</th><th>Người gán</th><th>Thao tác</th></tr></thead>
+                <thead><tr><th style="width: 40px; text-align: center;"><input type="checkbox" id="chk-all-orders" onchange="toggleAllOrders(this)"></th><th>ID Đơn hàng</th><th>Giá trị (₫)</th><th>Chiết Khấu</th><th>HH Shopee</th><th>Trạng thái đơn hàng</th><th>Trạng thái gán</th><th>Thanh toán</th><th>Người gán</th><th>Thao tác</th></tr></thead>
                 <tbody id="orders-tbody"><tr><td colspan="9" style="text-align:center;padding:24px;color:#999"><span class="spinner"></span>Đang tải...</td></tr></tbody>
               </table>
             </div>
