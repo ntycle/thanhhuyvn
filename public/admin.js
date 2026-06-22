@@ -414,6 +414,7 @@ window.confirmUpload = async function() {
     let countNew = 0, countUpdated = 0;
 
     let idCounter = {};
+    let usedDocIds = new Set();
 
     for (let i = 0; i < pendingData.length; i += CHUNK) {
       const batch = writeBatch(db);
@@ -430,23 +431,60 @@ window.confirmUpload = async function() {
           return;
         }
 
-        // Tạo document ID duy nhất bằng: OrderID + Hash(Tên Item) để tránh ghi đè khi 1 id có nhiều sản phẩm
+        const itemId = (order["Item ID"] || order["itemID"] || order["itemId"] || "").toString().trim();
         const itemName = (order["Tên Item"] || "").toString().trim();
-        let hash = 0;
-        for (let j = 0; j < itemName.length; j++) {
-          hash = ((hash << 5) - hash) + itemName.charCodeAt(j);
-          hash |= 0;
+
+        // 1. Tìm các đơn cùng orderId trong bộ nhớ đệm
+        const existingDocs = allOrders.filter(o => o["ID đơn hàng"] == orderId);
+        let matchedDoc = null;
+
+        // Ưu tiên tìm theo Item ID
+        if (itemId) {
+            matchedDoc = existingDocs.find(d => 
+               (d["Item ID"] == itemId || d["itemID"] == itemId || d["itemId"] == itemId) 
+               && !usedDocIds.has(d._id)
+            );
         }
-        const baseId = `${orderId}_${Math.abs(hash).toString(16)}`;
-        idCounter[baseId] = (idCounter[baseId] || 0) + 1;
-        const docId = idCounter[baseId] > 1 ? `${baseId}_${idCounter[baseId]}` : baseId;
+        
+        // Nếu không thấy (đơn cũ trước khi có Item ID), tìm theo Tên Item
+        if (!matchedDoc) {
+            matchedDoc = existingDocs.find(d => 
+               (d["Tên Item"] || "").toString().trim() === itemName 
+               && !usedDocIds.has(d._id)
+            );
+        }
+
+        let docId = "";
+        let isExisting = false;
+
+        if (matchedDoc) {
+            // Đã tồn tại (dù là ID cũ hay mới)
+            docId = matchedDoc._id;
+            usedDocIds.add(docId);
+            isExisting = true;
+        } else {
+            // Hoàn toàn mới
+            let baseId = "";
+            if (itemId) {
+                baseId = `${orderId}_${itemId}`;
+            } else {
+                let hash = 0;
+                for (let j = 0; j < itemName.length; j++) {
+                  hash = ((hash << 5) - hash) + itemName.charCodeAt(j);
+                  hash |= 0;
+                }
+                baseId = `${orderId}_${Math.abs(hash).toString(16)}`;
+            }
+            idCounter[baseId] = (idCounter[baseId] || 0) + 1;
+            docId = idCounter[baseId] > 1 ? `${baseId}_${idCounter[baseId]}` : baseId;
+            usedDocIds.add(docId);
+        }
 
         const ref = doc(db, "orders", docId);
-        const snap = await getDoc(ref);
 
-        if (snap.exists()) {
+        if (isExisting) {
           // Đơn đã tồn tại: áp dụng logic State Machine cho cột Chiết Khấu
-          const oldData = snap.data();
+          const oldData = matchedDoc;
           const oldStatus = (oldData["Trạng thái đặt hàng"] || "").toString().trim();
           const newStatus = (order["Trạng thái đặt hàng"] || "").toString().trim();
 

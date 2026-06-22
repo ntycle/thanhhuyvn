@@ -245,7 +245,6 @@ export default function Page() {
     </div>
   </div>
 
-  <script type="module" src="admin.min.js"></script>
 ` }} />
   </>
   );
