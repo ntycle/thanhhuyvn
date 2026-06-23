@@ -24,10 +24,10 @@ export async function POST(req) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          secret_key: process.env.ZALO_APP_SECRET,
+          secret_key: process.env.ZALO_APP_SECRET || process.env.ZALO_SECRET_KEY,
         },
         body: new URLSearchParams({
-          app_id: process.env.NEXT_PUBLIC_ZALO_APP_ID,
+          app_id: process.env.NEXT_PUBLIC_ZALO_APP_ID || process.env.ZALO_APP_ID,
           grant_type: 'authorization_code',
           code: body.code,
           code_verifier: body.codeVerifier || '',
