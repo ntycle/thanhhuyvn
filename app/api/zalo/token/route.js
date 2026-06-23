@@ -65,11 +65,14 @@ export async function POST(request) {
     }
 
     const profileData = await profileResponse.json();
-    if (profileData.error) {
-        throw new Error(`Zalo Graph API error: ${profileData.message}`);
+    if (profileData.error && !profileData.id) {
+        throw new Error(`Zalo Graph API error: ${profileData.message || profileData.error}`);
     }
 
     const zaloId = profileData.id;
+    if (!zaloId) {
+        throw new Error("Unable to retrieve Zalo ID");
+    }
     const zaloName = profileData.name || "Người dùng Zalo";
     
     // The fake email pattern used by the system
