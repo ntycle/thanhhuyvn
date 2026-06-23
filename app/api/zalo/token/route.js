@@ -109,8 +109,9 @@ export async function POST(request) {
     
     // In some edge cases on Next.js/Vercel, if the error is weird, JSON.stringify might fail.
     // Ensure we safely stringify the error response.
+    // Use status 400 instead of 500 so Vercel doesn't intercept it with an HTML error page
     const errorMessage = error instanceof Error ? error.message : String(error);
-    return NextResponse.json({ error: "Server Error", details: errorMessage }, { status: 500 });
+    return NextResponse.json({ error: "Server Error", details: errorMessage }, { status: 400 });
   }
 }
 
