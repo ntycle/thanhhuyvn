@@ -216,52 +216,24 @@ async function refreshMyOrders() {
     totalVal += Number(o["Giá trị đơn hàng (₫)"]) || 0;
     const disc = calcDisc(o);
     totalDisc += disc;
-    if (String(o["Trạng thái đặt hàng"] || "").trim().toLowerCase() === "hoạn thạnh" && o.thanhToan !== "Đã Thanh Toán") {
+    if (String(o["Trạng thái đặt hàng"] || "").trim().toLowerCase() === "hoàn thành" && o.thanhToan !== "Đã Thanh Toán") {
       totalAvailable += disc;
     }
   });
   document.getElementById("sum-count").textContent = count;
-  document.getElementById("sum-value").textContent = (totalVal / 1e6).toFixed(2) + "M";
-  document.getElementById("sum-disc").textContent = totalDisc.toLocaleString("vi-VN");
+  document.getElementById("sum-value").textContent = (totalVal / 1e6).toFixed(2) + "M₫";
+  document.getElementById("sum-disc").textContent = totalDisc.toLocaleString("vi-VN") + "₫";
   const elTotalAvailable = document.getElementById("sum-avail");
-  if (elTotalAvailable) elTotalAvailable.textContent = totalAvailable.toLocaleString("vi-VN");
+  if (elTotalAvailable) elTotalAvailable.textContent = totalAvailable.toLocaleString("vi-VN") + "₫";
 
   renderMyOrders();
 }
 
-function getStatusBadge(status) {
-  if (!status) return "";
-  const s = status.trim().toLowerCase();
-  
-  let bgColor = "#f3f4f6";
-  let color = "#4b5563";
-  
-  if (s === "hoàn thành") {
-    bgColor = "#d1fae5";
-    color = "#065f46";
-  } else if (s === "đang chờ xử lý" || s === "chờ xử lý") {
-    bgColor = "#fef3c7";
-    color = "#92400e";
-  } else if (s === "đã hủy" || s === "hủy" || s === "huỷ" || s === "đã huỷ") {
-    bgColor = "#fee2e2";
-    color = "#991b1b";
-  } else if (s === "đang vận chuyển" || s === "đang giao") {
-    bgColor = "#dbeafe";
-    color = "#1e40af";
-  } else if (s === "đã xác nhận" || s === "xác nhận") {
-    bgColor = "#e0e7ff";
-    color = "#3730a3";
-  }
-  
-  return `<span style="display:inline-block; font-size:11px; padding:3px 10px; border-radius:12px; font-weight:600; background-color:${bgColor}; color:${color}; border: 1px solid ${color}33;">${status}</span>`;
-}
-
 function paymentBadge(val) {
-  const commonStyle = 'display:inline-block; font-size:11px; padding:3px 10px; border-radius:12px; font-weight:600; border: 1px solid transparent;';
-  if (val === 'Đã Thanh Toán') return `<span style="${commonStyle} background-color:#d1fae5; color:#065f46; border-color:#065f4633;">💚 Đã Thanh Toán</span>`;
-  if (val === 'Đang chờ xử lý') return `<span style="${commonStyle} background-color:#fef3c7; color:#92400e; border-color:#92400e33;">⏳ Đang chờ xử lý</span>`;
-  if (val === 'Chưa Thanh Toán') return `<span style="${commonStyle} background-color:#fee2e2; color:#991b1b; border-color:#991b1b33;">🟡 Chưa Thanh Toán</span>`;
-  return `<span style="${commonStyle} background-color:#f3f4f6; color:#4b5563;">–</span>`;
+  if (val === "Đã Thanh Toán") return `<span class="tag-paid">💚 Đã Thanh Toán</span>`;
+  if (val === "Đang chờ xử lý") return `<span class="tag-unpaid" style="background:#fff3e0;color:#e65100">⏳ Đang chờ xử lý</span>`;
+  if (val === "Chưa Thanh Toán") return `<span class="tag-unpaid">🟡 Chưa Thanh Toán</span>`;
+  return `<span class="tag-nopay">–</span>`;
 }
 
 function calcDisc(o) {
@@ -301,12 +273,12 @@ function groupOrdersById(orders) {
       groups[id].payment = o.thanhToan;
     }
     
-    // Cập nhật trạng thái nhóm: ưu tiên hiển thị "Đang chờ xử lý" hoặc các trạng thái chưa hoạn thạnh
+    // Cập nhật trạng thái nhóm: ưu tiên hiển thị "Đang chờ xử lý" hoặc các trạng thái chưa hoàn thành
     const itemStatus = (o["Trạng thái đặt hàng"] || "").trim();
     const currentStatus = groups[id].status.trim().toLowerCase();
     if (itemStatus.toLowerCase() === "đang chờ xử lý") {
       groups[id].status = itemStatus;
-    } else if (currentStatus === "hoạn thạnh" && itemStatus.toLowerCase() !== "hoạn thạnh" && itemStatus !== "") {
+    } else if (currentStatus === "hoàn thành" && itemStatus.toLowerCase() !== "hoàn thành" && itemStatus !== "") {
       groups[id].status = itemStatus;
     }
   }
@@ -353,19 +325,21 @@ function renderMyOrders() {
 
     const thaoTac = isManual
       ? `<div style="display:flex;gap:4px">
-           <button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none; font-size:11px; padding:3px 8px; cursor: pointer;" onclick="event.stopPropagation(); searchSingleId('${g.orderId}')">🔄 Tìm Lỗi</button>
+           <button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none; font-size:11px; padding:3px 8px; cursor: pointer;" onclick="event.stopPropagation(); searchSingleId('${g.orderId}')">🔄 Tìm Lại</button>
            <button class="btn-out" style="color: var(--red); border-color: var(--red); background: none; font-size:11px; padding:3px 8px; cursor: pointer;" onclick="event.stopPropagation(); deleteMyOrder('${itemIdsStr}', this)">🗑️ Xóa</button>
          </div>`
       : ``;
 
-    const statusHtml = getStatusBadge(g.status);
+    const statusHtml = g.status.trim().toLowerCase() === "hoàn thành" 
+      ? `<span class="tag-mine" style="font-size:11px;padding:3px 10px">${g.status}</span>`
+      : `<span>${g.status}</span>`;
 
     const itemsListHtml = g.items.map(o => `
       <div class="detail-item-row">
         <div class="item-name-col">${o["Tên Item"] || ""}</div>
         <div class="item-price-col">
-          <div>Giá: ${(Number(o["Giá trị đơn hàng (₫)"]) || 0).toLocaleString("vi-VN")}đ</div>
-          <div style="font-size: 11px; color: var(--green);">CK: ${calcDisc(o).toLocaleString("vi-VN")}đ</div>
+          <div>Giá: ${(Number(o["Giá trị đơn hàng (₫)"]) || 0).toLocaleString("vi-VN")}₫</div>
+          <div style="font-size: 11px; color: var(--green);">CK: ${calcDisc(o).toLocaleString("vi-VN")}₫</div>
         </div>
       </div>
     `).join("");
@@ -374,7 +348,7 @@ function renderMyOrders() {
     <div class="order-group">
       <div class="order-summary" onclick="toggleOrderGroup(this)">
         <div class="order-summary-left">
-          <div class="order-title" title="${g.items.map(i=>(i["Tên Item"] || "").replace(/"/g, '&quot;')).join(', ')}">${titleText}</div>
+          <div class="order-title" title="${g.items.map(i=>i["Tên Item"].replace(/"/g, '&quot;')).join(', ')}">${titleText}</div>
           <div class="order-meta">
             ${statusHtml}
             ${paymentBadge(g.payment)}
@@ -390,8 +364,8 @@ function renderMyOrders() {
         <div class="detail-grid">
           <div class="detail-item"><span class="detail-lbl">Mã đơn hàng</span><span class="detail-val">${g.orderId}</span></div>
           <div class="detail-item"><span class="detail-lbl">Thời gian đặt</span><span class="detail-val">${g.time}</span></div>
-          <div class="detail-item"><span class="detail-lbl">Tổng giá trị</span><span class="detail-val">${g.totalVal.toLocaleString("vi-VN")}đ</span></div>
-          <div class="detail-item"><span class="detail-lbl">Tổng chiết khấu</span><span class="detail-val">${g.totalDisc.toLocaleString("vi-VN")}đ</span></div>
+          <div class="detail-item"><span class="detail-lbl">Tổng giá trị</span><span class="detail-val">${g.totalVal.toLocaleString("vi-VN")}₫</span></div>
+          <div class="detail-item"><span class="detail-lbl">Tổng chiết khấu</span><span class="detail-val">${g.totalDisc.toLocaleString("vi-VN")}₫</span></div>
         </div>
         <div class="detail-items-list">
           ${itemsListHtml}
@@ -404,8 +378,8 @@ function renderMyOrders() {
   el.innerHTML = `<div class="result-wrap">${html}</div>
   <div class="mobile-summary">
     <span>📦 ${groups.length} đơn (${filteredOrders.length} SP)</span>
-    <span>💰 ${grandTotalVal.toLocaleString("vi-VN")}đ</span>
-    <span>🎁 CK: ${grandTotalDisc.toLocaleString("vi-VN")}đ</span>
+    <span>💰 ${grandTotalVal.toLocaleString("vi-VN")}₫</span>
+    <span>🎁 CK: ${grandTotalDisc.toLocaleString("vi-VN")}₫</span>
   </div>`;
 }
 
@@ -541,7 +515,7 @@ function renderSearchResults(orders, container) {
     if (mineCount === g.items.length) {
       actionCell = isManual
         ? `<div style="display:flex;gap:4px">
-             <button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none; padding:4px 8px; font-size:12px; cursor: pointer;" onclick="event.stopPropagation(); searchSingleId('${g.orderId}')">🔄 Tìm Lỗi</button>
+             <button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none; padding:4px 8px; font-size:12px; cursor: pointer;" onclick="event.stopPropagation(); searchSingleId('${g.orderId}')">🔄 Tìm Lại</button>
              <button class="btn-out" style="color: var(--red); border-color: var(--red); background: none; padding:4px 8px; font-size:12px; cursor: pointer;" onclick="event.stopPropagation(); deleteMyOrder('${itemIdsStr}', this)">🗑️ Xóa</button>
            </div>`
         : `<span class="tag-mine">✅ Của tôi</span>`;
@@ -553,14 +527,16 @@ function renderSearchResults(orders, container) {
       actionCell = `<button class="btn-claim" onclick="event.stopPropagation(); claimOrder('${itemIdsStr}', this)">📌 Gán cho tôi</button>`;
     }
 
-    const statusHtml = getStatusBadge(g.status);
+    const statusHtml = g.status.trim().toLowerCase() === "hoàn thành" 
+      ? `<span class="tag-mine" style="font-size:11px;padding:3px 10px">${g.status}</span>`
+      : `<span>${g.status}</span>`;
 
     const itemsListHtml = g.items.map(o => `
       <div class="detail-item-row">
         <div class="item-name-col">${o["Tên Item"] || ""}</div>
         <div class="item-price-col">
-          <div>Giá: ${(Number(o["Giá trị đơn hàng (₫)"]) || 0).toLocaleString("vi-VN")}đ</div>
-          <div style="font-size: 11px; color: var(--green);">CK: ${calcDisc(o).toLocaleString("vi-VN")}đ</div>
+          <div>Giá: ${(Number(o["Giá trị đơn hàng (₫)"]) || 0).toLocaleString("vi-VN")}₫</div>
+          <div style="font-size: 11px; color: var(--green);">CK: ${calcDisc(o).toLocaleString("vi-VN")}₫</div>
         </div>
       </div>
     `).join("");
@@ -569,7 +545,7 @@ function renderSearchResults(orders, container) {
     <div class="order-group">
       <div class="order-summary" onclick="toggleOrderGroup(this)">
         <div class="order-summary-left">
-          <div class="order-title" title="${g.items.map(i=>(i["Tên Item"] || "").replace(/"/g, '&quot;')).join(', ')}">${titleText}</div>
+          <div class="order-title" title="${g.items.map(i=>i["Tên Item"].replace(/"/g, '&quot;')).join(', ')}">${titleText}</div>
           <div class="order-meta">
             ${statusHtml}
             ${paymentBadge(g.payment)}
@@ -585,8 +561,8 @@ function renderSearchResults(orders, container) {
         <div class="detail-grid">
           <div class="detail-item"><span class="detail-lbl">Mã đơn hàng</span><span class="detail-val">${g.orderId}</span></div>
           <div class="detail-item"><span class="detail-lbl">Thời gian đặt</span><span class="detail-val">${g.time}</span></div>
-          <div class="detail-item"><span class="detail-lbl">Tổng giá trị</span><span class="detail-val">${g.totalVal.toLocaleString("vi-VN")}đ</span></div>
-          <div class="detail-item"><span class="detail-lbl">Tổng chiết khấu</span><span class="detail-val">${g.totalDisc.toLocaleString("vi-VN")}đ</span></div>
+          <div class="detail-item"><span class="detail-lbl">Tổng giá trị</span><span class="detail-val">${g.totalVal.toLocaleString("vi-VN")}₫</span></div>
+          <div class="detail-item"><span class="detail-lbl">Tổng chiết khấu</span><span class="detail-val">${g.totalDisc.toLocaleString("vi-VN")}₫</span></div>
         </div>
         <div class="detail-items-list">
           ${itemsListHtml}
@@ -601,8 +577,8 @@ function renderSearchResults(orders, container) {
   </div></div>
   <div class="mobile-summary">
     <span>📦 ${groups.length} đơn (${orders.length} SP)</span>
-    <span>💰 ${grandTotalVal.toLocaleString("vi-VN")}đ</span>
-    <span>🎁 CK: ${grandTotalDisc.toLocaleString("vi-VN")}đ</span>
+    <span>💰 ${grandTotalVal.toLocaleString("vi-VN")}₫</span>
+    <span>🎁 CK: ${grandTotalDisc.toLocaleString("vi-VN")}₫</span>
   </div>`;
 }
 
@@ -637,19 +613,10 @@ const urlParams = new URLSearchParams(window.location.search);
 const zaloCode = urlParams.get('code');
 const zaloState = urlParams.get('state');
 
-if (zaloCode && zaloState) {
-  const savedState = sessionStorage.getItem('zalo_oauth_state');
-  if (savedState) {
-    if (zaloState === savedState) {
-      sessionStorage.removeItem('zalo_oauth_state');
-      window.addEventListener('DOMContentLoaded', () => {
-        handleZaloOauth(zaloCode);
-      });
-    } else {
-      console.error("❌ Zalo OAuth state mismatch! CSRF protection triggered.");
-      // State không khớp -> dừng flow, không xử lý tiếp
-    }
-  }
+if (zaloCode && zaloState === 'zalo_login') {
+  window.addEventListener('DOMContentLoaded', () => {
+    handleZaloOauth(zaloCode);
+  });
 }
 
 async function handleZaloOauth(code) {
@@ -797,7 +764,7 @@ window.createPaymentRequest = async function () {
   }
 
   const eligibleOrders = myOrders.filter(o =>
-    String(o["Trạng thái đặt hàng"] || "").trim().toLowerCase() === "hoạn thạnh" &&
+    String(o["Trạng thái đặt hàng"] || "").trim().toLowerCase() === "hoàn thành" &&
     (!o.thanhToan || o.thanhToan === "" || o.thanhToan === "Chưa cập nhật") &&
     o["Tên Item"] !== "Không có thông tin"
   );
@@ -813,7 +780,7 @@ window.createPaymentRequest = async function () {
     totalDisc += calcDisc(o);
   });
 
-  const msg = `Bạn sắp tạo yêu cầu thanh toán cho ${eligibleOrders.length} đơn hàng.\nTổng giá trị: ${totalVal.toLocaleString("vi-VN")}đ\nTổng chiết khấu: ${totalDisc.toLocaleString("vi-VN")}đ\n\nBạn có muốn tiếp tục?`;
+  const msg = `Bạn sắp tạo yêu cầu thanh toán cho ${eligibleOrders.length} đơn hàng.\nTổng giá trị: ${totalVal.toLocaleString("vi-VN")}₫\nTổng chiết khấu: ${totalDisc.toLocaleString("vi-VN")}₫\n\nBạn có muốn tiếp tục?`;
   if (!confirm(msg)) return;
 
   const btn = document.querySelector('button[onclick="createPaymentRequest()"]');
@@ -885,9 +852,7 @@ window.doLoginZalo = function (msgId = "login-msg") {
   
   const appId = '1150083649033793704';
   const redirectUrl = encodeURIComponent(window.location.origin + window.location.pathname);
-  const state = crypto.randomUUID(); // Sinh state ngẫu nhiên chống CSRF
-  
-  sessionStorage.setItem('zalo_oauth_state', state);
+  const state = "zalo_login";
   
   // Lưu lại ID của message box để hiện thị lỗi sau khi redirect về
   localStorage.setItem('zalo_msg_id', msgId);
@@ -898,31 +863,30 @@ window.doLoginZalo = function (msgId = "login-msg") {
 async function handleZaloFirebaseLogin(zaloId, name, msgEl, serverPass = null) {
   const email = `${zaloId}@zalo.com`;
   
-  // Nếu có serverPass (do server API trả về từ Firestore) thì giải mã base64 để dùng
-  let pass = serverPass ? atob(serverPass) : null;
+  // Nếu có serverPass (do server API trả về) thì dùng ngay
+  // Nếu không, kiểm tra trong localStorage (giải pháp lưu đệm tạm thời cho user đang thao tác)
+  let pass = serverPass || localStorage.getItem(`zalo_pass_${zaloId}`);
   
   try {
     if (pass) {
-      // Đăng nhập bằng pass giải mã được
+      // Đăng nhập bằng pass lấy được
       await signInWithEmailAndPassword(auth, email, pass);
       msgEl.className = "amsg ok"; 
       msgEl.textContent = "✅ Đăng nhập thành công!";
+      localStorage.setItem(`zalo_pass_${zaloId}`, pass); // cache lại
       return;
     }
     
-    // Nếu chưa có pass, thử đăng nhập bằng password default (dành cho các user cũ chưa được migrate)
+    // Nếu chưa có pass ở local, thử đăng nhập bằng password default (dành cho các user cũ)
     const oldPass = `ZaloAuth_${zaloId}_#`;
     await signInWithEmailAndPassword(auth, email, oldPass);
     msgEl.className = "amsg ok"; 
     msgEl.textContent = "✅ Đăng nhập thành công!";
   } catch (e) {
-    // Nếu không tìm thấy user hoặc sai password, tạo mới với pass ngẫu nhiên an toàn
+    // Nếu không tìm thấy user hoặc sai password, tạo mới với pass ngẫu nhiên
     if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password') {
       try {
-        const randomArray = new Uint8Array(16);
-        crypto.getRandomValues(randomArray);
-        const newPass = Array.from(randomArray).map(b => b.toString(16).padStart(2, '0')).join('');
-        
+        const newPass = crypto.randomUUID().replace(/-/g, '');
         const cred = await createUserWithEmailAndPassword(auth, email, newPass);
         await updateProfile(cred.user, { displayName: name });
         await setDoc(doc(db, "users", cred.user.uid), {
@@ -931,9 +895,9 @@ async function handleZaloFirebaseLogin(zaloId, name, msgEl, serverPass = null) {
           role: "user",
           createdAt: serverTimestamp(),
           zaloId: zaloId,
-          zaloPass: btoa(newPass) // Mã hóa nhẹ (base64) trước khi lưu vào Firestore
+          zaloPass: newPass // Lưu vào Firestore để dùng lại lần sau (thông qua server)
         });
-        
+        localStorage.setItem(`zalo_pass_${zaloId}`, newPass);
         msgEl.className = "amsg ok"; 
         msgEl.textContent = "✅ Đăng ký thành công!";
       } catch (err) {
@@ -991,7 +955,7 @@ window.doForgotPassword = async function () {
     btn.disabled = true; btn.textContent = "Đang gửi...";
     await sendPasswordResetEmail(auth, email);
     msg.className = "amsg ok"; msg.textContent = "✅ Đã gửi link tới email của bạn (kiểm tra cả thư rác).";
-    btn.disabled = false; btn.textContent = "Gửi Lỗi Lần Nữa";
+    btn.disabled = false; btn.textContent = "Gửi Lại Lần Nữa";
   } catch (e) {
     const btn = document.querySelector('#tab-forgot .btn-main');
     btn.disabled = false; btn.textContent = "Gửi Email Khôi Phục";
