@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
-import admin from 'firebase-admin';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 // 1. Khởi tạo và cache Firebase Admin instance
 function getFirebaseAdmin() {
-  if (!admin.apps.length) {
-    admin.initializeApp({
-      credential: admin.credential.cert({
+  if (!getApps().length) {
+    initializeApp({
+      credential: cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
         // Xử lý ký tự xuống dòng bị escape trong biến môi trường
@@ -13,7 +14,6 @@ function getFirebaseAdmin() {
       })
     });
   }
-  return admin;
 }
 
 // In-memory Rate Limiting (15 requests/minute)
@@ -77,13 +77,13 @@ export async function POST(request) {
     
 
     // 4. Lưu Shortlink vào Firestore bằng Admin SDK
-    const adminApp = getFirebaseAdmin();
-    const db = adminApp.firestore();
+    getFirebaseAdmin();
+    const db = getFirestore();
     
     await db.collection('shortlinks').doc(code).set({
       url: url,
       clicks: 0,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
+      createdAt: FieldValue.serverTimestamp()
     });
 
     // 5. Trả về kết quả thành công
