@@ -703,7 +703,11 @@ async function handleZaloOauth(code) {
 
 async function getZaloUserProfile(accessToken, msgEl) {
   try {
-    const res = await fetch(`/api/zalo/profile?access_token=${accessToken}`);
+    const res = await fetch('https://graph.zalo.me/v2.0/me?fields=id,name,picture', {
+      headers: {
+        'access_token': accessToken
+      }
+    });
     const data = await res.json();
     if (data.id) {
       window.history.replaceState({}, document.title, window.location.pathname);

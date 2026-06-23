@@ -13,7 +13,7 @@ export default function Page() {
       messagingSenderId: ${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID)},
       appId: ${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_APP_ID)}
     };` }} />
-      <script type="module" src="/user.js?v=1.10"></script>
+      <script type="module" src="/user.js?v=1.11"></script>
       <div dangerouslySetInnerHTML={{
         __html: `
 
@@ -322,7 +322,7 @@ export default function Page() {
     </div>
   </div>
 
-  <script type="module" src="/user.js?v=1.10"></script>
+  <script type="module" src="/user.js?v=1.11"></script>
 ` }} />
     </>
   );
