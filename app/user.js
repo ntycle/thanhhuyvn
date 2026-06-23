@@ -711,6 +711,18 @@ async function handleZaloOauth(code) {
       role: "user"
     }, { merge: true });
     
+    // Khắc phục lỗi race condition với onAuthStateChanged: Cập nhật DOM trực tiếp và làm mới cache
+    myName = realName;
+    const headerNameEl = document.getElementById("header-uname");
+    if (headerNameEl) headerNameEl.textContent = myName;
+    const welcomeNameEl = document.getElementById("welcome-name");
+    if (welcomeNameEl) welcomeNameEl.textContent = myName;
+    
+    cachedUserDoc = { 
+      uid: userCredential.user.uid, 
+      data: { name: realName, avatar: realAvatar, email: userCredential.user.email, role: "user" } 
+    };
+    
     if (msg) {
       msg.className = "amsg ok";
       msg.textContent = "✅ Đăng nhập Zalo thành công!";
