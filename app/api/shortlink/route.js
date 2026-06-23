@@ -68,15 +68,13 @@ export async function POST(request) {
       return NextResponse.json({ error: "URL quá dài, tối đa 2000 ký tự" }, { status: 400 });
     }
 
-    // 3. Tạo mã ngẫu nhiên 10 ký tự an toàn bằng Web Crypto API
+    // 3. Tạo mã ngẫu nhiên 10 ký tự
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    const randomArray = new Uint8Array(10);
-    crypto.getRandomValues(randomArray);
-    
     let code = "";
     for (let i = 0; i < 10; i++) {
-      code += chars[randomArray[i] % chars.length];
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
     }
+    
 
     // 4. Lưu Shortlink vào Firestore bằng Admin SDK
     const adminApp = getFirebaseAdmin();
