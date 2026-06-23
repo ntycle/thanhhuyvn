@@ -709,7 +709,7 @@ async function getZaloUserProfile(accessToken, msgEl) {
       window.history.replaceState({}, document.title, window.location.pathname);
       await handleZaloFirebaseLogin(data.id, data.name || "Người dùng Zalo", msgEl || document.createElement('div'));
     } else {
-      throw new Error("Không lấy được profile");
+      throw new Error("Không lấy được profile: " + JSON.stringify(data));
     }
   } catch (err) {
     if (msgEl) {
