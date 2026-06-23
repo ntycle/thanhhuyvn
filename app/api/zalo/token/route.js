@@ -53,8 +53,8 @@ export async function POST(request) {
         throw new Error("Failed to get Zalo access token");
     }
 
-    // 2. Fetch user profile from Zalo
-    const profileResponse = await fetch('https://graph.zalo.me/v2.0/me?fields=id,name,picture', {
+    // 2. Fetch user profile from Zalo (only 'id' to avoid foreign IP restriction on personal info)
+    const profileResponse = await fetch('https://graph.zalo.me/v2.0/me?fields=id', {
       headers: {
         'access_token': tokenData.access_token
       }
@@ -99,9 +99,14 @@ export async function POST(request) {
     }
 
     // 4. Mint custom token
-    const customToken = await auth.createCustomToken(uid);
+    const customToken = await admin.auth().createCustomToken(uid);
 
-    return NextResponse.json({ customToken, zaloId, name: zaloName });
+    return NextResponse.json({ 
+        customToken, 
+        zaloId, 
+        name: zaloName,
+        zaloAccessToken: tokenData.access_token 
+    });
 
   } catch (error) {
     console.error('Error in Zalo token route:', error);

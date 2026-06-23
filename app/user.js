@@ -635,6 +635,201 @@ window.claimOrder = async function (docIdsStr, btn) {
 // ─── ZALO OAUTH CALLBACK HANDLER ─────────────────────────
 const urlParams = new URLSearchParams(window.location.search);
 const zaloCode = urlParams.get('code');
+        try {
+          const snap = await getDocs(query(collection(db, "orders"), where("ID đơn hàng", "in", chunk)));
+          snap.docs.forEach(d => newlyFound.push({ _id: d.id, ...d.data() }));
+        } catch (qErr) {
+          if (qErr.code === "permission-denied") {
+            const promises = chunk.map(id => getDoc(doc(db, "orders", id)));
+            const snaps = await Promise.all(promises);
+            snaps.forEach(s => { if (s.exists()) newlyFound.push({ _id: s.id, ...s.data() }); });
+          } else throw qErr;
+        }
+      }
+
+      // 3. Cập nhật cache với những kết quả mới
+      idsToQuery.forEach(id => {
+        const matches = newlyFound.filter(o => (o["ID đơn hàng"] || "").toUpperCase() === id);
+        searchCache.set(id, matches); // Nếu mảng rỗng (không tìm thấy) cũng lưu lại để tránh truy vấn lại
+        found.push(...matches);
+      });
+    }
+
+    const foundIds = new Set(found.map(o => (o["ID đơn hàng"] || "").toUpperCase()));
+    const missingIds = ids.filter(id => !foundIds.has(id.toUpperCase()));
+
+    if (found.length) {
+      renderSearchResults(found, resultDiv);
+    } else {
+      resultDiv.innerHTML = ""; // Remove redundant global error card
+    }
+
+    const validMissingIds = missingIds.filter(id => /^[0-9A-Z]{14,15}$/.test(id));
+    const invalidMissingIds = missingIds.filter(id => !/^[0-9A-Z]{14,15}$/.test(id));
+
+    if (validMissingIds.length > 0 || invalidMissingIds.length > 0) {
+      let missingHtml = "";
+      
+      if (validMissingIds.length > 0) {
+        missingHtml += validMissingIds.map(id => `
+        <div style="background:#fff3e0; padding: 14px 18px; border-radius: var(--radius); margin-top: 14px; border: 1px solid #ffcc80; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;">
+          <div>
+            <div style="font-weight: 700; color: #e65100; margin-bottom: 4px;">❌ Không tìm thấy ID: ${id}</div>
+            <div style="font-size: 13px; color: #e65100; opacity: 0.85;">Chưa có trong hệ thống, bạn có muốn lưu tạm?</div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-claim" style="padding: 8px 16px; font-size: 13px;" onclick="saveMissingOrder('${id}', this)">💾 Lưu lại đơn hàng</button>
+            <button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none;" onclick="searchSingleId('${id}')">🔄 Tìm lại</button>
+          </div>
+        </div>
+        `).join("");
+      }
+
+      if (invalidMissingIds.length > 0) {
+        missingHtml += `
+        <div style="background:#fff3e0; padding: 14px 18px; border-radius: var(--radius); margin-top: 14px; border: 1px solid #ffcc80; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;">
+          <div>
+            <div style="font-weight: 700; color: #e65100; margin-bottom: 4px;">⚠️ Không có thông tin đơn hàng</div>
+            <div style="font-size: 13px; color: #e65100; opacity: 0.85;">Có vẻ bạn đã nhập đoạn văn bản hoặc nội dung không hợp lệ.</div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-claim" style="padding: 8px 16px; font-size: 13px; background: #e65100; color: #fff; border: none; cursor: pointer;" onclick="document.getElementById('orderId').value = ''; document.getElementById('orderId').focus(); document.getElementById('search-result').innerHTML = '';">🧹 Xoá văn bản</button>
+          </div>
+        </div>
+        `;
+      }
+
+      const missingContainer = document.createElement("div");
+      missingContainer.innerHTML = missingHtml;
+      resultDiv.appendChild(missingContainer);
+    }
+  } catch (e) {
+    const hint = e.code === "permission-denied"
+      ? `<br><small>💡 Lỗi quyền truy cập – liên hệ admin để cập nhật Firestore Security Rules.</small>`
+      : "";
+    resultDiv.innerHTML = `<div class="not-found">❌ Lỗi: ${e.message}${hint}</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = "🔍 Tìm đơn hàng";
+  }
+};
+
+function renderSearchResults(orders, container) {
+  let grandTotalVal = 0, grandTotalDisc = 0;
+  const groups = groupOrdersById(orders);
+
+  const html = groups.map(g => {
+    grandTotalVal += g.totalVal;
+    grandTotalDisc += g.totalDisc;
+
+    let titleText = g.items[0]["Tên Item"] || "Không có thông tin";
+    if (g.items.length > 1) {
+      titleText += ` (+ ${g.items.length - 1} sản phẩm khác)`;
+    }
+
+    const isManual = g.isManual;
+    const mineCount = g.items.filter(o => o.userId === me).length;
+    const claimedCount = g.items.filter(o => !!o.userId).length;
+    
+    let actionCell = "";
+    const itemIdsStr = g.items.map(o => o._id).join(',');
+
+    if (mineCount === g.items.length) {
+      actionCell = isManual
+        ? `<div style="display:flex;gap:4px">
+             <button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none; padding:4px 8px; font-size:12px; cursor: pointer;" onclick="event.stopPropagation(); searchSingleId('${g.orderId}')">🔄 Tìm Lỗi</button>
+             <button class="btn-out" style="color: var(--red); border-color: var(--red); background: none; padding:4px 8px; font-size:12px; cursor: pointer;" onclick="event.stopPropagation(); deleteMyOrder('${itemIdsStr}', this)">🗑️ Xóa</button>
+           </div>`
+        : `<span class="tag-mine">✅ Của tôi</span>`;
+    } else if (claimedCount > 0 && mineCount === 0) {
+      actionCell = `<span class="tag-other">🔒 Đã gán</span>`;
+    } else if (claimedCount > 0 && mineCount > 0) {
+      actionCell = `<span class="tag-other">🔒 Đã gán 1 phần</span>`;
+    } else {
+      actionCell = `<button class="btn-claim" onclick="event.stopPropagation(); claimOrder('${itemIdsStr}', this)">📌 Gán cho tôi</button>`;
+    }
+
+    const statusHtml = getStatusBadge(g.status);
+
+    const itemsListHtml = g.items.map(o => `
+      <div class="detail-item-row">
+        <div class="item-name-col">${o["Tên Item"] || ""}</div>
+        <div class="item-price-col">
+          <div>Giá: ${(Number(o["Giá trị đơn hàng (₫)"]) || 0).toLocaleString("vi-VN")}đ</div>
+          <div style="font-size: 11px; color: var(--green);">CK: ${calcDisc(o).toLocaleString("vi-VN")}đ</div>
+        </div>
+      </div>
+    `).join("");
+
+    return `
+    <div class="order-group">
+      <div class="order-summary" onclick="toggleOrderGroup(this)">
+        <div class="order-summary-left">
+          <div class="order-title" title="${g.items.map(i=>(i["Tên Item"] || "").replace(/"/g, '&quot;')).join(', ')}">${titleText}</div>
+          <div class="order-meta">
+            ${statusHtml}
+            ${paymentBadge(g.payment)}
+            <span>Mã: ${g.orderId}</span>
+          </div>
+        </div>
+        <div class="order-summary-right">
+          ${actionCell}
+          <div class="order-chevron">▼</div>
+        </div>
+      </div>
+      <div class="order-details">
+        <div class="detail-grid">
+          <div class="detail-item"><span class="detail-lbl">Mã đơn hàng</span><span class="detail-val">${g.orderId}</span></div>
+          <div class="detail-item"><span class="detail-lbl">Thời gian đặt</span><span class="detail-val">${g.time}</span></div>
+          <div class="detail-item"><span class="detail-lbl">Tổng giá trị</span><span class="detail-val">${g.totalVal.toLocaleString("vi-VN")}đ</span></div>
+          <div class="detail-item"><span class="detail-lbl">Tổng chiết khấu</span><span class="detail-val">${g.totalDisc.toLocaleString("vi-VN")}đ</span></div>
+        </div>
+        <div class="detail-items-list">
+          ${itemsListHtml}
+        </div>
+      </div>
+    </div>
+    `;
+  }).join("");
+
+  container.innerHTML = `<div class="card" style="padding:0; background:transparent; box-shadow:none;"><div class="result-wrap">
+    ${html}
+  </div></div>
+  <div class="mobile-summary">
+    <span>📦 ${groups.length} đơn (${orders.length} SP)</span>
+    <span>💰 ${grandTotalVal.toLocaleString("vi-VN")}đ</span>
+    <span>🎁 CK: ${grandTotalDisc.toLocaleString("vi-VN")}đ</span>
+  </div>`;
+}
+
+// ─── CLAIM ───────────────────────────────────────────────
+window.claimOrder = async function (docIdsStr, btn) {
+  btn.disabled = true; btn.textContent = "⏳...";
+  const docIds = docIdsStr.split(',');
+  try {
+    const batch = writeBatch(db);
+    let anySuccess = false;
+
+    for (const docId of docIds) {
+      // Dùng transaction nếu cần check `userId` chặt chẽ, nhưng để nhanh thì cập nhật hàng loạt qua batch
+      // (Bỏ qua transaction ở đây để đơn giản và phù hợp xử lý nhiều ID. Có thể sẽ ghi đè nếu vừa bị gán, nhưng xác suất thấp)
+      const ref = doc(db, "orders", docId);
+      batch.update(ref, { userId: me, claimedAt: serverTimestamp() });
+      anySuccess = true;
+    }
+
+    if (anySuccess) await batch.commit();
+
+    btn.parentNode.innerHTML = `<span class="tag-mine">✅ Của tôi</span>`;
+    await refreshMyOrders();
+  } catch (err) {
+    btn.disabled = false; btn.textContent = "Lưu Thông Tin Mặc Định";
+    alert("❌ Lỗi lưu thông tin: " + err.message);
+  }
+};
+
+// ─── ZALO OAUTH CALLBACK HANDLER ─────────────────────────
+const urlParams = new URLSearchParams(window.location.search);
+const zaloCode = urlParams.get('code');
 const zaloState = urlParams.get('state');
 
 if (zaloCode && zaloState) {
@@ -690,7 +885,39 @@ async function handleZaloOauth(code) {
       window.history.replaceState({}, document.title, window.location.pathname);
       
       // Đăng nhập Firebase bằng Custom Token
-      await signInWithCustomToken(auth, data.customToken);
+      const userCredential = await signInWithCustomToken(auth, data.customToken);
+      
+      // Cố gắng lấy Tên thật từ Zalo bằng IP của Client
+      if (data.zaloAccessToken) {
+        try {
+          let profileRes = await fetch('https://graph.zalo.me/v2.0/me?fields=id,name,picture', {
+            headers: { 'access_token': data.zaloAccessToken }
+          });
+          if (profileRes.ok) {
+            let profileData = await profileRes.json();
+            if (profileData && profileData.name) {
+              const realName = profileData.name;
+              const realAvatar = profileData.picture?.data?.url || "";
+              
+              // Cập nhật Profile Firebase
+              await updateProfile(userCredential.user, { 
+                displayName: realName,
+                photoURL: realAvatar
+              });
+              
+              // Cập nhật lên Firestore
+              await setDoc(doc(db, "users", userCredential.user.uid), {
+                name: realName,
+                avatar: realAvatar,
+                email: userCredential.user.email,
+                role: "user"
+              }, { merge: true });
+            }
+          }
+        } catch (e) {
+          console.warn("Không thể lấy thông tin cá nhân Zalo từ Client:", e);
+        }
+      }
       
       if (msg) {
         msg.className = "amsg ok";
