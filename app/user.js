@@ -5,7 +5,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
   getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc,
-  collection, query, where, getDocs,
+  collection, query, where, getDocs, limit,
   serverTimestamp, runTransaction, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -39,6 +39,7 @@ const COL_ORDER = [
 ];
 
 let me = null, myName = "", myOrders = [], myBankInfo = null;
+let cachedUserDoc = null; // Cache cho user document
 
 // ─── AUTH STATE ───────────────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
@@ -47,8 +48,15 @@ onAuthStateChanged(auth, async (user) => {
     document.documentElement.classList.add("is-logged-in");
     
     me = user.uid;
-    const snap = await getDoc(doc(db, "users", user.uid));
-    const uData = snap.exists() ? snap.data() : {};
+    let uData = {};
+    if (cachedUserDoc && cachedUserDoc.uid === user.uid) {
+      uData = cachedUserDoc.data;
+    } else {
+      const snap = await getDoc(doc(db, "users", user.uid));
+      uData = snap.exists() ? snap.data() : {};
+      cachedUserDoc = { uid: user.uid, data: uData };
+    }
+    
     myName = uData.name || user.email;
 
     document.getElementById("header-uname").textContent = myName;
@@ -179,7 +187,7 @@ async function autoClaimRealOrders(orders) {
 }
 
 async function refreshMyOrders() {
-  const q = query(collection(db, "orders"), where("userId", "==", me));
+  const q = query(collection(db, "orders"), where("userId", "==", me), limit(50));
   const snap = await getDocs(q);
   myOrders = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
 
@@ -190,13 +198,13 @@ async function refreshMyOrders() {
   //         → xóa nháp + tự gán đơn thật về user (không cần search thủ công)
   const autoClaimed = await autoClaimRealOrders(
     cleaned
-      ? (await getDocs(query(collection(db, "orders"), where("userId", "==", me)))).docs.map(d => ({ _id: d.id, ...d.data() }))
+      ? (await getDocs(query(collection(db, "orders"), where("userId", "==", me), limit(50)))).docs.map(d => ({ _id: d.id, ...d.data() }))
       : myOrders
   );
 
   // Reload lần cuối nếu có bất kỳ thay đổi nào
   if (cleaned || autoClaimed) {
-    const snap2 = await getDocs(query(collection(db, "orders"), where("userId", "==", me)));
+    const snap2 = await getDocs(query(collection(db, "orders"), where("userId", "==", me), limit(50)));
     myOrders = snap2.docs.map(d => ({ _id: d.id, ...d.data() }));
   }
 
@@ -376,9 +384,11 @@ function renderMyOrders() {
 }
 
 // ─── SEARCH ──────────────────────────────────────────────
+const searchCache = new Map();
+
 window.doSearch = async function () {
   const raw = document.getElementById("orderId").value;
-  const ids = raw.toUpperCase().split(/[\s,]+/).filter(Boolean);
+  const ids = Array.from(new Set(raw.toUpperCase().split(/[\s,]+/).filter(Boolean)));
   const resultDiv = document.getElementById("search-result");
   if (!ids.length) return;
 
@@ -388,18 +398,40 @@ window.doSearch = async function () {
 
   try {
     let found = [];
-    for (let i = 0; i < ids.length; i += 30) {
-      const chunk = ids.slice(i, i + 30);
-      try {
-        const snap = await getDocs(query(collection(db, "orders"), where("ID đơn hàng", "in", chunk)));
-        snap.docs.forEach(d => found.push({ _id: d.id, ...d.data() }));
-      } catch (qErr) {
-        if (qErr.code === "permission-denied") {
-          const promises = chunk.map(id => getDoc(doc(db, "orders", id)));
-          const snaps = await Promise.all(promises);
-          snaps.forEach(s => { if (s.exists()) found.push({ _id: s.id, ...s.data() }); });
-        } else throw qErr;
+    let idsToQuery = [];
+
+    // 1. Kiểm tra cache trước
+    for (const id of ids) {
+      if (searchCache.has(id)) {
+        found.push(...searchCache.get(id));
+      } else {
+        idsToQuery.push(id);
       }
+    }
+
+    // 2. Fetch những ID chưa có trong cache
+    if (idsToQuery.length > 0) {
+      let newlyFound = [];
+      for (let i = 0; i < idsToQuery.length; i += 30) {
+        const chunk = idsToQuery.slice(i, i + 30);
+        try {
+          const snap = await getDocs(query(collection(db, "orders"), where("ID đơn hàng", "in", chunk)));
+          snap.docs.forEach(d => newlyFound.push({ _id: d.id, ...d.data() }));
+        } catch (qErr) {
+          if (qErr.code === "permission-denied") {
+            const promises = chunk.map(id => getDoc(doc(db, "orders", id)));
+            const snaps = await Promise.all(promises);
+            snaps.forEach(s => { if (s.exists()) newlyFound.push({ _id: s.id, ...s.data() }); });
+          } else throw qErr;
+        }
+      }
+
+      // 3. Cập nhật cache với những kết quả mới
+      idsToQuery.forEach(id => {
+        const matches = newlyFound.filter(o => (o["ID đơn hàng"] || "").toUpperCase() === id);
+        searchCache.set(id, matches); // Nếu mảng rỗng (không tìm thấy) cũng lưu lại để tránh truy vấn lại
+        found.push(...matches);
+      });
     }
 
     const foundIds = new Set(found.map(o => (o["ID đơn hàng"] || "").toUpperCase()));
@@ -596,53 +628,42 @@ async function handleZaloOauth(code) {
     msg.style.display = "block";
   }
 
-  const tokenUrl = "https://oauth.zaloapp.com/v4/access_token";
-  const body = new URLSearchParams();
-  body.append('app_id', '1150083649033793704');
-  body.append('grant_type', 'authorization_code');
-  body.append('code', code);
+  const tokenUrl = "/api/zalo/token";
+  // Gửi code (và code_verifier nếu có trong localStorage) lên server
+  const codeVerifier = localStorage.getItem('zalo_code_verifier') || '';
+  const body = JSON.stringify({ code: code, codeVerifier: codeVerifier });
 
   const headers = {
-    'Content-Type': 'application/x-www-form-urlencoded',
-    'secret_key': 'ctHh3WHFDLPI1IBSP5R7'
+    'Content-Type': 'application/json'
   };
 
   try {
     let response = await fetch(tokenUrl, {
       method: 'POST',
       headers: headers,
-      body: body.toString()
+      body: body
     });
 
     if (!response.ok) {
-      throw new Error("Failed to fetch directly");
+      throw new Error("Failed to fetch token from server");
     }
 
     let data = await response.json();
     if (data.access_token) {
-      getZaloUserProfile(data.access_token, msg);
+      // Nếu server trả về pass thì ưu tiên dùng, nếu không thì get profile
+      if (data.zaloPass && data.zaloId) {
+         window.history.replaceState({}, document.title, window.location.pathname);
+         await handleZaloFirebaseLogin(data.zaloId, data.name || "Người dùng Zalo", msg, data.zaloPass);
+      } else {
+         getZaloUserProfile(data.access_token, msg);
+      }
     } else {
       throw new Error(data.error_name || "Lấy token thất bại");
     }
   } catch (err) {
-    try {
-      const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(tokenUrl);
-      let proxyResponse = await fetch(proxyUrl, {
-        method: 'POST',
-        headers: headers,
-        body: body.toString()
-      });
-      let proxyData = await proxyResponse.json();
-      if (proxyData.access_token) {
-        getZaloUserProfile(proxyData.access_token, msg);
-      } else {
-        throw new Error(proxyData.error_name || "Proxy: Lấy token thất bại");
-      }
-    } catch (proxyErr) {
-      if (msg) {
-        msg.className = "amsg err";
-        msg.textContent = "❌ Lỗi kết nối Zalo. Vui lòng kiểm tra lại cấu hình Domain Callback trên Zalo Developers.";
-      }
+    if (msg) {
+      msg.className = "amsg err";
+      msg.textContent = "❌ Lỗi kết nối Zalo: " + err.message;
     }
   }
 }
@@ -839,28 +860,46 @@ window.doLoginZalo = function (msgId = "login-msg") {
   window.location.href = `https://oauth.zaloapp.com/v4/permission?app_id=${appId}&redirect_uri=${redirectUrl}&state=${state}`;
 };
 
-async function handleZaloFirebaseLogin(zaloId, name, msgEl) {
+async function handleZaloFirebaseLogin(zaloId, name, msgEl, serverPass = null) {
   const email = `${zaloId}@zalo.com`;
-  const pass = `ZaloAuth_${zaloId}_#`;
+  
+  // Nếu có serverPass (do server API trả về) thì dùng ngay
+  // Nếu không, kiểm tra trong localStorage (giải pháp lưu đệm tạm thời cho user đang thao tác)
+  let pass = serverPass || localStorage.getItem(`zalo_pass_${zaloId}`);
   
   try {
-    await signInWithEmailAndPassword(auth, email, pass);
+    if (pass) {
+      // Đăng nhập bằng pass lấy được
+      await signInWithEmailAndPassword(auth, email, pass);
+      msgEl.className = "amsg ok"; 
+      msgEl.textContent = "✅ Đăng nhập thành công!";
+      localStorage.setItem(`zalo_pass_${zaloId}`, pass); // cache lại
+      return;
+    }
+    
+    // Nếu chưa có pass ở local, thử đăng nhập bằng password default (dành cho các user cũ)
+    const oldPass = `ZaloAuth_${zaloId}_#`;
+    await signInWithEmailAndPassword(auth, email, oldPass);
     msgEl.className = "amsg ok"; 
     msgEl.textContent = "✅ Đăng nhập thành công!";
   } catch (e) {
+    // Nếu không tìm thấy user hoặc sai password, tạo mới với pass ngẫu nhiên
     if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password') {
       try {
-        const cred = await createUserWithEmailAndPassword(auth, email, pass);
+        const newPass = crypto.randomUUID().replace(/-/g, '');
+        const cred = await createUserWithEmailAndPassword(auth, email, newPass);
         await updateProfile(cred.user, { displayName: name });
         await setDoc(doc(db, "users", cred.user.uid), {
           name: name,
           email: email,
           role: "user",
           createdAt: serverTimestamp(),
-          zaloId: zaloId
+          zaloId: zaloId,
+          zaloPass: newPass // Lưu vào Firestore để dùng lại lần sau (thông qua server)
         });
+        localStorage.setItem(`zalo_pass_${zaloId}`, newPass);
         msgEl.className = "amsg ok"; 
-        msgEl.textContent = "✅ Đăng nhập thành công!";
+        msgEl.textContent = "✅ Đăng ký thành công!";
       } catch (err) {
         msgEl.className = "amsg err";
         msgEl.textContent = "❌ Lỗi tạo tài khoản: " + err.message;
