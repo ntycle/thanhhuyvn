@@ -6,14 +6,14 @@ export default function Page() {
     <>
       <script dangerouslySetInnerHTML={{
         __html: `window.ENV = {
-      apiKey: '${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}',
-      authDomain: '${process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}',
-      projectId: '${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}',
-      storageBucket: '${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}',
-      messagingSenderId: '${process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}',
-      appId: '${process.env.NEXT_PUBLIC_FIREBASE_APP_ID}'
+      apiKey: ${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_API_KEY)},
+      authDomain: ${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN)},
+      projectId: ${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID)},
+      storageBucket: ${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET)},
+      messagingSenderId: ${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID)},
+      appId: ${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_APP_ID)}
     };` }} />
-      <script type="module" src="/user.js?v=1.2"></script>
+      <script type="module" src="/user.js?v=1.9"></script>
       <div dangerouslySetInnerHTML={{
         __html: `
 
@@ -322,7 +322,7 @@ export default function Page() {
     </div>
   </div>
 
-  <script type="module" src="user.js"></script>
+  <script type="module" src="/user.js?v=1.9"></script>
 ` }} />
     </>
   );

@@ -5,11 +5,18 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
   getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc,
-  collection, query, where, getDocs,
+  collection, query, where, getDocs, limit,
   serverTimestamp, runTransaction, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-const cfg = window.ENV || {};
+const cfg = {
+  apiKey: "AIzaSyCD3bS8LTPnXU-9C0xVTRC-IzYfPe428x8",
+  authDomain: "shopeeafff-bfd62.firebaseapp.com",
+  projectId: "shopeeafff-bfd62",
+  storageBucket: "shopeeafff-bfd62.firebasestorage.app",
+  messagingSenderId: "1091380862349",
+  appId: "1:1091380862349:web:1c82d576edc1888e4a31c4"
+};
 const app = initializeApp(cfg);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -32,6 +39,7 @@ const COL_ORDER = [
 ];
 
 let me = null, myName = "", myOrders = [], myBankInfo = null;
+let cachedUserDoc = null; // Cache cho user document
 
 // ─── AUTH STATE ───────────────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
@@ -40,8 +48,15 @@ onAuthStateChanged(auth, async (user) => {
     document.documentElement.classList.add("is-logged-in");
     
     me = user.uid;
-    const snap = await getDoc(doc(db, "users", user.uid));
-    const uData = snap.exists() ? snap.data() : {};
+    let uData = {};
+    if (cachedUserDoc && cachedUserDoc.uid === user.uid) {
+      uData = cachedUserDoc.data;
+    } else {
+      const snap = await getDoc(doc(db, "users", user.uid));
+      uData = snap.exists() ? snap.data() : {};
+      cachedUserDoc = { uid: user.uid, data: uData };
+    }
+    
     myName = uData.name || user.email;
 
     document.getElementById("header-uname").textContent = myName;
@@ -172,7 +187,7 @@ async function autoClaimRealOrders(orders) {
 }
 
 async function refreshMyOrders() {
-  const q = query(collection(db, "orders"), where("userId", "==", me));
+  const q = query(collection(db, "orders"), where("userId", "==", me), limit(50));
   const snap = await getDocs(q);
   myOrders = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
 
@@ -183,13 +198,13 @@ async function refreshMyOrders() {
   //         → xóa nháp + tự gán đơn thật về user (không cần search thủ công)
   const autoClaimed = await autoClaimRealOrders(
     cleaned
-      ? (await getDocs(query(collection(db, "orders"), where("userId", "==", me)))).docs.map(d => ({ _id: d.id, ...d.data() }))
+      ? (await getDocs(query(collection(db, "orders"), where("userId", "==", me), limit(50)))).docs.map(d => ({ _id: d.id, ...d.data() }))
       : myOrders
   );
 
   // Reload lần cuối nếu có bất kỳ thay đổi nào
   if (cleaned || autoClaimed) {
-    const snap2 = await getDocs(query(collection(db, "orders"), where("userId", "==", me)));
+    const snap2 = await getDocs(query(collection(db, "orders"), where("userId", "==", me), limit(50)));
     myOrders = snap2.docs.map(d => ({ _id: d.id, ...d.data() }));
   }
 
@@ -201,7 +216,7 @@ async function refreshMyOrders() {
     totalVal += Number(o["Giá trị đơn hàng (₫)"]) || 0;
     const disc = calcDisc(o);
     totalDisc += disc;
-    if (String(o["Trạng thái đặt hàng"] || "").trim().toLowerCase() === "hoàn thành" && o.thanhToan !== "Đã Thanh Toán") {
+    if (String(o["Trạng thái đặt hàng"] || "").trim().toLowerCase() === "hoạn thạnh" && o.thanhToan !== "Đã Thanh Toán") {
       totalAvailable += disc;
     }
   });
@@ -214,11 +229,39 @@ async function refreshMyOrders() {
   renderMyOrders();
 }
 
+function getStatusBadge(status) {
+  if (!status) return "";
+  const s = status.trim().toLowerCase();
+  
+  let bgColor = "#f3f4f6";
+  let color = "#4b5563";
+  
+  if (s === "hoàn thành") {
+    bgColor = "#d1fae5";
+    color = "#065f46";
+  } else if (s === "đang chờ xử lý" || s === "chờ xử lý") {
+    bgColor = "#fef3c7";
+    color = "#92400e";
+  } else if (s === "đã hủy" || s === "hủy" || s === "huỷ" || s === "đã huỷ") {
+    bgColor = "#fee2e2";
+    color = "#991b1b";
+  } else if (s === "đang vận chuyển" || s === "đang giao") {
+    bgColor = "#dbeafe";
+    color = "#1e40af";
+  } else if (s === "đã xác nhận" || s === "xác nhận") {
+    bgColor = "#e0e7ff";
+    color = "#3730a3";
+  }
+  
+  return `<span style="display:inline-block; font-size:11px; padding:3px 10px; border-radius:12px; font-weight:600; background-color:${bgColor}; color:${color}; border: 1px solid ${color}33;">${status}</span>`;
+}
+
 function paymentBadge(val) {
-  if (val === "Đã Thanh Toán") return `<span class="tag-paid">💚 Đã Thanh Toán</span>`;
-  if (val === "Đang chờ xử lý") return `<span class="tag-unpaid" style="background:#fff3e0;color:#e65100">⏳ Đang chờ xử lý</span>`;
-  if (val === "Chưa Thanh Toán") return `<span class="tag-unpaid">🟡 Chưa Thanh Toán</span>`;
-  return `<span class="tag-nopay">–</span>`;
+  const commonStyle = 'display:inline-block; font-size:11px; padding:3px 10px; border-radius:12px; font-weight:600; border: 1px solid transparent;';
+  if (val === 'Đã Thanh Toán') return `<span style="${commonStyle} background-color:#d1fae5; color:#065f46; border-color:#065f4633;">💚 Đã Thanh Toán</span>`;
+  if (val === 'Đang chờ xử lý') return `<span style="${commonStyle} background-color:#fef3c7; color:#92400e; border-color:#92400e33;">⏳ Đang chờ xử lý</span>`;
+  if (val === 'Chưa Thanh Toán') return `<span style="${commonStyle} background-color:#fee2e2; color:#991b1b; border-color:#991b1b33;">🟡 Chưa Thanh Toán</span>`;
+  return `<span style="${commonStyle} background-color:#f3f4f6; color:#4b5563;">–</span>`;
 }
 
 function calcDisc(o) {
@@ -258,12 +301,12 @@ function groupOrdersById(orders) {
       groups[id].payment = o.thanhToan;
     }
     
-    // Cập nhật trạng thái nhóm: ưu tiên hiển thị "Đang chờ xử lý" hoặc các trạng thái chưa hoàn thành
+    // Cập nhật trạng thái nhóm: ưu tiên hiển thị "Đang chờ xử lý" hoặc các trạng thái chưa hoạn thạnh
     const itemStatus = (o["Trạng thái đặt hàng"] || "").trim();
     const currentStatus = groups[id].status.trim().toLowerCase();
     if (itemStatus.toLowerCase() === "đang chờ xử lý") {
       groups[id].status = itemStatus;
-    } else if (currentStatus === "hoàn thành" && itemStatus.toLowerCase() !== "hoàn thành" && itemStatus !== "") {
+    } else if (currentStatus === "hoạn thạnh" && itemStatus.toLowerCase() !== "hoạn thạnh" && itemStatus !== "") {
       groups[id].status = itemStatus;
     }
   }
@@ -310,21 +353,19 @@ function renderMyOrders() {
 
     const thaoTac = isManual
       ? `<div style="display:flex;gap:4px">
-
+           <button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none; font-size:11px; padding:3px 8px; cursor: pointer;" onclick="event.stopPropagation(); searchSingleId('${g.orderId}')">🔄 Tìm Lỗi</button>
            <button class="btn-out" style="color: var(--red); border-color: var(--red); background: none; font-size:11px; padding:3px 8px; cursor: pointer;" onclick="event.stopPropagation(); deleteMyOrder('${itemIdsStr}', this)">🗑️ Xóa</button>
          </div>`
       : ``;
 
-    const statusHtml = g.status.trim().toLowerCase() === "hoàn thành" 
-      ? `<span class="tag-mine" style="font-size:11px;padding:3px 10px">${g.status}</span>`
-      : `<span>${g.status}</span>`;
+    const statusHtml = getStatusBadge(g.status);
 
     const itemsListHtml = g.items.map(o => `
       <div class="detail-item-row">
         <div class="item-name-col">${o["Tên Item"] || ""}</div>
         <div class="item-price-col">
-          <div>Giá: ${(Number(o["Giá trị đơn hàng (₫)"]) || 0).toLocaleString("vi-VN")}₫</div>
-          <div style="font-size: 11px; color: var(--green);">CK: ${calcDisc(o).toLocaleString("vi-VN")}₫</div>
+          <div>Giá: ${(Number(o["Giá trị đơn hàng (₫)"]) || 0).toLocaleString("vi-VN")}đ</div>
+          <div style="font-size: 11px; color: var(--green);">CK: ${calcDisc(o).toLocaleString("vi-VN")}đ</div>
         </div>
       </div>
     `).join("");
@@ -333,7 +374,7 @@ function renderMyOrders() {
     <div class="order-group">
       <div class="order-summary" onclick="toggleOrderGroup(this)">
         <div class="order-summary-left">
-          <div class="order-title" title="${g.items.map(i=>i["Tên Item"].replace(/"/g, '&quot;')).join(', ')}">${titleText}</div>
+          <div class="order-title" title="${g.items.map(i=>(i["Tên Item"] || "").replace(/"/g, '&quot;')).join(', ')}">${titleText}</div>
           <div class="order-meta">
             ${statusHtml}
             ${paymentBadge(g.payment)}
@@ -349,8 +390,8 @@ function renderMyOrders() {
         <div class="detail-grid">
           <div class="detail-item"><span class="detail-lbl">Mã đơn hàng</span><span class="detail-val">${g.orderId}</span></div>
           <div class="detail-item"><span class="detail-lbl">Thời gian đặt</span><span class="detail-val">${g.time}</span></div>
-          <div class="detail-item"><span class="detail-lbl">Tổng giá trị</span><span class="detail-val">${g.totalVal.toLocaleString("vi-VN")}₫</span></div>
-          <div class="detail-item"><span class="detail-lbl">Tổng chiết khấu</span><span class="detail-val">${g.totalDisc.toLocaleString("vi-VN")}₫</span></div>
+          <div class="detail-item"><span class="detail-lbl">Tổng giá trị</span><span class="detail-val">${g.totalVal.toLocaleString("vi-VN")}đ</span></div>
+          <div class="detail-item"><span class="detail-lbl">Tổng chiết khấu</span><span class="detail-val">${g.totalDisc.toLocaleString("vi-VN")}đ</span></div>
         </div>
         <div class="detail-items-list">
           ${itemsListHtml}
@@ -363,15 +404,17 @@ function renderMyOrders() {
   el.innerHTML = `<div class="result-wrap">${html}</div>
   <div class="mobile-summary">
     <span>📦 ${groups.length} đơn (${filteredOrders.length} SP)</span>
-    <span>💰 ${grandTotalVal.toLocaleString("vi-VN")}₫</span>
-    <span>🎁 CK: ${grandTotalDisc.toLocaleString("vi-VN")}₫</span>
+    <span>💰 ${grandTotalVal.toLocaleString("vi-VN")}đ</span>
+    <span>🎁 CK: ${grandTotalDisc.toLocaleString("vi-VN")}đ</span>
   </div>`;
 }
 
 // ─── SEARCH ──────────────────────────────────────────────
+const searchCache = new Map();
+
 window.doSearch = async function () {
   const raw = document.getElementById("orderId").value;
-  const ids = raw.toUpperCase().split(/[\s,]+/).filter(Boolean);
+  const ids = Array.from(new Set(raw.toUpperCase().split(/[\s,]+/).filter(Boolean)));
   const resultDiv = document.getElementById("search-result");
   if (!ids.length) return;
 
@@ -381,18 +424,40 @@ window.doSearch = async function () {
 
   try {
     let found = [];
-    for (let i = 0; i < ids.length; i += 30) {
-      const chunk = ids.slice(i, i + 30);
-      try {
-        const snap = await getDocs(query(collection(db, "orders"), where("ID đơn hàng", "in", chunk)));
-        snap.docs.forEach(d => found.push({ _id: d.id, ...d.data() }));
-      } catch (qErr) {
-        if (qErr.code === "permission-denied") {
-          const promises = chunk.map(id => getDoc(doc(db, "orders", id)));
-          const snaps = await Promise.all(promises);
-          snaps.forEach(s => { if (s.exists()) found.push({ _id: s.id, ...s.data() }); });
-        } else throw qErr;
+    let idsToQuery = [];
+
+    // 1. Kiểm tra cache trước
+    for (const id of ids) {
+      if (searchCache.has(id)) {
+        found.push(...searchCache.get(id));
+      } else {
+        idsToQuery.push(id);
       }
+    }
+
+    // 2. Fetch những ID chưa có trong cache
+    if (idsToQuery.length > 0) {
+      let newlyFound = [];
+      for (let i = 0; i < idsToQuery.length; i += 30) {
+        const chunk = idsToQuery.slice(i, i + 30);
+        try {
+          const snap = await getDocs(query(collection(db, "orders"), where("ID đơn hàng", "in", chunk)));
+          snap.docs.forEach(d => newlyFound.push({ _id: d.id, ...d.data() }));
+        } catch (qErr) {
+          if (qErr.code === "permission-denied") {
+            const promises = chunk.map(id => getDoc(doc(db, "orders", id)));
+            const snaps = await Promise.all(promises);
+            snaps.forEach(s => { if (s.exists()) newlyFound.push({ _id: s.id, ...s.data() }); });
+          } else throw qErr;
+        }
+      }
+
+      // 3. Cập nhật cache với những kết quả mới
+      idsToQuery.forEach(id => {
+        const matches = newlyFound.filter(o => (o["ID đơn hàng"] || "").toUpperCase() === id);
+        searchCache.set(id, matches); // Nếu mảng rỗng (không tìm thấy) cũng lưu lại để tránh truy vấn lại
+        found.push(...matches);
+      });
     }
 
     const foundIds = new Set(found.map(o => (o["ID đơn hàng"] || "").toUpperCase()));
@@ -419,6 +484,7 @@ window.doSearch = async function () {
           </div>
           <div style="display: flex; gap: 8px;">
             <button class="btn-claim" style="padding: 8px 16px; font-size: 13px;" onclick="saveMissingOrder('${id}', this)">💾 Lưu lại đơn hàng</button>
+            <button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none;" onclick="searchSingleId('${id}')">🔄 Tìm lại</button>
           </div>
         </div>
         `).join("");
@@ -475,7 +541,7 @@ function renderSearchResults(orders, container) {
     if (mineCount === g.items.length) {
       actionCell = isManual
         ? `<div style="display:flex;gap:4px">
-
+             <button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none; padding:4px 8px; font-size:12px; cursor: pointer;" onclick="event.stopPropagation(); searchSingleId('${g.orderId}')">🔄 Tìm Lỗi</button>
              <button class="btn-out" style="color: var(--red); border-color: var(--red); background: none; padding:4px 8px; font-size:12px; cursor: pointer;" onclick="event.stopPropagation(); deleteMyOrder('${itemIdsStr}', this)">🗑️ Xóa</button>
            </div>`
         : `<span class="tag-mine">✅ Của tôi</span>`;
@@ -487,16 +553,14 @@ function renderSearchResults(orders, container) {
       actionCell = `<button class="btn-claim" onclick="event.stopPropagation(); claimOrder('${itemIdsStr}', this)">📌 Gán cho tôi</button>`;
     }
 
-    const statusHtml = g.status.trim().toLowerCase() === "hoàn thành" 
-      ? `<span class="tag-mine" style="font-size:11px;padding:3px 10px">${g.status}</span>`
-      : `<span>${g.status}</span>`;
+    const statusHtml = getStatusBadge(g.status);
 
     const itemsListHtml = g.items.map(o => `
       <div class="detail-item-row">
         <div class="item-name-col">${o["Tên Item"] || ""}</div>
         <div class="item-price-col">
-          <div>Giá: ${(Number(o["Giá trị đơn hàng (₫)"]) || 0).toLocaleString("vi-VN")}₫</div>
-          <div style="font-size: 11px; color: var(--green);">CK: ${calcDisc(o).toLocaleString("vi-VN")}₫</div>
+          <div>Giá: ${(Number(o["Giá trị đơn hàng (₫)"]) || 0).toLocaleString("vi-VN")}đ</div>
+          <div style="font-size: 11px; color: var(--green);">CK: ${calcDisc(o).toLocaleString("vi-VN")}đ</div>
         </div>
       </div>
     `).join("");
@@ -505,7 +569,7 @@ function renderSearchResults(orders, container) {
     <div class="order-group">
       <div class="order-summary" onclick="toggleOrderGroup(this)">
         <div class="order-summary-left">
-          <div class="order-title" title="${g.items.map(i=>i["Tên Item"].replace(/"/g, '&quot;')).join(', ')}">${titleText}</div>
+          <div class="order-title" title="${g.items.map(i=>(i["Tên Item"] || "").replace(/"/g, '&quot;')).join(', ')}">${titleText}</div>
           <div class="order-meta">
             ${statusHtml}
             ${paymentBadge(g.payment)}
@@ -521,8 +585,8 @@ function renderSearchResults(orders, container) {
         <div class="detail-grid">
           <div class="detail-item"><span class="detail-lbl">Mã đơn hàng</span><span class="detail-val">${g.orderId}</span></div>
           <div class="detail-item"><span class="detail-lbl">Thời gian đặt</span><span class="detail-val">${g.time}</span></div>
-          <div class="detail-item"><span class="detail-lbl">Tổng giá trị</span><span class="detail-val">${g.totalVal.toLocaleString("vi-VN")}₫</span></div>
-          <div class="detail-item"><span class="detail-lbl">Tổng chiết khấu</span><span class="detail-val">${g.totalDisc.toLocaleString("vi-VN")}₫</span></div>
+          <div class="detail-item"><span class="detail-lbl">Tổng giá trị</span><span class="detail-val">${g.totalVal.toLocaleString("vi-VN")}đ</span></div>
+          <div class="detail-item"><span class="detail-lbl">Tổng chiết khấu</span><span class="detail-val">${g.totalDisc.toLocaleString("vi-VN")}đ</span></div>
         </div>
         <div class="detail-items-list">
           ${itemsListHtml}
@@ -532,13 +596,13 @@ function renderSearchResults(orders, container) {
     `;
   }).join("");
 
-  container.innerHTML = `<div class="card" style="padding:0; background:white; box-shadow:var(--shadow); border-radius: var(--radius);"><div class="result-wrap" style="padding: 14px;">
+  container.innerHTML = `<div class="card" style="padding:0; background:transparent; box-shadow:none;"><div class="result-wrap">
     ${html}
   </div></div>
   <div class="mobile-summary">
     <span>📦 ${groups.length} đơn (${orders.length} SP)</span>
-    <span>💰 ${grandTotalVal.toLocaleString("vi-VN")}₫</span>
-    <span>🎁 CK: ${grandTotalDisc.toLocaleString("vi-VN")}₫</span>
+    <span>💰 ${grandTotalVal.toLocaleString("vi-VN")}đ</span>
+    <span>🎁 CK: ${grandTotalDisc.toLocaleString("vi-VN")}đ</span>
   </div>`;
 }
 
@@ -573,10 +637,19 @@ const urlParams = new URLSearchParams(window.location.search);
 const zaloCode = urlParams.get('code');
 const zaloState = urlParams.get('state');
 
-if (zaloCode && zaloState === 'zalo_login') {
-  window.addEventListener('DOMContentLoaded', () => {
-    handleZaloOauth(zaloCode);
-  });
+if (zaloCode && zaloState) {
+  const savedState = sessionStorage.getItem('zalo_oauth_state');
+  if (savedState) {
+    if (zaloState === savedState) {
+      sessionStorage.removeItem('zalo_oauth_state');
+      window.addEventListener('DOMContentLoaded', () => {
+        handleZaloOauth(zaloCode);
+      });
+    } else {
+      console.error("❌ Zalo OAuth state mismatch! CSRF protection triggered.");
+      // State không khớp -> dừng flow, không xử lý tiếp
+    }
+  }
 }
 
 async function handleZaloOauth(code) {
@@ -589,7 +662,9 @@ async function handleZaloOauth(code) {
   }
 
   const tokenUrl = "/api/zalo/token";
-  const body = JSON.stringify({ code: zaloCode });
+  // Gửi code (và code_verifier nếu có trong localStorage) lên server
+  const codeVerifier = localStorage.getItem('zalo_code_verifier') || '';
+  const body = JSON.stringify({ code: code, codeVerifier: codeVerifier });
 
   const headers = {
     'Content-Type': 'application/json'
@@ -599,49 +674,36 @@ async function handleZaloOauth(code) {
     let response = await fetch(tokenUrl, {
       method: 'POST',
       headers: headers,
-      body: body.toString()
+      body: body
     });
 
     if (!response.ok) {
-      throw new Error("Failed to fetch directly");
+      throw new Error("Failed to fetch token from server");
     }
 
     let data = await response.json();
     if (data.access_token) {
-      getZaloUserProfile(data.access_token, msg);
+      // Nếu server trả về pass thì ưu tiên dùng, nếu không thì get profile
+      if (data.zaloPass && data.zaloId) {
+         window.history.replaceState({}, document.title, window.location.pathname);
+         await handleZaloFirebaseLogin(data.zaloId, data.name || "Người dùng Zalo", msg, data.zaloPass);
+      } else {
+         getZaloUserProfile(data.access_token, msg);
+      }
     } else {
       throw new Error(data.error_name || "Lấy token thất bại");
     }
   } catch (err) {
-    try {
-      const proxyUrl = tokenUrl;
-      let proxyResponse = await fetch(proxyUrl, {
-        method: 'POST',
-        headers: headers,
-        body: body.toString()
-      });
-      let proxyData = await proxyResponse.json();
-      if (proxyData.access_token) {
-        getZaloUserProfile(proxyData.access_token, msg);
-      } else {
-        throw new Error(proxyData.error_name || "Proxy: Lấy token thất bại");
-      }
-    } catch (proxyErr) {
-      if (msg) {
-        msg.className = "amsg err";
-        msg.textContent = "❌ Lỗi kết nối Zalo. Vui lòng kiểm tra lại cấu hình Domain Callback trên Zalo Developers.";
-      }
+    if (msg) {
+      msg.className = "amsg err";
+      msg.textContent = "❌ Lỗi kết nối Zalo: " + err.message;
     }
   }
 }
 
 async function getZaloUserProfile(accessToken, msgEl) {
   try {
-    const res = await fetch('https://graph.zalo.me/v2.0/me?fields=id,name,picture', {
-      headers: {
-        'access_token': accessToken
-      }
-    });
+    const res = await fetch(`/api/zalo/profile?access_token=${accessToken}`);
     const data = await res.json();
     if (data.id) {
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -731,7 +793,7 @@ window.createPaymentRequest = async function () {
   }
 
   const eligibleOrders = myOrders.filter(o =>
-    String(o["Trạng thái đặt hàng"] || "").trim().toLowerCase() === "hoàn thành" &&
+    String(o["Trạng thái đặt hàng"] || "").trim().toLowerCase() === "hoạn thạnh" &&
     (!o.thanhToan || o.thanhToan === "" || o.thanhToan === "Chưa cập nhật") &&
     o["Tên Item"] !== "Không có thông tin"
   );
@@ -747,7 +809,7 @@ window.createPaymentRequest = async function () {
     totalDisc += calcDisc(o);
   });
 
-  const msg = `Bạn sắp tạo yêu cầu thanh toán cho ${eligibleOrders.length} đơn hàng.\nTổng giá trị: ${totalVal.toLocaleString("vi-VN")}₫\nTổng chiết khấu: ${totalDisc.toLocaleString("vi-VN")}₫\n\nBạn có muốn tiếp tục?`;
+  const msg = `Bạn sắp tạo yêu cầu thanh toán cho ${eligibleOrders.length} đơn hàng.\nTổng giá trị: ${totalVal.toLocaleString("vi-VN")}đ\nTổng chiết khấu: ${totalDisc.toLocaleString("vi-VN")}đ\n\nBạn có muốn tiếp tục?`;
   if (!confirm(msg)) return;
 
   const btn = document.querySelector('button[onclick="createPaymentRequest()"]');
@@ -819,7 +881,9 @@ window.doLoginZalo = function (msgId = "login-msg") {
   
   const appId = '1150083649033793704';
   const redirectUrl = encodeURIComponent(window.location.origin + window.location.pathname);
-  const state = "zalo_login";
+  const state = crypto.randomUUID(); // Sinh state ngẫu nhiên chống CSRF
+  
+  sessionStorage.setItem('zalo_oauth_state', state);
   
   // Lưu lại ID của message box để hiện thị lỗi sau khi redirect về
   localStorage.setItem('zalo_msg_id', msgId);
@@ -827,28 +891,47 @@ window.doLoginZalo = function (msgId = "login-msg") {
   window.location.href = `https://oauth.zaloapp.com/v4/permission?app_id=${appId}&redirect_uri=${redirectUrl}&state=${state}`;
 };
 
-async function handleZaloFirebaseLogin(zaloId, name, msgEl) {
+async function handleZaloFirebaseLogin(zaloId, name, msgEl, serverPass = null) {
   const email = `${zaloId}@zalo.com`;
-  const pass = `ZaloAuth_${zaloId}_#`;
+  
+  // Nếu có serverPass (do server API trả về từ Firestore) thì giải mã base64 để dùng
+  let pass = serverPass ? atob(serverPass) : null;
   
   try {
-    await signInWithEmailAndPassword(auth, email, pass);
+    if (pass) {
+      // Đăng nhập bằng pass giải mã được
+      await signInWithEmailAndPassword(auth, email, pass);
+      msgEl.className = "amsg ok"; 
+      msgEl.textContent = "✅ Đăng nhập thành công!";
+      return;
+    }
+    
+    // Nếu chưa có pass, thử đăng nhập bằng password default (dành cho các user cũ chưa được migrate)
+    const oldPass = `ZaloAuth_${zaloId}_#`;
+    await signInWithEmailAndPassword(auth, email, oldPass);
     msgEl.className = "amsg ok"; 
     msgEl.textContent = "✅ Đăng nhập thành công!";
   } catch (e) {
+    // Nếu không tìm thấy user hoặc sai password, tạo mới với pass ngẫu nhiên an toàn
     if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password') {
       try {
-        const cred = await createUserWithEmailAndPassword(auth, email, pass);
+        const randomArray = new Uint8Array(16);
+        crypto.getRandomValues(randomArray);
+        const newPass = Array.from(randomArray).map(b => b.toString(16).padStart(2, '0')).join('');
+        
+        const cred = await createUserWithEmailAndPassword(auth, email, newPass);
         await updateProfile(cred.user, { displayName: name });
         await setDoc(doc(db, "users", cred.user.uid), {
           name: name,
           email: email,
           role: "user",
           createdAt: serverTimestamp(),
-          zaloId: zaloId
+          zaloId: zaloId,
+          zaloPass: btoa(newPass) // Mã hóa nhẹ (base64) trước khi lưu vào Firestore
         });
+        
         msgEl.className = "amsg ok"; 
-        msgEl.textContent = "✅ Đăng nhập thành công!";
+        msgEl.textContent = "✅ Đăng ký thành công!";
       } catch (err) {
         msgEl.className = "amsg err";
         msgEl.textContent = "❌ Lỗi tạo tài khoản: " + err.message;
@@ -904,7 +987,7 @@ window.doForgotPassword = async function () {
     btn.disabled = true; btn.textContent = "Đang gửi...";
     await sendPasswordResetEmail(auth, email);
     msg.className = "amsg ok"; msg.textContent = "✅ Đã gửi link tới email của bạn (kiểm tra cả thư rác).";
-    btn.disabled = false; btn.textContent = "Gửi Lại Lần Nữa";
+    btn.disabled = false; btn.textContent = "Gửi Lỗi Lần Nữa";
   } catch (e) {
     const btn = document.querySelector('#tab-forgot .btn-main');
     btn.disabled = false; btn.textContent = "Gửi Email Khôi Phục";
