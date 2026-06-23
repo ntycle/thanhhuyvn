@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
-  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithCustomToken,
   signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
@@ -639,16 +639,23 @@ const zaloState = urlParams.get('state');
 
 if (zaloCode && zaloState) {
   const savedState = sessionStorage.getItem('zalo_oauth_state');
-  if (savedState) {
-    if (zaloState === savedState) {
-      sessionStorage.removeItem('zalo_oauth_state');
-      window.addEventListener('DOMContentLoaded', () => {
-        handleZaloOauth(zaloCode);
-      });
-    } else {
-      console.error("❌ Zalo OAuth state mismatch! CSRF protection triggered.");
-      // State không khớp -> dừng flow, không xử lý tiếp
-    }
+  
+  if (savedState && zaloState === savedState) {
+    sessionStorage.removeItem('zalo_oauth_state');
+    window.addEventListener('DOMContentLoaded', () => {
+      handleZaloOauth(zaloCode);
+    });
+  } else {
+    console.error("🚨 Zalo OAuth state mismatch hoặc bị thiếu! Từ chối đăng nhập.");
+    window.history.replaceState({}, document.title, window.location.pathname);
+    window.addEventListener('DOMContentLoaded', () => {
+      const msgId = localStorage.getItem('zalo_msg_id') || 'login-msg';
+      const msgEl = document.getElementById(msgId);
+      if (msgEl) {
+        msgEl.innerHTML = `<div class="msg msg-err">❌ Phiên đăng nhập Zalo không hợp lệ hoặc đã hết hạn. Vui lòng thử lại!</div>`;
+        msgEl.style.display = 'block';
+      }
+    });
   }
 }
 
@@ -662,63 +669,40 @@ async function handleZaloOauth(code) {
   }
 
   const tokenUrl = "/api/zalo/token";
-  // Gửi code (và code_verifier nếu có trong localStorage) lên server
   const codeVerifier = localStorage.getItem('zalo_code_verifier') || '';
   const body = JSON.stringify({ code: code, codeVerifier: codeVerifier });
-
-  const headers = {
-    'Content-Type': 'application/json'
-  };
 
   try {
     let response = await fetch(tokenUrl, {
       method: 'POST',
-      headers: headers,
+      headers: { 'Content-Type': 'application/json' },
       body: body
     });
 
     if (!response.ok) {
-      throw new Error("Failed to fetch token from server");
+      const errText = await response.text();
+      throw new Error("Lỗi máy chủ khi xác thực Zalo: " + errText);
     }
 
     let data = await response.json();
-    if (data.access_token) {
-      // Nếu server trả về pass thì ưu tiên dùng, nếu không thì get profile
-      if (data.zaloPass && data.zaloId) {
-         window.history.replaceState({}, document.title, window.location.pathname);
-         await handleZaloFirebaseLogin(data.zaloId, data.name || "Người dùng Zalo", msg, data.zaloPass);
-      } else {
-         getZaloUserProfile(data.access_token, msg);
+    if (data.customToken) {
+      // Xoá các tham số trên URL cho sạch
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      // Đăng nhập Firebase bằng Custom Token
+      await signInWithCustomToken(auth, data.customToken);
+      
+      if (msg) {
+        msg.className = "amsg ok";
+        msg.textContent = "✅ Đăng nhập Zalo thành công!";
       }
     } else {
-      throw new Error(data.error_name || "Lấy token thất bại");
+      throw new Error(data.error || "Không nhận được token xác thực từ máy chủ.");
     }
   } catch (err) {
     if (msg) {
       msg.className = "amsg err";
       msg.textContent = "❌ Lỗi kết nối Zalo: " + err.message;
-    }
-  }
-}
-
-async function getZaloUserProfile(accessToken, msgEl) {
-  try {
-    const res = await fetch('https://graph.zalo.me/v2.0/me?fields=id,name,picture', {
-      headers: {
-        'access_token': accessToken
-      }
-    });
-    const data = await res.json();
-    if (data.id) {
-      window.history.replaceState({}, document.title, window.location.pathname);
-      await handleZaloFirebaseLogin(data.id, data.name || "Người dùng Zalo", msgEl || document.createElement('div'));
-    } else {
-      throw new Error("Không lấy được profile: " + JSON.stringify(data));
-    }
-  } catch (err) {
-    if (msgEl) {
-      msgEl.className = "amsg err";
-      msgEl.textContent = "❌ Lỗi lấy thông tin Zalo: " + err.message;
     }
   }
 }

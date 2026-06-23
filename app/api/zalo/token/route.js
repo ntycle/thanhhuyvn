@@ -1,4 +1,18 @@
 import { NextResponse } from 'next/server';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+
+function getFirebaseAdmin() {
+  if (!getApps().length) {
+    initializeApp({
+      credential: cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      })
+    });
+  }
+}
 
 export async function POST(request) {
   try {
@@ -12,12 +26,13 @@ export async function POST(request) {
     const secretKey = process.env.ZALO_SECRET_KEY;
     const tokenUrl = "https://oauth.zaloapp.com/v4/access_token";
 
+    // 1. Get access token from Zalo
     const body = new URLSearchParams();
     body.append('code', code);
     body.append('app_id', appId);
     body.append('grant_type', 'authorization_code');
 
-    const response = await fetch(tokenUrl, {
+    const tokenResponse = await fetch(tokenUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -26,15 +41,69 @@ export async function POST(request) {
       body: body.toString()
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Zalo API responded with ${response.status}: ${errorText}`);
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      throw new Error(`Zalo API responded with ${tokenResponse.status}: ${errorText}`);
     }
 
-    const data = await response.json();
-    return NextResponse.json(data);
+    const tokenData = await tokenResponse.json();
+    if (!tokenData.access_token) {
+        throw new Error("Failed to get Zalo access token");
+    }
+
+    // 2. Fetch user profile from Zalo
+    const profileResponse = await fetch('https://graph.zalo.me/v2.0/me?fields=id,name,picture', {
+      headers: {
+        'access_token': tokenData.access_token
+      }
+    });
+
+    if (!profileResponse.ok) {
+        throw new Error("Failed to get Zalo user profile");
+    }
+
+    const profileData = await profileResponse.json();
+    if (profileData.error) {
+        throw new Error(`Zalo Graph API error: ${profileData.message}`);
+    }
+
+    const zaloId = profileData.id;
+    const zaloName = profileData.name || "Người dùng Zalo";
+    
+    // The fake email pattern used by the system
+    const fakeEmail = `${zaloId}@zalo.com`;
+
+    // 3. Admin SDK: Ensure user exists and mint Custom Token
+    getFirebaseAdmin();
+    const auth = getAuth();
+    let uid;
+
+    try {
+        // Find existing user by fake email
+        const userRecord = await auth.getUserByEmail(fakeEmail);
+        uid = userRecord.uid;
+    } catch (e) {
+        if (e.code === 'auth/user-not-found') {
+            // Create new user without a password
+            const newUser = await auth.createUser({
+                email: fakeEmail,
+                emailVerified: true,
+                displayName: zaloName
+            });
+            uid = newUser.uid;
+        } else {
+            throw e;
+        }
+    }
+
+    // 4. Mint custom token
+    const customToken = await auth.createCustomToken(uid);
+
+    return NextResponse.json({ customToken, zaloId, name: zaloName });
+
   } catch (error) {
     console.error('Error in Zalo token route:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
