@@ -1,9 +1,11 @@
-import { getApps, initializeApp, cert } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
 import { NextResponse } from 'next/server';
 
 export async function POST(req) {
   try {
+    // Dynamic import to prevent module evaluation crashes at the top level
+    const { getApps, initializeApp, cert } = await import('firebase-admin/app');
+    const { getAuth } = await import('firebase-admin/auth');
+
     if (!getApps().length) {
       initializeApp({
         credential: cert({
