@@ -242,11 +242,49 @@ function populateUserFilter() {
 function renderOrders(list) {
   const orders = list || allOrders;
   const tbody  = document.getElementById("orders-tbody");
+  
+  let totalCK = 0;
+  let totalHH = 0;
+  let totalPaid = 0;
+
+  orders.forEach(o => {
+    let ck = Number(o["Chiết Khấu"]);
+    if (isNaN(ck)) ck = Number((o["Chiết Khấu"]||"").toString().replace(/[^\d.-]/g, ''));
+    if (isNaN(ck) || ck === 0) {
+      let ck2 = Number(o["Chiết Khấu 2%"]);
+      if (isNaN(ck2)) ck2 = Number((o["Chiết Khấu 2%"]||"").toString().replace(/[^\d.-]/g, ''));
+      ck = ck2 || 0;
+    }
+    const hh = Number((o["Hoa hồng Shopee trên sản phẩm(₫)"] || "0").toString().replace(/[^\d.-]/g, "")) || 0;
+    
+    totalCK += ck;
+    totalHH += hh;
+    if (o.thanhToan === "Đã Thanh Toán") totalPaid += ck;
+  });
+
+  const elTotal = document.getElementById("os-total");
+  const elCK = document.getElementById("os-ck");
+  const elHH = document.getElementById("os-hh");
+  const elPaid = document.getElementById("os-paid");
+  
+  if (elTotal) elTotal.textContent = orders.length.toLocaleString("vi-VN");
+  if (elCK) elCK.textContent = totalCK.toLocaleString("vi-VN") + " đ";
+  if (elHH) elHH.textContent = totalHH.toLocaleString("vi-VN") + " đ";
+  if (elPaid) elPaid.textContent = totalPaid.toLocaleString("vi-VN") + " đ";
+
   if (!orders.length) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:24px;color:#999">Không có đơn hàng</td></tr>`; return; }
   tbody.innerHTML = orders.map(o => {
-    const val     = Number(o["Giá trị đơn hàng (₫)"]) || 0;
-    const ck      = Number(o["Chiết Khấu"]) || Number(o["Chiết Khấu 2%"]) || 0;
-    const hh      = Number((o["Hoa hồng Shopee trên sản phẩm(₫)"] || "0").toString().replace(/\./g, "")) || 0;
+    const val     = Number((o["Giá trị đơn hàng (₫)"]||"0").toString().replace(/[^\d.-]/g, "")) || 0;
+    
+    let ck = Number(o["Chiết Khấu"]);
+    if (isNaN(ck)) ck = Number((o["Chiết Khấu"]||"").toString().replace(/[^\d.-]/g, ''));
+    if (isNaN(ck) || ck === 0) {
+      let ck2 = Number(o["Chiết Khấu 2%"]);
+      if (isNaN(ck2)) ck2 = Number((o["Chiết Khấu 2%"]||"").toString().replace(/[^\d.-]/g, ''));
+      ck = ck2 || 0;
+    }
+    const hh = Number((o["Hoa hồng Shopee trên sản phẩm(₫)"] || "0").toString().replace(/[^\d.-]/g, "")) || 0;
+    
     const claimed = !!o.userId;
     // Build payment dropdown (admin only)
     const payVal = o.thanhToan || "";
@@ -280,11 +318,39 @@ window.applyFilter = function() {
   const status  = document.getElementById("filter-status").value;
   const uid     = document.getElementById("filter-user").value;
   const keyword = document.getElementById("filter-id").value.toUpperCase().trim();
+  const dateFrom = document.getElementById("filter-date-from")?.value;
+  const dateTo = document.getElementById("filter-date-to")?.value;
+
   let f = allOrders;
   if (status === "claimed") f = f.filter(o => !!o.userId);
   if (status === "free")    f = f.filter(o => !o.userId);
   if (uid)     f = f.filter(o => o.userId === uid);
   if (keyword) f = f.filter(o => (o["ID đơn hàng"]||"").toUpperCase().includes(keyword));
+  
+  if (dateFrom || dateTo) {
+    const dFrom = dateFrom ? new Date(dateFrom) : null;
+    if (dFrom) dFrom.setHours(0, 0, 0, 0);
+    const dTo = dateTo ? new Date(dateTo) : null;
+    if (dTo) dTo.setHours(23, 59, 59, 999);
+
+    f = f.filter(o => {
+      const idStr = (o["ID đơn hàng"] || "").toString();
+      if (!idStr || idStr.length < 6) return true; // Include if we can't parse
+      const yy = parseInt(idStr.substring(0, 2), 10);
+      const mm = parseInt(idStr.substring(2, 4), 10);
+      const dd = parseInt(idStr.substring(4, 6), 10);
+      
+      if (isNaN(yy) || isNaN(mm) || isNaN(dd)) return true;
+      
+      const year = 2000 + yy;
+      const month = mm - 1;
+      const oDate = new Date(year, month, dd);
+      
+      if (dFrom && oDate < dFrom) return false;
+      if (dTo && oDate > dTo) return false;
+      return true;
+    });
+  }
   
   currentFilteredOrders = f;
   

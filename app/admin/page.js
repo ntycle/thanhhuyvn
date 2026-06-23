@@ -12,7 +12,7 @@ export default function Page() {
       messagingSenderId: '${process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}',
       appId: '${process.env.NEXT_PUBLIC_FIREBASE_APP_ID}'
       };` }} />
-      <script type="module" src="/admin.js?v=202606221135"></script>
+      <script type="module" src="/admin.js?v=202606231621"></script>
     <div dangerouslySetInnerHTML={{ __html: `
 
 <!-- LOGIN -->
@@ -70,6 +70,13 @@ export default function Page() {
 
         <!-- ORDERS -->
         <div id="tab-orders" class="tab-content">
+          <div class="stats-row" style="margin-bottom: 24px;" id="orders-stats">
+            <div class="stat-card"><div class="stat-icon">📦</div><div><div class="stat-label">Tổng đơn hàng</div><div class="stat-value" id="os-total">0</div></div></div>
+            <div class="stat-card"><div class="stat-icon">💸</div><div><div class="stat-label">Tổng chiết khấu</div><div class="stat-value" id="os-ck" style="color:var(--orange);">0 đ</div></div></div>
+            <div class="stat-card"><div class="stat-icon">💰</div><div><div class="stat-label">Tổng HH Shopee</div><div class="stat-value" id="os-hh" style="color:var(--green);">0 đ</div></div></div>
+            <div class="stat-card"><div class="stat-icon">✅</div><div><div class="stat-label">Tổng TT (Đã trả)</div><div class="stat-value" id="os-paid">0 đ</div></div></div>
+            <div class="stat-card"><div class="stat-icon">📈</div><div><div class="stat-label">Lợi nhuận</div><div class="stat-value" id="os-profit" style="color:#007bff;">0 đ</div></div></div>
+          </div>
           <div class="panel">
             <div class="panel-header">
               <h2>📦 Tất cả đơn hàng</h2>
@@ -87,6 +94,8 @@ export default function Page() {
               </select>
               <select id="filter-user" onchange="applyFilter()"><option value="">-- Lọc theo user --</option></select>
               <input type="text" id="filter-id" placeholder="Tìm ID đơn hàng..." oninput="applyFilter()"/>
+              <input type="date" id="filter-date-from" onchange="applyFilter()" title="Từ ngày"/>
+              <input type="date" id="filter-date-to" onchange="applyFilter()" title="Đến ngày"/>
               <button id="btn-copy-orders" class="btn btn-blue btn-sm" style="display:none" onclick="copyFilteredOrders()">📋 Copy đơn hàng</button>
             </div>
             <div style="overflow-x:auto">
