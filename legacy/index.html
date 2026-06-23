@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tra cứu đơn hàng Shopee</title>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-SLLYE9F7EF"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'G-SLLYE9F7EF');
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <script src="https://sp.zalo.me/plugins/sdk.js"></script>
+  <style>
+    :root {
+      --orange: #EE4D2D;
+      --orange-dark: #c73e24;
+      --blue: #0a6ebd;
+      --green: #0abd50;
+      --bg: #f5f5f5;
+      --text: #333;
+      --text-light: #777;
+      --border: #e0e0e0;
+      --shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.14);
+      --radius: 10px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Be Vietnam Pro', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* AUTH */
+    #auth-screen {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #EE4D2D 0%, #ff8c00 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .auth-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 40px;
+      width: fit-content;
+      max-width: 95vw;
+    }
+
+    .auth-banner {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .auth-banner img {
+      max-width: 100%;
+      max-height: 90vh;
+      /* Ngăn ảnh quá cao so với màn hình */
+      height: auto;
+      object-fit: contain;
+      border-radius: 16px;
+      box-shadow: var(--shadow-lg);
+      image-rendering: -webkit-optimize-contrast;
+      transform: translateZ(0);
+    }
+
+    .auth-card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: var(--shadow-lg);
+      width: 100%;
+      max-width: 420px;
+      overflow: hidden;
+    }
+
+    @media (max-width: 850px) {
+      .auth-container {
+        flex-direction: column;
+      }
+
+      .auth-banner {
+        display: none;
+      }
+    }
+
+    .auth-top {
+      background: linear-gradient(135deg, #EE4D2D, #ff6b4a);
+      color: white;
+      padding: 28px 32px 22px;
+      text-align: center;
+    }
+
+    .auth-top .logo {
+      font-size: 38px;
+      margin-bottom: 6px;
+    }
+
+    .auth-top h2 {
+      font-size: 19px;
+      font-weight: 700;
+    }
+
+    .auth-top p {
+      font-size: 13px;
+      opacity: 0.85;
+      margin-top: 4px;
+    }
+
+    .auth-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .auth-tab {
+      flex: 1;
+      padding: 13px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text-light);
+      border: none;
+      border-bottom: 3px solid transparent;
+      background: none;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .auth-tab.active {
+      color: var(--orange);
+      border-bottom-color: var(--orange);
+    }
+
+    .auth-body {
+      padding: 22px 28px 26px;
+    }
+
+    .fg {
+      margin-bottom: 14px;
+    }
+
+    .fg label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+
+    .fg input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .fg input:focus {
+      border-color: var(--orange);
+    }
+
+    .btn-main {
+      width: 100%;
+      background: var(--orange);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 4px;
+    }
+
+    .btn-main:hover {
+      background: var(--orange-dark);
+    }
+
+    .btn-zalo {
+      width: 100%;
+      background: #0180c7;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-zalo:hover {
+      background: #0066a2;
+    }
+
+    .auth-divider {
+      text-align: center;
+      margin: 16px 0;
+      position: relative;
+    }
+
+    .auth-divider::before,
+    .auth-divider::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 35%;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .auth-divider::before { left: 0; }
+    .auth-divider::after { right: 0; }
+
+    .auth-divider span {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-light);
+      background: white;
+      padding: 0 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .amsg {
+      font-size: 13px;
+      padding: 10px 12px;
+      border-radius: 7px;
+      margin-top: 12px;
+      display: none;
+    }
+
+    .amsg.err {
+      background: #fff0ee;
+      color: #c00;
+      border: 1px solid #ffc5bb;
+      display: block;
+    }
+
+    .amsg.ok {
+      background: #edfff4;
+      color: #0a7a32;
+      border: 1px solid #b3f0cc;
+      display: block;
+    }
+
+    /* HEADER */
+    #app-screen {
+      display: none;
+    }
+
+    .header {
+      background: var(--orange);
+      color: white;
+      padding: 0 20px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(238, 77, 45, 0.3);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-logo {
+      font-size: 19px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+    }
+
+    .header-right .uname {
+      font-weight: 600;
+      max-width: 140px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .btn-out {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      color: white;
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s;
+    }
+
+    .btn-out:hover {
+      background: rgba(255, 255, 255, 0.35);
+    }
+
+    /* TAB NAV */
+    .tab-nav {
+      background: white;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      padding: 0 16px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .tab-nav button {
+      padding: 14px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      border: none;
+      background: none;
+      cursor: pointer;
+      color: var(--text-light);
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .tab-nav button.active {
+      color: var(--orange);
+      border-bottom-color: var(--orange);
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 22px 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--blue);
+      margin-bottom: 14px;
+    }
+
+    .guide-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .guide-links a {
+      color: var(--blue);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 4px 10px;
+      border: 1px solid var(--blue);
+      border-radius: 20px;
+      transition: all 0.2s;
+    }
+
+    .guide-links a:hover {
+      background: var(--blue);
+      color: white;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 11px 13px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    textarea:focus {
+      border-color: var(--orange);
+    }
+
+    .btn-search {
+      width: 100%;
+      background: var(--green);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background 0.2s;
+    }
+
+    .btn-search:hover {
+      background: #09a344;
+    }
+
+    .btn-search:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    /* TABLE */
+    .result-wrap {
+      overflow-x: auto;
+      width: 100%;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      min-width: 700px;
+    }
+
+    th {
+      background: var(--blue);
+      color: white;
+      padding: 9px 12px;
+      text-align: left;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    td {
+      border-bottom: 1px solid var(--border);
+      padding: 9px 12px;
+      vertical-align: middle;
+    }
+
+    td.col-name {
+      max-width: 220px;
+    }
+
+    td.col-name span {
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 220px;
+      cursor: default;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    tbody tr:hover td {
+      background: #f9f9f9;
+    }
+
+    tfoot td {
+      font-weight: 700;
+      background: #e8f4ff;
+      color: var(--blue);
+    }
+
+    @media (max-width: 900px) {
+      td.col-name {
+        max-width: 150px;
+      }
+
+      td.col-name span {
+        max-width: 150px;
+      }
+    }
+
+    /* CLAIM STATES */
+    .btn-claim {
+      background: var(--orange);
+      color: white;
+      border: none;
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-claim:hover {
+      background: var(--orange-dark);
+    }
+
+    .btn-claim:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .tag-mine {
+      display: inline-block;
+      background: #e8f5e9;
+      color: #2e7d32;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .tag-other {
+      display: inline-block;
+      background: #fff3e0;
+      color: #e65100;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .tag-paid {
+      display: inline-block;
+      background: #e8f5e9;
+      color: #2e7d32;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .tag-unpaid {
+      display: inline-block;
+      background: #fff3e0;
+      color: #c75000;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .tag-nopay {
+      display: inline-block;
+      background: #f3f3f3;
+      color: #999;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .not-found {
+      background: white;
+      border-radius: var(--radius);
+      padding: 24px;
+      text-align: center;
+      box-shadow: var(--shadow);
+      color: #c00;
+      font-weight: 600;
+    }
+
+    /* ORDER ACCORDION */
+    .order-group {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+      transition: box-shadow 0.2s;
+    }
+
+    .order-group:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .order-summary {
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      background: #fff;
+      user-select: none;
+      gap: 12px;
+    }
+
+    .order-summary-left {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .order-title {
+      font-weight: 700;
+      color: var(--blue);
+      font-size: 14px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      word-break: break-word;
+    }
+
+    .order-meta {
+      font-size: 12px;
+      color: var(--text-light);
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .order-summary-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .order-chevron {
+      font-size: 14px;
+      color: var(--text-light);
+      transition: transform 0.3s;
+    }
+
+    .order-group.open .order-chevron {
+      transform: rotate(180deg);
+    }
+
+    .order-details {
+      display: none;
+      border-top: 1px solid #f0f0f0;
+      background: #fafafa;
+      padding: 16px 18px;
+    }
+
+    .order-group.open .order-details {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-5px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .detail-lbl {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-light);
+      text-transform: uppercase;
+    }
+
+    .detail-val {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .detail-items-list {
+      margin-top: 16px;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      background: white;
+      overflow: hidden;
+    }
+
+    .detail-item-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-bottom: 1px solid #eee;
+      font-size: 13px;
+    }
+
+    .detail-item-row:last-child {
+      border-bottom: none;
+    }
+
+    .item-name-col {
+      flex: 1;
+      font-weight: 500;
+      padding-right: 12px;
+      min-width: 0;
+      word-break: break-word;
+    }
+
+    .item-price-col {
+      text-align: right;
+      color: var(--orange);
+      font-weight: 600;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .order-actions {
+      margin-top: 16px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    /* MY ORDERS */
+    .summary-bar {
+      background: linear-gradient(135deg, #EE4D2D, #ff8c00);
+      color: white;
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .summary-bar h3 {
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .summary-bar p {
+      font-size: 13px;
+      opacity: 0.85;
+      margin-top: 2px;
+    }
+
+    .summary-stats {
+      display: flex;
+      gap: 22px;
+    }
+
+    .stat-box .val {
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .stat-box .lbl {
+      font-size: 11px;
+      opacity: 0.8;
+    }
+
+    .btn-unclaim {
+      background: none;
+      border: 1px solid #e53935;
+      color: #e53935;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-unclaim:hover {
+      background: #e53935;
+      color: white;
+    }
+
+    .spinner-wrap {
+      text-align: center;
+      padding: 32px;
+      color: var(--text-light);
+      font-size: 14px;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 26px;
+      height: 26px;
+      border: 3px solid var(--border);
+      border-top-color: var(--orange);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-bottom: 8px;
+      display: block;
+      margin: 0 auto 10px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .auth-body {
+        padding: 18px;
+      }
+
+      .tab-nav button {
+        padding: 12px 14px;
+        font-size: 13px;
+      }
+
+      .summary-stats {
+        gap: 14px;
+      }
+
+      .container {
+        padding: 14px 10px;
+      }
+
+      .summary-bar {
+        padding: 14px 16px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .tab-nav button {
+        padding: 10px 10px;
+        font-size: 12px;
+      }
+
+      .summary-stats {
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+    }
+
+    /* Ẩn mobile summary trên desktop */
+    .mobile-summary {
+      display: none;
+    }
+
+    /* ── MOBILE CARD LAYOUT (≤640px) ── */
+    @media (max-width: 640px) {
+
+      /* Bỏ overflow ngang */
+      .result-wrap {
+        overflow-x: unset;
+      }
+
+      /* QUAN TRỌNG: table phải là display:block để td::before hoạt động */
+      .result-wrap table,
+      .result-wrap tbody,
+      .result-wrap tr {
+        display: block;
+        width: 100%;
+      }
+
+      .result-wrap table {
+        min-width: unset;
+      }
+
+      /* Ẩn header & footer của table */
+      .result-wrap thead,
+      .result-wrap tfoot {
+        display: none;
+      }
+
+      /* Mỗi <tr> thành 1 card */
+      .result-wrap tbody tr {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        margin-bottom: 12px;
+        box-shadow: 0 1px 6px rgba(0, 0, 0, 0.07);
+        overflow: hidden;
+        background: white;
+      }
+
+      /* Mỗi <td> thành 1 hàng label : value */
+      .result-wrap td {
+        display: flex !important;
+        justify-content: space-between;
+        align-items: center;
+        padding: 9px 14px;
+        border-bottom: 1px solid #f3f3f3;
+        font-size: 13px;
+        gap: 8px;
+        min-height: 38px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .result-wrap td:last-child {
+        border-bottom: none;
+      }
+
+      /* Tên field hiển thị bên trái từ data-label */
+      .result-wrap td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        color: var(--text-light);
+        font-size: 11px;
+        min-width: 95px;
+        flex-shrink: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+      }
+
+      /* Ẩn td không có data-label */
+      .result-wrap td[data-label=""] {
+        display: none !important;
+      }
+
+      /* col-name tự xuống hàng trên mobile */
+      td.col-name,
+      td.col-name span {
+        max-width: unset;
+        white-space: normal;
+        word-break: break-word;
+        display: block;
+        overflow: unset;
+        text-overflow: unset;
+      }
+
+      /* Summary tổng ở cuối — chỉ hiện trên mobile */
+      .mobile-summary {
+        display: flex;
+        background: #e8f4ff;
+        border-radius: 10px;
+        padding: 12px 16px;
+        margin-top: 4px;
+        justify-content: space-between;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--blue);
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- AUTH -->
+  <div id="auth-screen">
+    <div class="auth-container">
+      <div class="auth-banner">
+        <img src="banner.png" alt="Banner Shopee Affiliate">
+      </div>
+      <div class="auth-card">
+        <div class="auth-top">
+          <div class="logo">🛍️</div>
+          <h2>Tra cứu đơn hàng Shopee</h2>
+          <p>Đăng nhập để tìm và quản lý đơn hàng của bạn</p>
+        </div>
+        <div class="auth-tabs">
+          <button class="auth-tab active" onclick="switchTab('login')">Đăng nhập</button>
+          <button class="auth-tab" onclick="switchTab('register')">Đăng ký</button>
+        </div>
+        <div class="auth-body">
+          <div id="tab-login">
+            <div class="fg"><label>Email</label><input type="email" id="login-email" placeholder="email@example.com"
+                onkeydown="if(event.key==='Enter')doLogin()" /></div>
+            <div class="fg"><label>Mật khẩu</label><input type="password" id="login-pass" placeholder="••••••••"
+                onkeydown="if(event.key==='Enter')doLogin()" /></div>
+            <div style="text-align: right; margin-bottom: 14px;"><a href="#" onclick="showForgotPassword()"
+                style="font-size: 13px; color: var(--blue); text-decoration: none;">Quên mật khẩu?</a></div>
+            <button class="btn-main" onclick="doLogin()">Đăng nhập</button>
+            <div class="auth-divider"><span>HOẶC</span></div>
+            <button class="btn-zalo" onclick="doLoginZalo('login-msg')">
+              <svg width="20" height="20" viewBox="0 0 460.1 436.3" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M230.1 0C103 0 0 92.5 0 206.5C0 268 30.6 323.4 82 359.8C80.2 373.1 72.8 406.8 61.3 430.7C60.2 433 62 435.6 64.5 435.1C91.5 430 139.6 414.5 168.3 395.4C188 401 208.6 404 230.1 404C357.2 404 460.1 311.5 460.1 197.5C460.1 83.5 357.2 0 230.1 0Z" fill="white"/></svg>
+              Đăng nhập bằng Zalo
+            </button>
+            <div id="login-msg" class="amsg"></div>
+          </div>
+          <div id="tab-register" style="display:none">
+            <div class="fg"><label>Họ tên</label><input type="text" id="reg-name" placeholder="Nguyễn Văn A" /></div>
+            <div class="fg"><label>Email</label><input type="email" id="reg-email" placeholder="email@example.com" />
+            </div>
+            <div class="fg"><label>Mật khẩu</label><input type="password" id="reg-pass" placeholder="Ít nhất 6 ký tự" />
+            </div>
+            <div class="fg"><label>Người giới thiệu (Email)</label><input type="email" id="reg-ref"
+                placeholder="Email người giới thiệu (tùy chọn)" />
+            </div>
+            <button class="btn-main" onclick="doRegister()">Đăng ký tài khoản</button>
+            <div class="auth-divider"><span>HOẶC</span></div>
+            <button class="btn-zalo" onclick="doLoginZalo('reg-msg')">
+              <svg width="20" height="20" viewBox="0 0 460.1 436.3" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M230.1 0C103 0 0 92.5 0 206.5C0 268 30.6 323.4 82 359.8C80.2 373.1 72.8 406.8 61.3 430.7C60.2 433 62 435.6 64.5 435.1C91.5 430 139.6 414.5 168.3 395.4C188 401 208.6 404 230.1 404C357.2 404 460.1 311.5 460.1 197.5C460.1 83.5 357.2 0 230.1 0Z" fill="white"/></svg>
+              Đăng nhập bằng Zalo
+            </button>
+            <div id="reg-msg" class="amsg"></div>
+          </div>
+          <div id="tab-forgot" style="display:none">
+            <div
+              style="margin-bottom: 16px; font-size: 13px; color: var(--text-light); text-align: center; line-height: 1.5;">
+              Nhập email của bạn để nhận liên kết đặt lại mật khẩu từ hệ thống.
+            </div>
+            <div class="fg"><label>Email</label><input type="email" id="forgot-email" placeholder="email@example.com" />
+            </div>
+            <button class="btn-main" onclick="doForgotPassword()">Gửi Email Khôi Phục</button>
+            <div style="text-align: center; margin-top: 14px;"><a href="#" onclick="switchTab('login')"
+                style="font-size: 13px; color: var(--text-light); text-decoration: none; font-weight: 600;">&larr; Quay
+                lại Đăng nhập</a></div>
+            <div id="forgot-msg" class="amsg"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <div id="app-screen">
+    <div class="header">
+      <div class="header-logo">🛍️ Shopee Affiliate</div>
+      <div class="header-right">
+        <span class="uname" id="header-uname"></span>
+        <button class="btn-out" onclick="doLogout()">Đăng xuất</button>
+      </div>
+    </div>
+
+    <div class="tab-nav">
+      <button class="active" id="nav-search" onclick="showMainTab('search')">🔍 Tìm đơn hàng</button>
+      <button id="nav-mine" onclick="showMainTab('mine')">📦 Đơn của tôi <span id="mine-badge"></span></button>
+    </div>
+
+    <div class="container">
+      <!-- SEARCH TAB -->
+      <div id="main-search">
+        <div class="card">
+          <div class="card-title">🔍 Tìm kiếm đơn hàng</div>
+          <div class="guide-links">
+            <a href="https://s.shopee.vn/4fswFcE0Mc" target="_blank">🎟️ Mã giảm giá Shopee</a>
+            <a href="https://shorten.asia/mTn3wHfD" target="_blank">☕ Mã Highland Coffee</a>
+            <a href="https://sandeal.io.vn/huongdan.html" target="_blank">Hướng dẫn sử dụng web</a>
+            <a href="https://zalo.me/g/dnyqyk95ihelrtqn3cyg" target="_blank">Link nhóm Zalo</a>
+          </div>
+          <textarea id="orderId" rows="3"
+            placeholder="Nhập ID đơn hàng, cách nhau bằng dấu phẩy hoặc xuống dòng&#10;VD: 250601E7EMYD4X, 250602ABCDE12F"></textarea>
+          <button class="btn-search" id="btn-search" onclick="doSearch()">🔍 Tìm đơn hàng</button>
+        </div>
+        <div id="search-result"></div>
+      </div>
+
+      <!-- MY ORDERS TAB -->
+      <div id="main-mine" style="display:none">
+        <div class="summary-bar">
+          <div>
+            <h3>Xin chào, <span id="welcome-name"></span>! 👋</h3>
+            <p>Các đơn hàng đã được gán về tài khoản của bạn</p>
+          </div>
+          <div class="summary-stats">
+            <div class="stat-box">
+              <div class="val" id="sum-count">0</div>
+              <div class="lbl">Đơn hàng</div>
+            </div>
+            <div class="stat-box">
+              <div class="val" id="sum-value">0₫</div>
+              <div class="lbl">Tổng giá trị</div>
+            </div>
+            <div class="stat-box">
+              <div class="val" id="sum-disc">0₫</div>
+              <div class="lbl">Chiết khấu</div>
+            </div>
+            <div class="stat-box">
+              <div class="val" id="sum-avail">0₫</div>
+              <div class="lbl">Khả dụng</div>
+            </div>
+          </div>
+          <div style="width: 100%; margin-top: 16px; display: flex; justify-content: flex-end;">
+            <button class="btn-search"
+              style="width: auto; padding: 10px 24px; margin-top: 0; background: #fff; color: var(--orange); border: 2px solid white; box-shadow: var(--shadow);"
+              onclick="createPaymentRequest()">💳 Yêu Cầu Thanh Toán</button>
+          </div>
+        </div>
+        <div class="card" style="padding:0">
+          <div style="padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #fafafa; border-radius: var(--radius) var(--radius) 0 0;">
+            <div style="font-size: 15px; font-weight: 700; color: var(--blue);">Danh sách đơn hàng</div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 13px; font-weight: 600; color: var(--text-light);">Lọc:</span>
+              <select id="order-filter" onchange="window.renderMyOrders()" style="padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; outline: none; font-family: inherit; font-size: 13px; color: var(--text); background: white;">
+                <option value="all">Tất cả đơn</option>
+                <option value="paid">Đơn đã thanh toán</option>
+                <option value="unpaid" selected>Đơn khác (chưa thanh toán)</option>
+              </select>
+            </div>
+          </div>
+          <div id="mine-list">
+            <div class="spinner-wrap">
+              <div class="spinner"></div>Đang tải...
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="bank-info-modal"
+    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+    <div class="panel card"
+      style="background:#fff; width:450px; max-width:90%; padding:24px; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+      <h3 style="margin:0 0 12px 0; color:var(--text); font-size:18px;">💳 Thông Tin Nhận Tiền</h3>
+      <p style="font-size:13px; color:var(--text-light); margin-bottom:16px; line-height:1.4;">Bạn cần thiết lập thông
+        tin ngân hàng trước khi Gửi Yêu Cầu Thanh Toán. <br><b style="color:var(--orange)">Chỉ được nhập 1 lần duy
+          nhất</b>.</p>
+
+      <div class="fg">
+        <label>Họ và tên chủ tài khoản</label>
+        <input type="text" id="bank-fullname" placeholder="VD: NGUYEN VAN A" style="text-transform: uppercase;" />
+      </div>
+      <div class="fg">
+        <label>Ngân hàng nhận tiền</label>
+        <select id="bank-name"
+          style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-family:inherit; outline:none; font-size:14px;">
+          <option value="">-- Đang tải danh sách ngân hàng... --</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Số tài khoản</label>
+        <input type="text" id="bank-account" placeholder="Nhập chính xác số tài khoản" />
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:20px;">
+        <button class="btn-outline" onclick="document.getElementById('bank-info-modal').style.display='none'"
+          style="padding:10px 20px; border-radius:8px; border:1px solid #ccc; background:white; cursor:pointer;">Hủy
+          bỏ</button>
+        <button class="btn-main" id="btn-save-bank" onclick="saveBankInfo()"
+          style="margin-top:0; width:auto; padding:10px 20px;">Lưu Thông Tin</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="user.js"></script>
+</body>
+
+</html>
