@@ -44,6 +44,7 @@ body {
 
 /* AUTH */
 #auth-screen {
+  min-height: 100vh;
   background: linear-gradient(135deg, #EE4D2D 0%, #ff8c00 100%);
   display: flex;
   align-items: center;
