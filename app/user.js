@@ -865,72 +865,87 @@ async function handleZaloOauth(code) {
 
   const tokenUrl = "/api/zalo/token";
   const codeVerifier = localStorage.getItem('zalo_code_verifier') || '';
-  const body = JSON.stringify({ code: code, codeVerifier: codeVerifier });
 
   try {
-    let response = await fetch(tokenUrl, {
+    // PHASE 1: Exchange code for Access Token
+    let tokenRes = await fetch(tokenUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: body
+      body: JSON.stringify({ code: code, codeVerifier: codeVerifier })
     });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error("Lỗi máy chủ khi xác thực Zalo: " + errText);
+    if (!tokenRes.ok) {
+      const errText = await tokenRes.text();
+      throw new Error("Lỗi máy chủ khi lấy Token: " + errText);
     }
 
-    let data = await response.json();
-    if (data.customToken) {
-      // Xoá các tham số trên URL cho sạch
-      window.history.replaceState({}, document.title, window.location.pathname);
-      
-      // Đăng nhập Firebase bằng Custom Token
-      const userCredential = await signInWithCustomToken(auth, data.customToken);
-      
-      // Cố gắng lấy Tên thật từ Zalo bằng IP của Client
-      if (data.zaloAccessToken) {
-        try {
-          let profileRes = await fetch('https://graph.zalo.me/v2.0/me?fields=id,name,picture', {
-            headers: { 'access_token': data.zaloAccessToken }
-          });
-          if (profileRes.ok) {
-            let profileData = await profileRes.json();
-            if (profileData && profileData.name) {
-              const realName = profileData.name;
-              const realAvatar = profileData.picture?.data?.url || "";
-              
-              // Cập nhật Profile Firebase
-              await updateProfile(userCredential.user, { 
-                displayName: realName,
-                photoURL: realAvatar
-              });
-              
-              // Cập nhật lên Firestore
-              await setDoc(doc(db, "users", userCredential.user.uid), {
-                name: realName,
-                avatar: realAvatar,
-                email: userCredential.user.email,
-                role: "user"
-              }, { merge: true });
-            }
-          }
-        } catch (e) {
-          console.warn("Không thể lấy thông tin cá nhân Zalo từ Client:", e);
-        }
-      }
-      
-      if (msg) {
-        msg.className = "amsg ok";
-        msg.textContent = "✅ Đăng nhập Zalo thành công!";
-      }
-    } else {
-      throw new Error(data.error || "Không nhận được token xác thực từ máy chủ.");
+    let tokenData = await tokenRes.json();
+    if (!tokenData.zaloAccessToken) {
+      throw new Error("Không nhận được Zalo Access Token.");
+    }
+
+    // PHASE 2: Fetch Zalo Profile from Client (IP Việt Nam)
+    let profileRes = await fetch('https://graph.zalo.me/v2.0/me?fields=id,name,picture', {
+      headers: { 'access_token': tokenData.zaloAccessToken }
+    });
+
+    if (!profileRes.ok) {
+      throw new Error("Lỗi khi lấy thông tin cá nhân Zalo.");
+    }
+
+    let profileData = await profileRes.json();
+    if (profileData.error || !profileData.id) {
+      throw new Error("Zalo API Error: " + (profileData.message || "Không lấy được ID"));
+    }
+
+    const zaloId = profileData.id;
+    const realName = profileData.name || "Người dùng Zalo";
+    const realAvatar = profileData.picture?.data?.url || "";
+
+    // PHASE 3: Mint Custom Token on Server
+    let mintRes = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ zaloId: zaloId, zaloAccessToken: tokenData.zaloAccessToken })
+    });
+
+    if (!mintRes.ok) {
+      const errText = await mintRes.text();
+      throw new Error("Lỗi máy chủ khi tạo phiên đăng nhập: " + errText);
+    }
+
+    let mintData = await mintRes.json();
+    if (!mintData.customToken) {
+      throw new Error("Không nhận được Custom Token.");
+    }
+
+    // PHASE 4: Firebase Sign In
+    window.history.replaceState({}, document.title, window.location.pathname);
+    const userCredential = await signInWithCustomToken(auth, mintData.customToken);
+    
+    // Cập nhật Profile
+    await updateProfile(userCredential.user, { 
+      displayName: realName,
+      photoURL: realAvatar
+    });
+    
+    await setDoc(doc(db, "users", userCredential.user.uid), {
+      name: realName,
+      avatar: realAvatar,
+      email: userCredential.user.email,
+      role: "user"
+    }, { merge: true });
+    
+    if (msg) {
+      msg.className = "amsg ok";
+      msg.textContent = "✅ Đăng nhập Zalo thành công!";
     }
   } catch (err) {
     if (msg) {
       msg.className = "amsg err";
       msg.textContent = "❌ Lỗi kết nối Zalo: " + err.message;
     }
+    console.error("Zalo Login Error:", err);
   }
 }
 
