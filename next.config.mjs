@@ -1,5 +1,5 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
+const nextConfig = { serverExternalPackages: ['firebase-admin', 'firebase-admin/app', 'firebase-admin/auth'],
   async headers() {
     return [
       {
