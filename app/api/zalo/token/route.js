@@ -16,7 +16,7 @@ function getFirebaseAdmin() {
 
 export async function POST(request) {
   try {
-    const { code } = await request.json();
+    const { code, codeVerifier } = await request.json();
 
     if (!code) {
       return NextResponse.json({ error: 'Missing code parameter' }, { status: 400 });
@@ -31,6 +31,9 @@ export async function POST(request) {
     body.append('code', code);
     body.append('app_id', appId);
     body.append('grant_type', 'authorization_code');
+    if (codeVerifier) {
+      body.append('code_verifier', codeVerifier);
+    }
 
     const tokenResponse = await fetch(tokenUrl, {
       method: 'POST',
@@ -103,7 +106,11 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('Error in Zalo token route:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    
+    // In some edge cases on Next.js/Vercel, if the error is weird, JSON.stringify might fail.
+    // Ensure we safely stringify the error response.
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: "Server Error", details: errorMessage }, { status: 500 });
   }
 }
 
