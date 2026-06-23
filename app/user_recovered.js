@@ -23,19 +23,19 @@ const db = getFirestore(app);
 
 // Các field bị ẩn khỏi bảng
 const EXCLUDE = new Set([
-  "Hoa hồng Shopee trên sản phẩm(₫)",
+  "Hoa hồng Shopee tr�n sản phẩm(₫)",
   "Chiết Khấu 2%",
   "userId", "createdAt", "updatedAt", "claimedAt", "_id", "thanhToan"
 ]);
 
 // Thứ tự cột cố định — luôn hiển thị theo đúng thứ tự này
 const COL_ORDER = [
-  "ID đơn hàng",
+  "ID đơn h�ng",
   "Thời Gian Đặt Hàng",
-  "Tên Item",
-  "Giá trị đơn hàng (₫)",
+  "T�n Item",
+  "Gi� trị đơn h�ng (₫)",
   "Chiết Khấu",
-  "Trạng thái đặt hàng",
+  "Trạng th�i đặt h�ng",
 ];
 
 let me = null, myName = "", myOrders = [], myBankInfo = null;
@@ -99,13 +99,13 @@ onAuthStateChanged(auth, async (user) => {
 
 /**
  * [Bước 1] Dọn dẹp trùng ID trong chính myOrders:
- * Nếu user có ≥2 bản ghi cùng "ID đơn hàng" và một trong đó là nháp
- * "Không có thông tin" → xóa nháp, gán đơn thật (nếu chưa có userId).
+ * Nếu user có ≥2 bản ghi cùng "ID đơn h�ng" và một trong đó là nháp
+ * "Kh�ng c� th�ng tin" → xóa nháp, gán đơn thật (nếu chưa có userId).
  */
 async function cleanupDuplicateDrafts(orders) {
   const groups = {};
   for (const o of orders) {
-    const orderId = (o["ID đơn hàng"] || "").trim();
+    const orderId = (o["ID đơn h�ng"] || "").trim();
     if (!orderId) continue;
     if (!groups[orderId]) groups[orderId] = [];
     groups[orderId].push(o);
@@ -114,8 +114,8 @@ async function cleanupDuplicateDrafts(orders) {
   const toDelete = [], toClaim = [];
   for (const [, group] of Object.entries(groups)) {
     if (group.length >= 2) {
-      group.filter(o => o["Tên Item"] === "Không có thông tin").forEach(d => toDelete.push(d._id));
-      group.filter(o => o["Tên Item"] !== "Không có thông tin" && !o.userId).forEach(r => toClaim.push(r._id));
+      group.filter(o => o["T�n Item"] === "Kh�ng c� th�ng tin").forEach(d => toDelete.push(d._id));
+      group.filter(o => o["T�n Item"] !== "Kh�ng c� th�ng tin" && !o.userId).forEach(r => toClaim.push(r._id));
     }
   }
 
@@ -134,33 +134,33 @@ async function cleanupDuplicateDrafts(orders) {
 }
 
 /**
- * [Bước 2] Với mỗi bản nháp "Không có thông tin" còn lại trong myOrders,
- * chủ động query Firestore để tìm đơn thật cùng "ID đơn hàng"
+ * [Bước 2] Với mỗi bản nháp "Kh�ng c� th�ng tin" còn lại trong myOrders,
+ * chủ động query Firestore để tìm đơn thật cùng "ID đơn h�ng"
  * — kể cả đơn thật chưa có userId (không nằm trong myOrders).
  * Nếu tìm thấy → xóa nháp + tự động gán đơn thật về user.
  * Không cần user search thủ công.
  * Trả về true nếu có thay đổi.
  */
 async function autoClaimRealOrders(orders) {
-  const drafts = orders.filter(o => o["Tên Item"] === "Không có thông tin");
+  const drafts = orders.filter(o => o["T�n Item"] === "Kh�ng c� th�ng tin");
   if (!drafts.length) return false;
 
   let changed = false;
 
   // Xử lý tuần tự để tránh race condition
   for (const draft of drafts) {
-    const orderId = (draft["ID đơn hàng"] || "").trim();
+    const orderId = (draft["ID đơn h�ng"] || "").trim();
     if (!orderId) continue;
 
-    // Tìm tất cả đơn có cùng "ID đơn hàng" trong toàn bộ Firestore
+    // Tìm tất cả đơn có cùng "ID đơn h�ng" trong toàn bộ Firestore
     const snap = await getDocs(
-      query(collection(db, "orders"), where("ID đơn hàng", "==", orderId))
+      query(collection(db, "orders"), where("ID đơn h�ng", "==", orderId))
     );
 
-    // Lọc ra đơn thật (không phải bản nháp này, không phải "Không có thông tin")
+    // Lọc ra đơn thật (không phải bản nháp này, không phải "Kh�ng c� th�ng tin")
     const reals = snap.docs
       .map(d => ({ _id: d.id, ...d.data() }))
-      .filter(o => o._id !== draft._id && o["Tên Item"] !== "Không có thông tin");
+      .filter(o => o._id !== draft._id && o["T�n Item"] !== "Kh�ng c� th�ng tin");
 
     if (!reals.length) continue; // Chưa có đơn thật → bỏ qua
 
@@ -213,10 +213,10 @@ async function refreshMyOrders() {
 
   let totalVal = 0, totalDisc = 0, totalAvailable = 0;
   myOrders.forEach(o => {
-    totalVal += Number(o["Giá trị đơn hàng (₫)"]) || 0;
+    totalVal += Number(o["Gi� trị đơn h�ng (₫)"]) || 0;
     const disc = calcDisc(o);
     totalDisc += disc;
-    if (String(o["Trạng thái đặt hàng"] || "").trim().toLowerCase() === "hoạn thạnh" && o.thanhToan !== "Đã Thanh Toán") {
+    if (String(o["Trạng th�i đặt h�ng"] || "").trim().toLowerCase() === "ho�n th�nh" && o.thanhToan !== "Đã Thanh Toán") {
       totalAvailable += disc;
     }
   });
@@ -229,43 +229,15 @@ async function refreshMyOrders() {
   renderMyOrders();
 }
 
-function getStatusBadge(status) {
-  if (!status) return "";
-  const s = status.trim().toLowerCase();
-  
-  let bgColor = "#f3f4f6";
-  let color = "#4b5563";
-  
-  if (s === "hoàn thành") {
-    bgColor = "#d1fae5";
-    color = "#065f46";
-  } else if (s === "đang chờ xử lý" || s === "chờ xử lý") {
-    bgColor = "#fef3c7";
-    color = "#92400e";
-  } else if (s === "đã hủy" || s === "hủy" || s === "huỷ" || s === "đã huỷ") {
-    bgColor = "#fee2e2";
-    color = "#991b1b";
-  } else if (s === "đang vận chuyển" || s === "đang giao") {
-    bgColor = "#dbeafe";
-    color = "#1e40af";
-  } else if (s === "đã xác nhận" || s === "xác nhận") {
-    bgColor = "#e0e7ff";
-    color = "#3730a3";
-  }
-  
-  return `<span style="display:inline-block; font-size:11px; padding:3px 10px; border-radius:12px; font-weight:600; background-color:${bgColor}; color:${color}; border: 1px solid ${color}33;">${status}</span>`;
-}
-
 function paymentBadge(val) {
-  const commonStyle = 'display:inline-block; font-size:11px; padding:3px 10px; border-radius:12px; font-weight:600; border: 1px solid transparent;';
-  if (val === 'Đã Thanh Toán') return `<span style="${commonStyle} background-color:#d1fae5; color:#065f46; border-color:#065f4633;">💚 Đã Thanh Toán</span>`;
-  if (val === 'Đang chờ xử lý') return `<span style="${commonStyle} background-color:#fef3c7; color:#92400e; border-color:#92400e33;">⏳ Đang chờ xử lý</span>`;
-  if (val === 'Chưa Thanh Toán') return `<span style="${commonStyle} background-color:#fee2e2; color:#991b1b; border-color:#991b1b33;">🟡 Chưa Thanh Toán</span>`;
-  return `<span style="${commonStyle} background-color:#f3f4f6; color:#4b5563;">–</span>`;
+  if (val === "Đã Thanh Toán") return `<span class="tag-paid">💚 Đã Thanh Toán</span>`;
+  if (val === "Đang chờ xử lý") return `<span class="tag-unpaid" style="background:#fff3e0;color:#e65100">⏳ Đang chờ xử lý</span>`;
+  if (val === "Chưa Thanh Toán") return `<span class="tag-unpaid">🟡 Chưa Thanh Toán</span>`;
+  return `<span class="tag-nopay">–</span>`;
 }
 
 function calcDisc(o) {
-  const hh = Number((o["Hoa hồng Shopee trên sản phẩm(₫)"] || "0").toString().replace(/\./g, "")) || 0;
+  const hh = Number((o["Hoa hồng Shopee tr�n sản phẩm(₫)"] || "0").toString().replace(/\./g, "")) || 0;
   const ck = Number(o["Chiết Khấu"]) || Number(o["Chiết Khấu 2%"]) || 0;
   return hh === 0 ? 0 : Math.min(ck, Math.round(hh * 0.7));
 }
@@ -277,14 +249,14 @@ window.toggleOrderGroup = function(el) {
 function groupOrdersById(orders) {
   const groups = {};
   for (const o of orders) {
-    const id = o["ID đơn hàng"] || "UNKNOWN";
+    const id = o["ID đơn h�ng"] || "UNKNOWN";
     if (!groups[id]) {
       groups[id] = {
         orderId: id,
         items: [],
         totalVal: 0,
         totalDisc: 0,
-        status: o["Trạng thái đặt hàng"] || "",
+        status: o["Trạng th�i đặt h�ng"] || "",
         payment: o.thanhToan || "",
         time: o["Thời Gian Đặt Hàng"] || "",
         userId: o.userId || null,
@@ -292,21 +264,21 @@ function groupOrdersById(orders) {
       };
     }
     groups[id].items.push(o);
-    groups[id].totalVal += Number(o["Giá trị đơn hàng (₫)"]) || 0;
+    groups[id].totalVal += Number(o["Gi� trị đơn h�ng (₫)"]) || 0;
     groups[id].totalDisc += calcDisc(o);
-    if (o["Tên Item"] === "Không có thông tin") {
+    if (o["T�n Item"] === "Kh�ng c� th�ng tin") {
       groups[id].isManual = true;
     }
     if (o.thanhToan && o.thanhToan !== "Chưa cập nhật") {
       groups[id].payment = o.thanhToan;
     }
     
-    // Cập nhật trạng thái nhóm: ưu tiên hiển thị "Đang chờ xử lý" hoặc các trạng thái chưa hoạn thạnh
-    const itemStatus = (o["Trạng thái đặt hàng"] || "").trim();
+    // Cập nhật trạng thái nhóm: ưu tiên hiển thị "Đang chờ xử lý" hoặc các trạng thái chưa ho�n th�nh
+    const itemStatus = (o["Trạng th�i đặt h�ng"] || "").trim();
     const currentStatus = groups[id].status.trim().toLowerCase();
     if (itemStatus.toLowerCase() === "đang chờ xử lý") {
       groups[id].status = itemStatus;
-    } else if (currentStatus === "hoạn thạnh" && itemStatus.toLowerCase() !== "hoạn thạnh" && itemStatus !== "") {
+    } else if (currentStatus === "ho�n th�nh" && itemStatus.toLowerCase() !== "ho�n th�nh" && itemStatus !== "") {
       groups[id].status = itemStatus;
     }
   }
@@ -343,7 +315,7 @@ function renderMyOrders() {
     grandTotalVal += g.totalVal;
     grandTotalDisc += g.totalDisc;
 
-    let titleText = g.items[0]["Tên Item"] || "Không có thông tin";
+    let titleText = g.items[0]["T�n Item"] || "Kh�ng c� th�ng tin";
     if (g.items.length > 1) {
       titleText += ` (+ ${g.items.length - 1} sản phẩm khác)`;
     }
@@ -353,18 +325,20 @@ function renderMyOrders() {
 
     const thaoTac = isManual
       ? `<div style="display:flex;gap:4px">
-           <button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none; font-size:11px; padding:3px 8px; cursor: pointer;" onclick="event.stopPropagation(); searchSingleId('${g.orderId}')">🔄 Tìm Lỗi</button>
+           <button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none; font-size:11px; padding:3px 8px; cursor: pointer;" onclick="event.stopPropagation(); searchSingleId('${g.orderId}')">🔄 Tìm Lại</button>
            <button class="btn-out" style="color: var(--red); border-color: var(--red); background: none; font-size:11px; padding:3px 8px; cursor: pointer;" onclick="event.stopPropagation(); deleteMyOrder('${itemIdsStr}', this)">🗑️ Xóa</button>
          </div>`
       : ``;
 
-    const statusHtml = getStatusBadge(g.status);
+    const statusHtml = g.status.trim().toLowerCase() === "ho�n th�nh" 
+      ? `<span class="tag-mine" style="font-size:11px;padding:3px 10px">${g.status}</span>`
+      : `<span>${g.status}</span>`;
 
     const itemsListHtml = g.items.map(o => `
       <div class="detail-item-row">
-        <div class="item-name-col">${o["Tên Item"] || ""}</div>
+        <div class="item-name-col">${o["T�n Item"] || ""}</div>
         <div class="item-price-col">
-          <div>Giá: ${(Number(o["Giá trị đơn hàng (₫)"]) || 0).toLocaleString("vi-VN")}đ</div>
+          <div>Giá: ${(Number(o["Gi� trị đơn h�ng (₫)"]) || 0).toLocaleString("vi-VN")}đ</div>
           <div style="font-size: 11px; color: var(--green);">CK: ${calcDisc(o).toLocaleString("vi-VN")}đ</div>
         </div>
       </div>
@@ -374,7 +348,7 @@ function renderMyOrders() {
     <div class="order-group">
       <div class="order-summary" onclick="toggleOrderGroup(this)">
         <div class="order-summary-left">
-          <div class="order-title" title="${g.items.map(i=>(i["Tên Item"] || "").replace(/"/g, '&quot;')).join(', ')}">${titleText}</div>
+          <div class="order-title" title="${g.items.map(i=>(i["T�n Item"] || "").replace(/"/g, '&quot;')).join(', ')}">${titleText}</div>
           <div class="order-meta">
             ${statusHtml}
             ${paymentBadge(g.payment)}
@@ -441,7 +415,7 @@ window.doSearch = async function () {
       for (let i = 0; i < idsToQuery.length; i += 30) {
         const chunk = idsToQuery.slice(i, i + 30);
         try {
-          const snap = await getDocs(query(collection(db, "orders"), where("ID đơn hàng", "in", chunk)));
+          const snap = await getDocs(query(collection(db, "orders"), where("ID đơn h�ng", "in", chunk)));
           snap.docs.forEach(d => newlyFound.push({ _id: d.id, ...d.data() }));
         } catch (qErr) {
           if (qErr.code === "permission-denied") {
@@ -454,13 +428,13 @@ window.doSearch = async function () {
 
       // 3. Cập nhật cache với những kết quả mới
       idsToQuery.forEach(id => {
-        const matches = newlyFound.filter(o => (o["ID đơn hàng"] || "").toUpperCase() === id);
+        const matches = newlyFound.filter(o => (o["ID đơn h�ng"] || "").toUpperCase() === id);
         searchCache.set(id, matches); // Nếu mảng rỗng (không tìm thấy) cũng lưu lại để tránh truy vấn lại
         found.push(...matches);
       });
     }
 
-    const foundIds = new Set(found.map(o => (o["ID đơn hàng"] || "").toUpperCase()));
+    const foundIds = new Set(found.map(o => (o["ID đơn h�ng"] || "").toUpperCase()));
     const missingIds = ids.filter(id => !foundIds.has(id.toUpperCase()));
 
     if (found.length) {
@@ -494,7 +468,7 @@ window.doSearch = async function () {
         missingHtml += `
         <div style="background:#fff3e0; padding: 14px 18px; border-radius: var(--radius); margin-top: 14px; border: 1px solid #ffcc80; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;">
           <div>
-            <div style="font-weight: 700; color: #e65100; margin-bottom: 4px;">⚠️ Không có thông tin đơn hàng</div>
+            <div style="font-weight: 700; color: #e65100; margin-bottom: 4px;">⚠️ Kh�ng c� th�ng tin đơn hàng</div>
             <div style="font-size: 13px; color: #e65100; opacity: 0.85;">Có vẻ bạn đã nhập đoạn văn bản hoặc nội dung không hợp lệ.</div>
           </div>
           <div style="display: flex; gap: 8px;">
@@ -526,7 +500,7 @@ function renderSearchResults(orders, container) {
     grandTotalVal += g.totalVal;
     grandTotalDisc += g.totalDisc;
 
-    let titleText = g.items[0]["Tên Item"] || "Không có thông tin";
+    let titleText = g.items[0]["T�n Item"] || "Kh�ng c� th�ng tin";
     if (g.items.length > 1) {
       titleText += ` (+ ${g.items.length - 1} sản phẩm khác)`;
     }
@@ -541,7 +515,7 @@ function renderSearchResults(orders, container) {
     if (mineCount === g.items.length) {
       actionCell = isManual
         ? `<div style="display:flex;gap:4px">
-             <button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none; padding:4px 8px; font-size:12px; cursor: pointer;" onclick="event.stopPropagation(); searchSingleId('${g.orderId}')">🔄 Tìm Lỗi</button>
+             <button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none; padding:4px 8px; font-size:12px; cursor: pointer;" onclick="event.stopPropagation(); searchSingleId('${g.orderId}')">🔄 Tìm Lại</button>
              <button class="btn-out" style="color: var(--red); border-color: var(--red); background: none; padding:4px 8px; font-size:12px; cursor: pointer;" onclick="event.stopPropagation(); deleteMyOrder('${itemIdsStr}', this)">🗑️ Xóa</button>
            </div>`
         : `<span class="tag-mine">✅ Của tôi</span>`;
@@ -553,13 +527,15 @@ function renderSearchResults(orders, container) {
       actionCell = `<button class="btn-claim" onclick="event.stopPropagation(); claimOrder('${itemIdsStr}', this)">📌 Gán cho tôi</button>`;
     }
 
-    const statusHtml = getStatusBadge(g.status);
+    const statusHtml = g.status.trim().toLowerCase() === "ho�n th�nh" 
+      ? `<span class="tag-mine" style="font-size:11px;padding:3px 10px">${g.status}</span>`
+      : `<span>${g.status}</span>`;
 
     const itemsListHtml = g.items.map(o => `
       <div class="detail-item-row">
-        <div class="item-name-col">${o["Tên Item"] || ""}</div>
+        <div class="item-name-col">${o["T�n Item"] || ""}</div>
         <div class="item-price-col">
-          <div>Giá: ${(Number(o["Giá trị đơn hàng (₫)"]) || 0).toLocaleString("vi-VN")}đ</div>
+          <div>Giá: ${(Number(o["Gi� trị đơn h�ng (₫)"]) || 0).toLocaleString("vi-VN")}đ</div>
           <div style="font-size: 11px; color: var(--green);">CK: ${calcDisc(o).toLocaleString("vi-VN")}đ</div>
         </div>
       </div>
@@ -569,7 +545,7 @@ function renderSearchResults(orders, container) {
     <div class="order-group">
       <div class="order-summary" onclick="toggleOrderGroup(this)">
         <div class="order-summary-left">
-          <div class="order-title" title="${g.items.map(i=>(i["Tên Item"] || "").replace(/"/g, '&quot;')).join(', ')}">${titleText}</div>
+          <div class="order-title" title="${g.items.map(i=>(i["T�n Item"] || "").replace(/"/g, '&quot;')).join(', ')}">${titleText}</div>
           <div class="order-meta">
             ${statusHtml}
             ${paymentBadge(g.payment)}
@@ -731,11 +707,11 @@ window.saveMissingOrder = async function (id, btn) {
       const snap = await tx.get(ref);
       if (!snap.exists()) {
         tx.set(ref, {
-          "ID đơn hàng": id,
-          "Tên Item": "Không có thông tin",
-          "Giá trị đơn hàng (₫)": 0,
+          "ID đơn h�ng": id,
+          "T�n Item": "Kh�ng c� th�ng tin",
+          "Gi� trị đơn h�ng (₫)": 0,
           "Chiết Khấu": 0,
-          "Trạng thái đặt hàng": "",
+          "Trạng th�i đặt h�ng": "",
           userId: me,
           claimedAt: serverTimestamp(),
           createdAt: serverTimestamp(),
@@ -797,9 +773,9 @@ window.createPaymentRequest = async function () {
   }
 
   const eligibleOrders = myOrders.filter(o =>
-    String(o["Trạng thái đặt hàng"] || "").trim().toLowerCase() === "hoạn thạnh" &&
+    String(o["Trạng th�i đặt h�ng"] || "").trim().toLowerCase() === "ho�n th�nh" &&
     (!o.thanhToan || o.thanhToan === "" || o.thanhToan === "Chưa cập nhật") &&
-    o["Tên Item"] !== "Không có thông tin"
+    o["T�n Item"] !== "Kh�ng c� th�ng tin"
   );
 
   if (!eligibleOrders.length) {
@@ -809,7 +785,7 @@ window.createPaymentRequest = async function () {
 
   let totalVal = 0, totalDisc = 0;
   eligibleOrders.forEach(o => {
-    totalVal += Number(o["Giá trị đơn hàng (₫)"]) || 0;
+    totalVal += Number(o["Gi� trị đơn h�ng (₫)"]) || 0;
     totalDisc += calcDisc(o);
   });
 
@@ -991,7 +967,7 @@ window.doForgotPassword = async function () {
     btn.disabled = true; btn.textContent = "Đang gửi...";
     await sendPasswordResetEmail(auth, email);
     msg.className = "amsg ok"; msg.textContent = "✅ Đã gửi link tới email của bạn (kiểm tra cả thư rác).";
-    btn.disabled = false; btn.textContent = "Gửi Lỗi Lần Nữa";
+    btn.disabled = false; btn.textContent = "Gửi Lại Lần Nữa";
   } catch (e) {
     const btn = document.querySelector('#tab-forgot .btn-main');
     btn.disabled = false; btn.textContent = "Gửi Email Khôi Phục";
