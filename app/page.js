@@ -163,11 +163,20 @@ export default function Page() {
             <textarea id="orderId" rows="3"
               placeholder="Nhập ID đơn hàng, cách nhau bằng dấu phẩy hoặc xuống dòng&#10;VD: 250601E7EMYD4X, 250602ABCDE12F"></textarea>
             <button type="button" 
+              id="btn-paste-mobile"
               onclick="window.pasteOrderId()" 
               class="btn-paste-mobile"
               title="Dán từ bộ nhớ tạm">
               <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clipboard"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path></svg>
             </button>
+            <script>
+              (function() {
+                var btn = document.getElementById('btn-paste-mobile');
+                if (btn && (!navigator.clipboard || typeof navigator.clipboard.readText !== 'function' || /Zalo/i.test(navigator.userAgent))) {
+                  btn.style.display = 'none';
+                }
+              })();
+            </script>
           </div>
           <button class="btn-search" id="btn-search" onclick="doSearch()">🔍 Tìm đơn hàng</button>
         </div>
