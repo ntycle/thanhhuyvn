@@ -22,6 +22,28 @@ const db   = getFirestore(app);
 
 let allUsers = [], allOrders = [], allShortLinks = [], allPaymentRequests = [];
 
+function escapeHTML(str) {
+  if (!str && str !== 0) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function escapeJS(str) {
+  if (!str && str !== 0) return "";
+  return String(str)
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'")
+    .replace(/"/g, "\\\"")
+    .replace(/\n/g, "\\n")
+    .replace(/\r/g, "\\r")
+    .replace(/</g, "\\x3c")
+    .replace(/>/g, "\\x3e");
+}
+
 // ─── AUTH ──────────────────────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
   if (user) {
@@ -101,10 +123,10 @@ function renderDashboard() {
     : `<div style="overflow-x:auto"><table>
         <thead><tr><th>ID Đơn hàng</th><th>Người gán</th><th>Giá trị (₫)</th><th>Thao tác</th></tr></thead>
         <tbody>${recent.map(o => `<tr>
-          <td><code>${o["ID đơn hàng"]||""}</code></td>
-          <td>${getUserName(o.userId)}</td>
+          <td><code>${escapeHTML(o["ID đơn hàng"]||"")}</code></td>
+          <td>${escapeHTML(getUserName(o.userId))}</td>
           <td>${(Number(o["Giá trị đơn hàng (₫)"])||0).toLocaleString("vi-VN")}</td>
-          <td><button class="btn btn-outline btn-xs" onclick="resetClaim('${o._id}')">↩ Reset gán</button></td>
+          <td><button class="btn btn-outline btn-xs" onclick="resetClaim('${escapeJS(o._id)}')">↩ Reset gán</button></td>
         </tr>`).join("")}</tbody>
       </table></div>`;
 }
@@ -133,17 +155,17 @@ function renderUsers() {
     const bankStatus = u.bankAccount ? `<span class="badge badge-paid">✅ Đã điền</span>` : `<span class="badge badge-unpaid">Chưa có</span>`;
     
     return `<tr>
-      <td>${u.name || "–"}</td>
-      <td>${u.email}</td>
+      <td>${escapeHTML(u.name || "–")}</td>
+      <td>${escapeHTML(u.email)}</td>
       <td><span class="badge badge-${u.role === "admin" ? "admin" : "user"}">${u.role === "admin" ? "Admin" : "User"}</span></td>
       <td>${cnt}</td>
       <td>${bankStatus}</td>
       <td>${date}</td>
-      <td>${u.refEmail || "–"}</td>
+      <td>${escapeHTML(u.refEmail || "–")}</td>
       <td style="display:flex;gap:4px;">${u.role !== "admin"
-        ? `<button class="btn btn-outline btn-xs" style="color:var(--orange);border-color:var(--orange)" onclick="editUserBank('${u.id}')">💳 Bank</button>
-           <button class="btn btn-outline btn-xs" style="color:var(--blue);border-color:var(--blue)" onclick="sendResetEmailToUser('${u.email}', this)">🔑 Đổi MK</button>
-           <button class="btn btn-red btn-xs" onclick="resetUserClaims('${u.id}','${u.name||u.email}')">↩ Reset đơn</button>`
+        ? `<button class="btn btn-outline btn-xs" style="color:var(--orange);border-color:var(--orange)" onclick="editUserBank('${escapeJS(u.id)}')">💳 Bank</button>
+           <button class="btn btn-outline btn-xs" style="color:var(--blue);border-color:var(--blue)" onclick="sendResetEmailToUser('${escapeJS(u.email)}', this)">🔑 Đổi MK</button>
+           <button class="btn btn-red btn-xs" onclick="resetUserClaims('${escapeJS(u.id)}','${escapeJS(u.name||u.email)}')">↩ Reset đơn</button>`
         : ""}</td>
     </tr>`;
   }).join("");
@@ -235,7 +257,7 @@ window.sendResetEmailToUser = async function(email, btn) {
 
 // ─── ORDERS ────────────────────────────────────────────────
 function populateUserFilter() {
-  const opts = allUsers.filter(u => u.role !== "admin").map(u => `<option value="${u.id}">${u.name||u.email}</option>`).join("");
+  const opts = allUsers.filter(u => u.role !== "admin").map(u => `<option value="${escapeHTML(u.id)}">${escapeHTML(u.name||u.email)}</option>`).join("");
   document.getElementById("filter-user").innerHTML = `<option value="">-- Lọc theo user --</option>` + opts;
 }
 
@@ -296,17 +318,17 @@ function renderOrders(list) {
       <option value="Đã Thanh Toán"${payVal === "Đã Thanh Toán" ? " selected" : ""}>Đã Thanh Toán</option>
     </select>`;
     return `<tr>
-      <td><code>${o["ID đơn hàng"]||""}</code></td>
+      <td><code>${escapeHTML(o["ID đơn hàng"]||"")}</code></td>
       <td>${val.toLocaleString("vi-VN")}</td>
       <td style="color:var(--orange);font-weight:600">${ck.toLocaleString("vi-VN")} đ</td>
       <td style="color:var(--green);font-weight:600">${hh.toLocaleString("vi-VN")} đ</td>
-      <td>${o["Trạng thái đặt hàng"] || "–"}</td>
+      <td>${escapeHTML(o["Trạng thái đặt hàng"] || "–")}</td>
       <td><span class="badge badge-${claimed?"claimed":"free"}">${claimed ? "✅ Đã gán" : "⏳ Chưa gán"}</span></td>
       <td>${paySel}</td>
-      <td>${getUserName(o.userId)}</td>
+      <td>${escapeHTML(getUserName(o.userId))}</td>
       <td style="display:flex;gap:6px">
-        ${claimed ? `<button class="btn btn-outline btn-xs" onclick="resetClaim('${o._id}')">↩ Reset</button>` : ""}
-        <button class="btn btn-red btn-xs" onclick="deleteOrder('${o._id}')">&#128465;</button>
+        ${claimed ? `<button class="btn btn-outline btn-xs" onclick="resetClaim('${escapeJS(o._id)}')">↩ Reset</button>` : ""}
+        <button class="btn btn-red btn-xs" onclick="deleteOrder('${escapeJS(o._id)}')">&#128465;</button>
       </td>
     </tr>`;
   }).join("");
@@ -622,29 +644,29 @@ function renderPaymentRequests() {
     const desc = encodeURIComponent(`SANDEAL THANH TOAN ${neatId}`);
     const qrUrl = (bankAcc && bankName) ? `https://qr.sepay.vn/img?acc=${bankAcc}&bank=${bankName}&amount=${amount}&des=${desc}&template=compact` : '';
     
-    const safeUserName = userName.replace(/'/g, "\\'");
-    const safeBankFullName = (uInfo.bankFullName || "").replace(/'/g, "\\'");
-    const safeBankName = bankName.replace(/'/g, "\\'");
-    const safeBankAcc = bankAcc.replace(/'/g, "\\'");
+    const safeUserName = escapeJS(userName);
+    const safeBankFullName = escapeJS(uInfo.bankFullName || "");
+    const safeBankName = escapeJS(bankName);
+    const safeBankAcc = escapeJS(bankAcc);
     
     let qrBtn = qrUrl ? `<button class="btn btn-outline btn-xs" style="color:var(--orange); border-color:var(--orange); margin-right:4px;" onclick="showQR('${qrUrl}', '${safeUserName}', '${safeBankFullName}', '${safeBankName}', '${safeBankAcc}')">📷 Lấy QR</button>` : '';
 
     let actionBtn = r.status === "pending" ? 
-      `${qrBtn}<button class="btn btn-green btn-xs" onclick="approvePayment('${r.id}')">✅ Duyệt thanh toán</button>
-       <button class="btn btn-red btn-xs" onclick="deletePayment('${r.id}')" style="margin-left:4px;">🗑️ Xoá</button>` : 
+      `${qrBtn}<button class="btn btn-green btn-xs" onclick="approvePayment('${escapeJS(r.id)}')">✅ Duyệt thanh toán</button>
+       <button class="btn btn-red btn-xs" onclick="deletePayment('${escapeJS(r.id)}')" style="margin-left:4px;">🗑️ Xoá</button>` : 
       `<span style="color:#aaa;font-size:12px;font-style:italic">Đã xử lý</span>
-       <button class="btn btn-red btn-xs" onclick="deletePayment('${r.id}')" style="margin-left:4px;">🗑️ Xoá</button>`;
+       <button class="btn btn-red btn-xs" onclick="deletePayment('${escapeJS(r.id)}')" style="margin-left:4px;">🗑️ Xoá</button>`;
       
     const orderCodes = (r.orderIds || []).map(id => id.split('_')[0]);
     const uniqueCodes = [...new Set(orderCodes)].filter(Boolean);
       
     return `<tr>
-      <td><code>${r.requestId}</code></td>
-      <td>${r.userName || getUserName(r.userId)}</td>
+      <td><code>${escapeHTML(r.requestId)}</code></td>
+      <td>${escapeHTML(r.userName || getUserName(r.userId))}</td>
       <td>
         <div style="font-weight: 600;">${r.totalCount} đơn</div>
         <div style="font-size: 11px; color: #666; max-width: 200px; white-space: normal; line-height: 1.5; margin-top: 4px;">
-          ${uniqueCodes.map(id => `<code>${id}</code>`).join(", ")}
+          ${uniqueCodes.map(id => `<code>${escapeHTML(id)}</code>`).join(", ")}
         </div>
       </td>
       <td style="font-weight:600;color:var(--orange)">${(r.totalValue||0).toLocaleString("vi-VN")} đ</td>
@@ -763,11 +785,34 @@ window.showTab = function(tab) {
   if (sidebar && sidebar.classList.contains("show")) sidebar.classList.remove("show");
 };
 
+let loginAttempts = 0;
+let lockUntil = 0;
+
 window.adminLogin = async function() {
+  const now = Date.now();
+  if (now < lockUntil) {
+    const sec = Math.ceil((lockUntil - now) / 1000);
+    showAuthErr(`❌ Thử quá nhiều lần. Vui lòng thử lại sau ${sec}s.`);
+    return;
+  }
+  
   const email = document.getElementById("adm-email").value.trim();
   const pass  = document.getElementById("adm-pass").value;
-  try { await signInWithEmailAndPassword(auth, email, pass); }
-  catch(e) { showAuthErr("❌ Email hoặc mật khẩu không đúng."); }
+  
+  try { 
+    await signInWithEmailAndPassword(auth, email, pass); 
+    loginAttempts = 0;
+  }
+  catch(e) { 
+    loginAttempts++;
+    if (loginAttempts >= 5) {
+      lockUntil = Date.now() + 60000;
+      loginAttempts = 0;
+      showAuthErr(`❌ Thử quá nhiều lần. Vui lòng thử lại sau 60s.`);
+    } else {
+      showAuthErr(`❌ Email hoặc mật khẩu không đúng. (Sai ${loginAttempts}/5 lần)`); 
+    }
+  }
 };
 window.adminLogout = async function() { await signOut(auth); };
 

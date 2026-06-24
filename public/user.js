@@ -39,6 +39,11 @@ const COL_ORDER = [
   "Trạng thái đặt hàng",
 ];
 
+function escapeHTML(str) {
+  if (typeof str !== 'string' && typeof str !== 'number') return '';
+  return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
 let me = null, myName = "", myOrders = [], myBankInfo = null;
 let cachedUserDoc = null; // Cache cho user document
 
@@ -326,18 +331,18 @@ function renderMyOrders() {
 
     const thaoTac = isManual
       ? `<div style="display:flex;gap:4px">
-           <button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none; font-size:11px; padding:3px 8px; cursor: pointer;" onclick="event.stopPropagation(); searchSingleId('${g.orderId}')">🔄 Tìm Lại</button>
-           <button class="btn-out" style="color: var(--red); border-color: var(--red); background: none; font-size:11px; padding:3px 8px; cursor: pointer;" onclick="event.stopPropagation(); deleteMyOrder('${itemIdsStr}', this)">🗑️ Xóa</button>
+           <button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none; font-size:11px; padding:3px 8px; cursor: pointer;" data-id="${escapeHTML(g.orderId)}" onclick="event.stopPropagation(); searchSingleId(this.dataset.id)">🔄 Tìm Lại</button>
+           <button class="btn-out" style="color: var(--red); border-color: var(--red); background: none; font-size:11px; padding:3px 8px; cursor: pointer;" data-ids="${escapeHTML(itemIdsStr)}" onclick="event.stopPropagation(); deleteMyOrder(this.dataset.ids, this)">🗑️ Xóa</button>
          </div>`
       : ``;
 
     const statusHtml = g.status.trim().toLowerCase() === "hoàn thành" 
-      ? `<span class="tag-mine" style="font-size:11px;padding:3px 10px">${g.status}</span>`
-      : `<span>${g.status}</span>`;
+      ? `<span class="tag-mine" style="font-size:11px;padding:3px 10px">${escapeHTML(g.status)}</span>`
+      : `<span>${escapeHTML(g.status)}</span>`;
 
     const itemsListHtml = g.items.map(o => `
       <div class="detail-item-row">
-        <div class="item-name-col">${o["Tên Item"] || ""}</div>
+        <div class="item-name-col">${escapeHTML(o["Tên Item"] || "")}</div>
         <div class="item-price-col">
           <div>Giá: ${(Number(o["Giá trị đơn hàng (₫)"]) || 0).toLocaleString("vi-VN")}đ</div>
           <div style="font-size: 11px; color: var(--green);">CK: ${calcDisc(o).toLocaleString("vi-VN")}đ</div>
@@ -349,11 +354,11 @@ function renderMyOrders() {
     <div class="order-group">
       <div class="order-summary" onclick="toggleOrderGroup(this)">
         <div class="order-summary-left">
-          <div class="order-title" title="${g.items.map(i=>(i["Tên Item"] || "").replace(/"/g, '&quot;')).join(', ')}">${titleText}</div>
+          <div class="order-title" title="${escapeHTML(g.items.map(i=>i["Tên Item"] || "").join(', '))}">${escapeHTML(titleText)}</div>
           <div class="order-meta">
             ${statusHtml}
             ${paymentBadge(g.payment)}
-            <span>Mã: ${g.orderId}</span>
+            <span>Mã: ${escapeHTML(g.orderId)}</span>
           </div>
         </div>
         <div class="order-summary-right">
@@ -363,7 +368,7 @@ function renderMyOrders() {
       </div>
       <div class="order-details">
         <div class="detail-grid">
-          <div class="detail-item"><span class="detail-lbl">Mã đơn hàng</span><span class="detail-val">${g.orderId}</span></div>
+          <div class="detail-item"><span class="detail-lbl">Mã đơn hàng</span><span class="detail-val">${escapeHTML(g.orderId)}</span></div>
           <div class="detail-item"><span class="detail-lbl">Thời gian đặt</span><span class="detail-val">${g.time}</span></div>
           <div class="detail-item"><span class="detail-lbl">Tổng giá trị</span><span class="detail-val">${g.totalVal.toLocaleString("vi-VN")}đ</span></div>
           <div class="detail-item"><span class="detail-lbl">Tổng chiết khấu</span><span class="detail-val">${g.totalDisc.toLocaleString("vi-VN")}đ</span></div>
@@ -454,12 +459,12 @@ window.doSearch = async function () {
         missingHtml += validMissingIds.map(id => `
         <div style="background:#fff3e0; padding: 14px 18px; border-radius: var(--radius); margin-top: 14px; border: 1px solid #ffcc80; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;">
           <div>
-            <div style="font-weight: 700; color: #e65100; margin-bottom: 4px;">❌ Không tìm thấy ID: ${id}</div>
+            <div style="font-weight: 700; color: #e65100; margin-bottom: 4px;">❌ Không tìm thấy ID: ${escapeHTML(id)}</div>
             <div style="font-size: 13px; color: #e65100; opacity: 0.85;">Chưa có trong hệ thống, bạn có muốn lưu tạm?</div>
           </div>
           <div style="display: flex; gap: 8px;">
-            <button class="btn-claim" style="padding: 8px 16px; font-size: 13px;" onclick="saveMissingOrder('${id}', this)">💾 Lưu lại đơn hàng</button>
-            <button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none;" onclick="searchSingleId('${id}')">🔄 Tìm lại</button>
+            <button class="btn-claim" style="padding: 8px 16px; font-size: 13px;" data-id="${escapeHTML(id)}" onclick="saveMissingOrder(this.dataset.id, this)">💾 Lưu lại đơn hàng</button>
+            <button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none;" data-id="${escapeHTML(id)}" onclick="searchSingleId(this.dataset.id)">🔄 Tìm lại</button>
           </div>
         </div>
         `).join("");
@@ -516,8 +521,8 @@ function renderSearchResults(orders, container) {
     if (mineCount === g.items.length) {
       actionCell = isManual
         ? `<div style="display:flex;gap:4px">
-             <button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none; padding:4px 8px; font-size:12px; cursor: pointer;" onclick="event.stopPropagation(); searchSingleId('${g.orderId}')">🔄 Tìm Lại</button>
-             <button class="btn-out" style="color: var(--red); border-color: var(--red); background: none; padding:4px 8px; font-size:12px; cursor: pointer;" onclick="event.stopPropagation(); deleteMyOrder('${itemIdsStr}', this)">🗑️ Xóa</button>
+             <button class="btn-out" style="color: var(--blue); border-color: var(--blue); background: none; padding:4px 8px; font-size:12px; cursor: pointer;" data-id="${escapeHTML(g.orderId)}" onclick="event.stopPropagation(); searchSingleId(this.dataset.id)">🔄 Tìm Lại</button>
+             <button class="btn-out" style="color: var(--red); border-color: var(--red); background: none; padding:4px 8px; font-size:12px; cursor: pointer;" data-ids="${escapeHTML(itemIdsStr)}" onclick="event.stopPropagation(); deleteMyOrder(this.dataset.ids, this)">🗑️ Xóa</button>
            </div>`
         : `<span class="tag-mine">✅ Của tôi</span>`;
     } else if (claimedCount > 0 && mineCount === 0) {
@@ -525,16 +530,16 @@ function renderSearchResults(orders, container) {
     } else if (claimedCount > 0 && mineCount > 0) {
       actionCell = `<span class="tag-other">🔒 Đã gán 1 phần</span>`;
     } else {
-      actionCell = `<button class="btn-claim" onclick="event.stopPropagation(); claimOrder('${itemIdsStr}', this)">📌 Gán cho tôi</button>`;
+      actionCell = `<button class="btn-claim" data-ids="${escapeHTML(itemIdsStr)}" onclick="event.stopPropagation(); claimOrder(this.dataset.ids, this)">📌 Gán cho tôi</button>`;
     }
 
     const statusHtml = g.status.trim().toLowerCase() === "hoàn thành" 
-      ? `<span class="tag-mine" style="font-size:11px;padding:3px 10px">${g.status}</span>`
-      : `<span>${g.status}</span>`;
+      ? `<span class="tag-mine" style="font-size:11px;padding:3px 10px">${escapeHTML(g.status)}</span>`
+      : `<span>${escapeHTML(g.status)}</span>`;
 
     const itemsListHtml = g.items.map(o => `
       <div class="detail-item-row">
-        <div class="item-name-col">${o["Tên Item"] || ""}</div>
+        <div class="item-name-col">${escapeHTML(o["Tên Item"] || "")}</div>
         <div class="item-price-col">
           <div>Giá: ${(Number(o["Giá trị đơn hàng (₫)"]) || 0).toLocaleString("vi-VN")}đ</div>
           <div style="font-size: 11px; color: var(--green);">CK: ${calcDisc(o).toLocaleString("vi-VN")}đ</div>
@@ -546,11 +551,11 @@ function renderSearchResults(orders, container) {
     <div class="order-group">
       <div class="order-summary" onclick="toggleOrderGroup(this)">
         <div class="order-summary-left">
-          <div class="order-title" title="${g.items.map(i=>(i["Tên Item"] || "").replace(/"/g, '&quot;')).join(', ')}">${titleText}</div>
+          <div class="order-title" title="${escapeHTML(g.items.map(i=>i["Tên Item"] || "").join(', '))}">${escapeHTML(titleText)}</div>
           <div class="order-meta">
             ${statusHtml}
             ${paymentBadge(g.payment)}
-            <span>Mã: ${g.orderId}</span>
+            <span>Mã: ${escapeHTML(g.orderId)}</span>
           </div>
         </div>
         <div class="order-summary-right">
@@ -560,7 +565,7 @@ function renderSearchResults(orders, container) {
       </div>
       <div class="order-details">
         <div class="detail-grid">
-          <div class="detail-item"><span class="detail-lbl">Mã đơn hàng</span><span class="detail-val">${g.orderId}</span></div>
+          <div class="detail-item"><span class="detail-lbl">Mã đơn hàng</span><span class="detail-val">${escapeHTML(g.orderId)}</span></div>
           <div class="detail-item"><span class="detail-lbl">Thời gian đặt</span><span class="detail-val">${g.time}</span></div>
           <div class="detail-item"><span class="detail-lbl">Tổng giá trị</span><span class="detail-val">${g.totalVal.toLocaleString("vi-VN")}đ</span></div>
           <div class="detail-item"><span class="detail-lbl">Tổng chiết khấu</span><span class="detail-val">${g.totalDisc.toLocaleString("vi-VN")}đ</span></div>
@@ -1046,7 +1051,7 @@ window.loadBanksList = async function () {
     const r2 = await fetch("https://api.vietqr.io/v2/banks");
     data = await r2.json();
     banksList = data.data || [];
-    select.innerHTML = '<option value="">-- Chọn ngân hàng --</option>' + banksList.map(b => `<option value="${b.short_name || b.shortName}">${b.name} (${b.short_name || b.shortName})</option>`).join("");
+    select.innerHTML = '<option value="">-- Chọn ngân hàng --</option>' + banksList.map(b => `<option value="${escapeHTML(b.short_name || b.shortName)}">${escapeHTML(b.name)} (${b.short_name || b.shortName})</option>`).join("");
   } catch (err) {
     select.innerHTML = '<option value="">-- Lỗi tải danh sách ngân hàng --</option>';
   }

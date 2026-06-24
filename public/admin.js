@@ -13,6 +13,11 @@ const app  = initializeApp(cfg);
 const auth = getAuth(app);
 const db   = getFirestore(app);
 
+function escapeHTML(str) {
+  if (typeof str !== 'string' && typeof str !== 'number') return '';
+  return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
 let allUsers = [], allOrders = [], allShortLinks = [], allPaymentRequests = [];
 
 // ─── AUTH ──────────────────────────────────────────────────
@@ -76,7 +81,7 @@ window.loadOrders = loadOrders;
 function getUserName(uid) {
   if (!uid) return "–";
   const u = allUsers.find(u => u.id === uid);
-  return u ? (u.name || u.email) : uid.slice(0,8)+"...";
+  return escapeHTML(u ? (u.name || u.email) : uid.slice(0,8)+"...");
 }
 
 // ─── DASHBOARD ─────────────────────────────────────────────
@@ -98,10 +103,10 @@ function renderDashboard() {
     : `<div style="overflow-x:auto"><table>
         <thead><tr><th>ID Đơn hàng</th><th>Người gán</th><th>Giá trị (₫)</th><th>Thao tác</th></tr></thead>
         <tbody>${recent.map(o => `<tr>
-          <td><code>${o["ID đơn hàng"]||""}</code></td>
+          <td><code>${escapeHTML(o["ID đơn hàng"]||"")}</code></td>
           <td>${getUserName(o.userId)}</td>
           <td>${(Number(o["Giá trị đơn hàng (₫)"])||0).toLocaleString("vi-VN")}</td>
-          <td><button class="btn btn-outline btn-xs" onclick="resetClaim('${o._id}')">↩ Reset gán</button></td>
+          <td><button class="btn btn-outline btn-xs" onclick="resetClaim('${escapeHTML(o._id)}')">↩ Reset gán</button></td>
         </tr>`).join("")}</tbody>
       </table></div>`;
 }
@@ -130,17 +135,17 @@ function renderUsers() {
     const bankStatus = u.bankAccount ? `<span class="badge badge-paid">✅ Đã điền</span>` : `<span class="badge badge-unpaid">Chưa có</span>`;
     
     return `<tr>
-      <td>${u.name || "–"}</td>
-      <td>${u.email}</td>
+      <td>${escapeHTML(u.name || "–")}</td>
+      <td>${escapeHTML(u.email)}</td>
       <td><span class="badge badge-${u.role === "admin" ? "admin" : "user"}">${u.role === "admin" ? "Admin" : "User"}</span></td>
       <td>${cnt}</td>
       <td>${bankStatus}</td>
       <td>${date}</td>
-      <td>${u.refEmail || "–"}</td>
+      <td>${escapeHTML(u.refEmail || "–")}</td>
       <td style="display:flex;gap:4px;">${u.role !== "admin"
-        ? `<button class="btn btn-outline btn-xs" style="color:var(--orange);border-color:var(--orange)" onclick="editUserBank('${u.id}')">💳 Bank</button>
-           <button class="btn btn-outline btn-xs" style="color:var(--blue);border-color:var(--blue)" onclick="sendResetEmailToUser('${u.email}', this)">🔑 Đổi MK</button>
-           <button class="btn btn-red btn-xs" onclick="resetUserClaims('${u.id}','${u.name||u.email}')">↩ Reset đơn</button>`
+        ? `<button class="btn btn-outline btn-xs" style="color:var(--orange);border-color:var(--orange)" onclick="editUserBank('${escapeHTML(u.id)}')">💳 Bank</button>
+           <button class="btn btn-outline btn-xs" style="color:var(--blue);border-color:var(--blue)" data-email="${escapeHTML(u.email)}" onclick="sendResetEmailToUser(this.dataset.email, this)">🔑 Đổi MK</button>
+           <button class="btn btn-red btn-xs" data-uid="${escapeHTML(u.id)}" data-name="${escapeHTML(u.name||u.email)}" onclick="resetUserClaims(this.dataset.uid, this.dataset.name)">↩ Reset đơn</button>`
         : ""}</td>
     </tr>`;
   }).join("");
@@ -232,7 +237,7 @@ window.sendResetEmailToUser = async function(email, btn) {
 
 // ─── ORDERS ────────────────────────────────────────────────
 function populateUserFilter() {
-  const opts = allUsers.filter(u => u.role !== "admin").map(u => `<option value="${u.id}">${u.name||u.email}</option>`).join("");
+  const opts = allUsers.filter(u => u.role !== "admin").map(u => `<option value="${escapeHTML(u.id)}">${escapeHTML(u.name||u.email)}</option>`).join("");
   document.getElementById("filter-user").innerHTML = `<option value="">-- Lọc theo user --</option>` + opts;
 }
 
@@ -294,25 +299,25 @@ function renderOrders(list) {
     // Build payment dropdown (admin only)
     const payVal = o.thanhToan || "";
     const payClass = payVal === "Đã Thanh Toán" ? "paid" : payVal === "Chưa Thanh Toán" || payVal === "Đang chờ xử lý" ? "unpaid" : "";
-    const paySel = `<select class="pay-sel ${payClass}" onchange="setPayment('${o._id}', this)">
+    const paySel = `<select class="pay-sel ${payClass}" onchange="setPayment('${escapeHTML(o._id)}', this)">
       <option value=""${payVal === "" ? " selected" : ""}>– Chưa cập nhật</option>
       <option value="Đang chờ xử lý"${payVal === "Đang chờ xử lý" ? " selected" : ""}>Đang chờ xử lý</option>
       <option value="Chưa Thanh Toán"${payVal === "Chưa Thanh Toán" ? " selected" : ""}>Chưa Thanh Toán</option>
       <option value="Đã Thanh Toán"${payVal === "Đã Thanh Toán" ? " selected" : ""}>Đã Thanh Toán</option>
     </select>`;
     return `<tr>
-      <td style="text-align: center;"><input type="checkbox" class="chk-order" value="${o._id}" onchange="toggleOrderCheckbox()"></td>
-      <td><code>${o["ID đơn hàng"]||""}</code></td>
+      <td style="text-align: center;"><input type="checkbox" class="chk-order" value="${escapeHTML(o._id)}" onchange="toggleOrderCheckbox()"></td>
+      <td><code>${escapeHTML(o["ID đơn hàng"]||"")}</code></td>
       <td>${val.toLocaleString("vi-VN")}</td>
       <td style="color:var(--orange);font-weight:600">${ck.toLocaleString("vi-VN")} đ</td>
       <td style="color:var(--green);font-weight:600">${hh.toLocaleString("vi-VN")} đ</td>
-      <td>${o["Trạng thái đặt hàng"] || "–"}</td>
+      <td>${escapeHTML(o["Trạng thái đặt hàng"] || "–")}</td>
       <td><span class="badge badge-${claimed?"claimed":"free"}">${claimed ? "✅ Đã gán" : "⏳ Chưa gán"}</span></td>
       <td>${paySel}</td>
       <td>${getUserName(o.userId)}</td>
       <td style="display:flex;gap:6px">
-        ${claimed ? `<button class="btn btn-outline btn-xs" onclick="resetClaim('${o._id}')">↩ Reset</button>` : ""}
-        <button class="btn btn-red btn-xs" onclick="deleteOrder('${o._id}')">&#128465;</button>
+        ${claimed ? `<button class="btn btn-outline btn-xs" onclick="resetClaim('${escapeHTML(o._id)}')">↩ Reset</button>` : ""}
+        <button class="btn btn-red btn-xs" onclick="deleteOrder('${escapeHTML(o._id)}')">&#128465;</button>
       </td>
     </tr>`;
   }).join("");
@@ -730,29 +735,26 @@ function renderPaymentRequests() {
     const desc = encodeURIComponent(`SANDEAL THANH TOAN ${neatId}`);
     const qrUrl = (bankAcc && bankName) ? `https://qr.sepay.vn/img?acc=${bankAcc}&bank=${bankName}&amount=${amount}&des=${desc}&template=compact` : '';
     
-    const safeUserName = userName.replace(/'/g, "\\'");
-    const safeBankFullName = (uInfo.bankFullName || "").replace(/'/g, "\\'");
-    const safeBankName = bankName.replace(/'/g, "\\'");
-    const safeBankAcc = bankAcc.replace(/'/g, "\\'");
     
-    let qrBtn = qrUrl ? `<button class="btn btn-outline btn-xs" style="color:var(--orange); border-color:var(--orange); margin-right:4px;" onclick="showQR('${qrUrl}', '${safeUserName}', '${safeBankFullName}', '${safeBankName}', '${safeBankAcc}')">📷 Lấy QR</button>` : '';
+    
+    let qrBtn = qrUrl ? `<button class="btn btn-outline btn-xs" style="color:var(--orange); border-color:var(--orange); margin-right:4px;" data-url="${escapeHTML(qrUrl)}" data-name="${escapeHTML(userName)}" data-bfull="${escapeHTML(uInfo.bankFullName || '')}" data-bname="${escapeHTML(bankName)}" data-bacc="${escapeHTML(bankAcc)}" onclick="showQR(this.dataset.url, this.dataset.name, this.dataset.bfull, this.dataset.bname, this.dataset.bacc)">📷 Lấy QR</button>` : '';
 
     let actionBtn = r.status === "pending" ? 
-      `${qrBtn}<button class="btn btn-green btn-xs" onclick="approvePayment('${r.id}')">✅ Duyệt thanh toán</button>
-       <button class="btn btn-red btn-xs" onclick="deletePayment('${r.id}')" style="margin-left:4px;">🗑️ Xoá</button>` : 
+      `${qrBtn}<button class="btn btn-green btn-xs" onclick="approvePayment('${escapeHTML(r.id)}')">✅ Duyệt thanh toán</button>
+       <button class="btn btn-red btn-xs" onclick="deletePayment('${escapeHTML(r.id)}')" style="margin-left:4px;">🗑️ Xoá</button>` : 
       `<span style="color:#aaa;font-size:12px;font-style:italic">Đã xử lý</span>
-       <button class="btn btn-red btn-xs" onclick="deletePayment('${r.id}')" style="margin-left:4px;">🗑️ Xoá</button>`;
+       <button class="btn btn-red btn-xs" onclick="deletePayment('${escapeHTML(r.id)}')" style="margin-left:4px;">🗑️ Xoá</button>`;
       
     const orderCodes = (r.orderIds || []).map(id => id.split('_')[0]);
     const uniqueCodes = [...new Set(orderCodes)].filter(Boolean);
       
     return `<tr>
-      <td><code>${r.requestId}</code></td>
-      <td>${r.userName || getUserName(r.userId)}</td>
+      <td><code>${escapeHTML(r.requestId)}</code></td>
+      <td>${escapeHTML(r.userName || getUserName(r.userId))}</td>
       <td>
         <div style="font-weight: 600;">${r.totalCount} đơn</div>
         <div style="font-size: 11px; color: #666; max-width: 200px; white-space: normal; line-height: 1.5; margin-top: 4px;">
-          ${uniqueCodes.map(id => `<code>${id}</code>`).join(", ")}
+          ${uniqueCodes.map(id => `<code>${escapeHTML(id)}</code>`).join(", ")}
         </div>
       </td>
       <td style="font-weight:600;color:var(--orange)">${(r.totalValue||0).toLocaleString("vi-VN")} đ</td>
@@ -805,12 +807,12 @@ function renderShortLinks() {
     
     return `<tr>
       <td><a href="${fullLink}" target="_blank" style="color:var(--blue);font-weight:600;text-decoration:none">${fullLink}</a></td>
-      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${s.url}">${s.url}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHTML(s.url)}">${escapeHTML(s.url)}</td>
       <td>${date}</td>
       <td>${s.clicks || 0}</td>
       <td style="display:flex;gap:4px;">
-        <button class="btn btn-outline btn-xs" onclick="copyToClipboard('${fullLink}', this)">📋 Copy</button>
-        <button class="btn btn-red btn-xs" onclick="deleteShortLink('${s.id}')">🗑️</button>
+        <button class="btn btn-outline btn-xs" onclick="data-link="${escapeHTML(fullLink)}" onclick="copyToClipboard(this.dataset.link, this)"">📋 Copy</button>
+        <button class="btn btn-red btn-xs" onclick="deleteShortLink('${escapeHTML(s.id)}')">🗑️</button>
       </td>
     </tr>`;
   }).join("");
