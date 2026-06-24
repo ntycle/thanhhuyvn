@@ -87,9 +87,8 @@ export async function POST(request) {
     });
 
     // 5. Trả về kết quả thành công
-    const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
-    const protocol = request.headers.get("x-forwarded-proto") || "http";
-    const shortUrl = `${protocol}://${host}/${code}`;
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${request.headers.get("x-forwarded-proto") || "http"}://${request.headers.get("host") || "localhost:3000"}`;
+    const shortUrl = `${baseUrl.replace(/\/$/, '')}/${code}`;
 
     return NextResponse.json({ 
       success: true, 
