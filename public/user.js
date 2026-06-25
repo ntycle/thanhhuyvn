@@ -449,8 +449,8 @@ window.doSearch = async function () {
       resultDiv.innerHTML = ""; // Remove redundant global error card
     }
 
-    const validMissingIds = missingIds.filter(id => /^[0-9A-Z]{14,15}$/.test(id));
-    const invalidMissingIds = missingIds.filter(id => !/^[0-9A-Z]{14,15}$/.test(id));
+    const validMissingIds = missingIds.filter(id => /^\d{6}[0-9A-Z]{8}$/.test(id));
+    const invalidMissingIds = missingIds.filter(id => !/^\d{6}[0-9A-Z]{8}$/.test(id));
 
     if (validMissingIds.length > 0 || invalidMissingIds.length > 0) {
       let missingHtml = "";
@@ -475,7 +475,7 @@ window.doSearch = async function () {
         <div style="background:#fff3e0; padding: 14px 18px; border-radius: var(--radius); margin-top: 14px; border: 1px solid #ffcc80; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;">
           <div>
             <div style="font-weight: 700; color: #e65100; margin-bottom: 4px;">⚠️ Không có thông tin đơn hàng</div>
-            <div style="font-size: 13px; color: #e65100; opacity: 0.85;">Hãy thử tìm lại bạn nhé.</div>
+            <div style="font-size: 13px; color: #e65100; opacity: 0.85;">Có vẻ bạn đã nhập đoạn văn bản hoặc nội dung không hợp lệ.</div>
           </div>
           <div style="display: flex; gap: 8px;">
             <button class="btn-claim" style="padding: 8px 16px; font-size: 13px; background: #e65100; color: #fff; border: none; cursor: pointer;" onclick="document.getElementById('orderId').value = ''; document.getElementById('orderId').focus(); document.getElementById('search-result').innerHTML = '';">🧹 Xoá văn bản</button>
