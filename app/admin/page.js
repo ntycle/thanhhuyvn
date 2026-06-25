@@ -183,6 +183,10 @@ export default function Page() {
               <input type="file" id="json-file" accept=".json" style="display:none" onchange="handleFile(this.files[0])"/>
               <div id="upload-preview" style="margin-top:14px"></div>
               <div id="upload-msg"></div>
+              <div style="margin-top:16px;padding-top:14px;border-top:1px solid #eee">
+                <p style="font-size:12px;color:#888;margin-bottom:8px">🔧 Công cụ sửa dữ liệu sai:</p>
+                <button class="btn btn-outline" style="font-size:13px;color:var(--orange);border-color:var(--orange)" onclick="fixDraftData()">🧹 Dọn đơn nháp bị tách đôi</button>
+              </div>
             </div>
           </div>
         </div>
