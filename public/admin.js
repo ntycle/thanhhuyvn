@@ -309,7 +309,10 @@ function renderOrders(list) {
       <td style="text-align: center;"><input type="checkbox" class="chk-order" value="${escapeHTML(o._id)}" onchange="toggleOrderCheckbox()"></td>
       <td><code>${escapeHTML(o["ID đơn hàng"]||"")}</code></td>
       <td>${val.toLocaleString("vi-VN")}</td>
-      <td style="color:var(--orange);font-weight:600">${ck.toLocaleString("vi-VN")} đ</td>
+      <td style="color:var(--orange);font-weight:600">
+        ${ck.toLocaleString("vi-VN")} đ
+        <button class="btn btn-outline btn-xs" style="margin-left:4px;font-size:10px;padding:1px 5px" onclick="editCK('${escapeHTML(o._id)}', ${ck})">✏️</button>
+      </td>
       <td style="color:var(--green);font-weight:600">${hh.toLocaleString("vi-VN")} đ</td>
       <td>${escapeHTML(o["Trạng thái đặt hàng"] || "–")}</td>
       <td><span class="badge badge-${claimed?"claimed":"free"}">${claimed ? "✅ Đã gán" : "⏳ Chưa gán"}</span></td>
@@ -400,6 +403,101 @@ window.copyFilteredOrders = function() {
     console.error("Lỗi copy", err);
     alert("Không thể copy. Hãy thử lại!");
   });
+};
+
+// ─── SỬA CHIẾT KHẤU (admin only) ────────────────────────────
+window.editCK = async function(docId, currentCK) {
+  const input = prompt(`Nhập số tiền Chiết Khấu mới (hiện tại: ${Number(currentCK).toLocaleString("vi-VN")} đ):`, currentCK);
+  if (input === null) return;
+  const newCK = Number(input.toString().replace(/[^\d.-]/g, ''));
+  if (isNaN(newCK) || newCK < 0) { alert("❌ Số tiền không hợp lệ."); return; }
+  try {
+    await updateDoc(doc(db, "orders", docId), { "Chiết Khấu": newCK, updatedAt: serverTimestamp() });
+    const o = allOrders.find(o => o._id === docId);
+    if (o) o["Chiết Khấu"] = newCK;
+    await loadOrders(); renderDashboard();
+  } catch(e) {
+    alert("❌ Lỗi cập nhật chiết khấu: " + e.message);
+  }
+};
+
+// ─── DỌN DATA SAI: draft + real order bị tách đôi ───────────
+window.fixDraftData = async function() {
+  const input = prompt(
+    "Nhập mã đơn hàng cần dọn (VD: 2506021234567).\n\nĐể trống và nhấn OK nếu muốn quét TOÀN BỘ database (không khuyến khích):"
+  );
+  if (input === null) return;
+
+  const msgEl = document.getElementById("upload-msg");
+  msgEl.innerHTML = `<div class="msg msg-info"><span class="spinner"></span> Đang xử lý...</div>`;
+
+  try {
+    let drafts = [];
+
+    if (input.trim()) {
+      const targetId = input.trim();
+      const snap = await getDocs(
+        query(collection(db, "orders"),
+          where("ID đơn hàng", "==", targetId),
+          where("Tên Item", "==", "Không có thông tin")
+        )
+      );
+      drafts = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+      if (!drafts.length) {
+        msgEl.innerHTML = `<div class="msg msg-ok">✅ Không tìm thấy đơn nháp nào cho mã: <strong>${targetId}</strong></div>`;
+        return;
+      }
+    } else {
+      if (!confirm("⚠️ Xác nhận quét TOÀN BỘ database?")) return;
+      const snap = await getDocs(
+        query(collection(db, "orders"), where("Tên Item", "==", "Không có thông tin"))
+      );
+      drafts = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+      if (!drafts.length) {
+        msgEl.innerHTML = `<div class="msg msg-ok">✅ Không có đơn nháp nào cần dọn.</div>`;
+        return;
+      }
+    }
+
+    let fixed = 0, skipped = 0;
+    const batch = writeBatch(db);
+
+    for (const draft of drafts) {
+      const orderId = (draft["ID đơn hàng"] || "").trim();
+      if (!orderId) { skipped++; continue; }
+
+      const realSnap = await getDocs(
+        query(collection(db, "orders"), where("ID đơn hàng", "==", orderId))
+      );
+      const reals = realSnap.docs
+        .map(d => ({ _id: d.id, ...d.data() }))
+        .filter(o => o._id !== draft._id && o["Tên Item"] !== "Không có thông tin");
+
+      if (!reals.length) {
+        msgEl.innerHTML += `<div class="msg msg-err" style="margin-top:6px">⚠️ Chưa có real order cho mã: <strong>${orderId}</strong> — bỏ qua.</div>`;
+        skipped++; continue;
+      }
+
+      for (const real of reals) {
+        if (!real.userId && draft.userId) {
+          batch.update(doc(db, "orders", real._id), {
+            userId: draft.userId,
+            claimedAt: draft.claimedAt || serverTimestamp(),
+            updatedAt: serverTimestamp()
+          });
+        }
+      }
+
+      batch.delete(doc(db, "orders", draft._id));
+      fixed++;
+    }
+
+    await batch.commit();
+    await loadOrders(); renderDashboard();
+    msgEl.innerHTML = `<div class="msg msg-ok">✅ Hoàn tất! Đã dọn <strong>${fixed}</strong> đơn. Bỏ qua: <strong>${skipped}</strong>.</div>`;
+  } catch(e) {
+    msgEl.innerHTML = `<div class="msg msg-err">❌ Lỗi: ${e.message}</div>`;
+  }
 };
 
 // ─── SET PAYMENT (admin only) ────────────────────────────────
