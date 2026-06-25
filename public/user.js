@@ -358,7 +358,7 @@ function renderMyOrders() {
           <div class="order-meta">
             ${statusHtml}
             ${paymentBadge(g.payment)}
-            <span>Mã: ${escapeHTML(g.orderId)}</span>
+            <span style="color:var(--green);font-weight:600">CK: ${(g.totalDisc || 0).toLocaleString("vi-VN")}đ</span>
           </div>
         </div>
         <div class="order-summary-right">
@@ -555,7 +555,7 @@ function renderSearchResults(orders, container) {
           <div class="order-meta">
             ${statusHtml}
             ${paymentBadge(g.payment)}
-            <span>Mã: ${escapeHTML(g.orderId)}</span>
+            <span style="color:var(--green);font-weight:600">CK: ${(g.totalDisc || 0).toLocaleString("vi-VN")}đ</span>
           </div>
         </div>
         <div class="order-summary-right">
