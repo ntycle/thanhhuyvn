@@ -63,6 +63,15 @@ export default function Page() {
     html.not-logged-in #auth-screen { display: flex !important; }
     html.not-logged-in #app-screen { display: none !important; }
     #auth-screen, #app-screen { display: none; } /* Default hide both to prevent flashes */
+    @keyframes wave {
+      0%   { transform: rotate(0deg); }
+      15%  { transform: rotate(18deg); }
+      30%  { transform: rotate(-8deg); }
+      45%  { transform: rotate(18deg); }
+      60%  { transform: rotate(-4deg); }
+      75%  { transform: rotate(12deg); }
+      100% { transform: rotate(0deg); }
+    }
   </style>
 
   <!-- AUTH -->
@@ -188,7 +197,7 @@ export default function Page() {
         <div class="wallet-card">
           <div class="wallet-content">
             <div class="wallet-greeting" style="display: flex; align-items: center; margin-bottom: 16px;">
-              <span style="font-size: 22px; margin-right: 6px; flex-shrink: 0;">👋</span>
+              <span style="font-size: 22px; margin-right: 6px; flex-shrink: 0; display: inline-block; animation: wave 2s ease-in-out 1s 3; transform-origin: 70% 80%;">👋</span>
               <h3 style="margin: 0; font-size: 20px; font-weight: 700;">Xin chào, <span id="welcome-name"></span>!</h3>
             </div>
             
