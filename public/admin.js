@@ -742,11 +742,14 @@ window.confirmUpload = async function() {
             // 2. Chưa thanh toán -> Đang chờ xử lý -> Lấy từ JSON mới (không làm gì thêm vì orderFields đã chứa giá trị mới)
           } else {
             // 3. Các trường hợp khác -> Khoá cột Chiết Khấu (Giữ nguyên giá trị trên Database)
-            if (oldData["Chiết Khấu"] !== undefined) {
-              orderFields["Chiết Khấu"] = oldData["Chiết Khấu"];
+            // Ngoại lệ: nếu DB đang là 0 hoặc chưa set, cho phép lấy từ JSON (tránh khoá tại 0)
+            const dbCK = oldData["Chiết Khấu"];
+            if (dbCK !== undefined && dbCK !== null && Number(dbCK) !== 0) {
+              orderFields["Chiết Khấu"] = dbCK;
             }
-            if (oldData["Chiết Khấu 2%"] !== undefined) {
-              orderFields["Chiết Khấu 2%"] = oldData["Chiết Khấu 2%"];
+            const dbCK2 = oldData["Chiết Khấu 2%"];
+            if (dbCK2 !== undefined && dbCK2 !== null && Number(dbCK2) !== 0) {
+              orderFields["Chiết Khấu 2%"] = dbCK2;
             }
           }
 
@@ -754,7 +757,27 @@ window.confirmUpload = async function() {
           countUpdated++;
         } else {
           // Đơn mới: tạo với userId = null (chưa gán)
-          batch.set(ref, { ...order, userId: null, claimedAt: null, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+          // Kiểm tra xem có đơn nháp (docId = plain orderId) không để kế thừa userId
+          let inheritUserId = null;
+          let inheritClaimedAt = null;
+          const draftRef = doc(db, "orders", orderId);
+          try {
+            const draftSnap = await getDoc(draftRef);
+            if (draftSnap.exists()) {
+              const draftData = draftSnap.data();
+              // Chỉ kế thừa nếu đây là đơn nháp (Tên Item = placeholder hoặc không có itemId)
+              const isDraft = !draftData["Item ID"] && !draftData["itemID"] && !draftData["itemId"];
+              if (isDraft && draftData.userId) {
+                inheritUserId = draftData.userId;
+                inheritClaimedAt = draftData.claimedAt || null;
+              }
+              // Xoá đơn nháp trong cùng batch
+              batch.delete(draftRef);
+            }
+          } catch(e) {
+            // Không ảnh hưởng đến việc tạo đơn mới
+          }
+          batch.set(ref, { ...order, userId: inheritUserId, claimedAt: inheritClaimedAt, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
           countNew++;
         }
       }));
