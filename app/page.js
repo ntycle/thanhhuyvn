@@ -161,12 +161,14 @@ export default function Page() {
     <div class="container">
       <!-- SEARCH TAB -->
       <div id="main-search">
+        <a href="https://zalo.me/g/dnyqyk95ihelrtqn3cyg" target="_blank" rel="noopener noreferrer" style="display:block;margin:0 -6px 12px -6px;border-radius:12px;overflow:hidden">
+          <img src="/truycapzalo.png" alt="Tham gia nhóm Zalo" style="width:100%;height:auto;display:block" />
+        </a>
         <div class="card">
           <div class="card-title">🔍 Tìm kiếm đơn hàng</div>
           <div class="guide-links">
             <a href="https://s.shopee.vn/4fswFcE0Mc" target="_blank">🎟️ Mã giảm giá Shopee</a>
             <a href="https://shorten.asia/mTn3wHfD" target="_blank">☕ Mã Highland Coffee</a>            
-            <a href="https://zalo.me/g/dnyqyk95ihelrtqn3cyg" target="_blank">Link nhóm Zalo</a>
           </div>
           <div style="position: relative; width: 100%;">
             <textarea id="orderId" rows="3"
