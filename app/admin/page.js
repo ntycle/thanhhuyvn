@@ -42,7 +42,7 @@ export default function Page() {
       </nav>
       <div class="sidebar-foot">
         <div class="aname" id="adm-name">Admin</div>
-        <div>Shopee Affiliate</div>
+        <div>Sandeal.io.vn</div>
       </div>
     </aside>
     <main class="main">

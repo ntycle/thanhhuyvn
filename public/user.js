@@ -870,6 +870,32 @@ window.showMainTab = function (tab) {
   document.getElementById("nav-mine").classList.toggle("active", tab === "mine");
 };
 
+// ─── SWIPE BETWEEN TABS ───────────────────────────────────
+(function () {
+  let startX = 0, startY = 0;
+  const THRESHOLD = 60;   // px tối thiểu để tính là vuốt
+  const MAX_Y    = 80;    // px dọc tối đa — tránh nhầm với scroll
+
+  const container = document.getElementById("app-screen");
+  if (!container) return;
+
+  container.addEventListener("touchstart", e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+
+  container.addEventListener("touchend", e => {
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (Math.abs(dy) > MAX_Y) return;          // vuốt dọc → bỏ qua
+    if (Math.abs(dx) < THRESHOLD) return;      // quá ngắn → bỏ qua
+
+    const isSearch = document.getElementById("main-search").style.display !== "none";
+    if (dx < 0 && isSearch)  window.showMainTab("mine");   // vuốt trái → Đơn của tôi
+    if (dx > 0 && !isSearch) window.showMainTab("search"); // vuốt phải → Tìm đơn hàng
+  }, { passive: true });
+})();
+
 window.switchTab = function (tab) {
   document.getElementById("tab-login").style.display = tab === "login" ? "block" : "none";
   document.getElementById("tab-register").style.display = tab === "register" ? "block" : "none";

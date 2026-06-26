@@ -144,7 +144,7 @@ export default function Page() {
   <!-- APP -->
   <div id="app-screen">
     <div class="header">
-      <div class="header-logo">🛍️ Shopee Affiliate</div>
+      <div class="header-logo">🛍️ Sandeal.io.vn</div>
       <div class="header-right">
         <span class="uname" id="header-uname"></span>
         <button class="btn-out" onclick="doLogout()" title="Đăng xuất" style="display:flex; align-items:center; justify-content:center; padding: 6px 10px;">
