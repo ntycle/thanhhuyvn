@@ -25,7 +25,7 @@ const nextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' www.gstatic.com; connect-src 'self' *.googleapis.com *.firebaseapp.com oauth.zaloapp.com graph.zalo.me *.zalo.me api.vietqr.io; img-src 'self' data: *.googleapis.com *.zalo.me *.zadn.vn qr.sepay.vn"
+            value: "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' www.gstatic.com apis.google.com; connect-src 'self' *.googleapis.com *.firebaseapp.com oauth.zaloapp.com graph.zalo.me *.zalo.me api.vietqr.io www.gstatic.com; img-src 'self' data: *.googleapis.com *.zalo.me *.zadn.vn qr.sepay.vn; frame-src *.firebaseapp.com"
           }
         ],
       },
