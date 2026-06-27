@@ -669,47 +669,48 @@ window.confirmUpload = async function() {
           return;
         }
 
-        const itemId = (order["Item ID"] || order["itemID"] || order["itemId"] || "").toString().trim();
+        const modelId = (order["ID Model"] || "").toString().trim();
         const itemName = (order["Tên Item"] || "").toString().trim();
 
         // 1. Tìm các đơn cùng orderId trong bộ nhớ đệm
         const existingDocs = allOrders.filter(o => o["ID đơn hàng"] == orderId);
         let matchedDoc = null;
 
-        // Ưu tiên tìm theo Item ID
-        if (itemId) {
-            matchedDoc = existingDocs.find(d => 
-               (d["Item ID"] == itemId || d["itemID"] == itemId || d["itemId"] == itemId) 
-               && !usedDocIds.has(d._id)
+        // Ưu tiên match theo ID Model (đơn mới đã có ID Model trong DB)
+        if (modelId) {
+            matchedDoc = existingDocs.find(d =>
+                d["ID Model"] == modelId && !usedDocIds.has(d._id)
             );
         }
-        
-        // Nếu không thấy (đơn cũ trước khi có Item ID hoặc JSON không có Item ID)
-        // Lấy 1 đơn cùng ID đơn hàng mà chưa được match ở lần duyệt này.
-        if (!matchedDoc) {
-            matchedDoc = existingDocs.find(d => !usedDocIds.has(d._id));
+
+        // Fallback: match theo Tên Item (đơn cũ trong DB chưa có ID Model)
+        if (!matchedDoc && itemName) {
+            matchedDoc = existingDocs.find(d =>
+                !d["ID Model"] &&
+                (d["Tên Item"] || "").trim() === itemName &&
+                !usedDocIds.has(d._id)
+            );
         }
 
-        // Đơn hàng ĐÃ CÓ trong database (đơn cũ), nhưng dư item trong JSON (không còn doc nào chưa dùng)
-        // Theo yêu cầu: không được thêm mới cho những id đơn hàng đã có. Bỏ qua tạo mới.
-        if (!matchedDoc && existingDocs.length > 0) {
-            return; // Skip (tương đương continue)
+        // Đơn hàng ĐÃ CÓ trong database nhưng không còn doc nào chưa match → bỏ qua
+        if (!matchedDoc && existingDocs.length > 0 && existingDocs.every(d => usedDocIds.has(d._id))) {
+            return;
         }
 
         let docId = "";
         let isExisting = false;
 
         if (matchedDoc) {
-            // Đã tồn tại (dù là ID cũ hay mới)
             docId = matchedDoc._id;
             usedDocIds.add(docId);
             isExisting = true;
         } else {
-            // Hoàn toàn mới
+            // Hoàn toàn mới: docId = orderId_modelId
             let baseId = "";
-            if (itemId) {
-                baseId = `${orderId}_${itemId}`;
+            if (modelId) {
+                baseId = `${orderId}_${modelId}`;
             } else {
+                // Fallback hash tên item nếu không có ID Model
                 let hash = 0;
                 for (let j = 0; j < itemName.length; j++) {
                   hash = ((hash << 5) - hash) + itemName.charCodeAt(j);
