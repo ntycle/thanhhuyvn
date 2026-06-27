@@ -42,113 +42,143 @@ body {
 
 
 
-/* AUTH */
+/* Reset wrapper Next.js inject quanh dangerouslySetInnerHTML */
+#auth-screen, #app-screen { margin: 0; padding: 0; }
+
+/* ── AUTH SCREEN — Mobile-first ── */
 #auth-screen {
   min-height: 100vh;
-  background: linear-gradient(135deg, #EE4D2D 0%, #ff8c00 100%);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 20px;
+  background: #f2f2f2;
+  padding: 0;
+}
+
+@media (min-width: 600px) {
+  #auth-screen {
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px 16px 60px;
+    min-height: 100vh;
+  }
 }
 
 .auth-container {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 40px;
-  width: fit-content;
-  max-width: 100%;
+  flex-direction: column;
+  width: 100%;
+  max-width: 460px;
+  background: white;
+  border-radius: 0;
+  box-shadow: none;
+  min-height: 100vh;
+}
+
+@media (min-width: 600px) {
+  .auth-container {
+    max-width: 600px;
+    min-height: calc(100vh - 48px);
+    border-radius: 20px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05), 0 10px 40px rgba(0,0,0,0.12);
+    border: 1px solid rgba(0,0,0,0.07);
+  }
+}
+
+@media (min-width: 900px) {
+  .auth-container {
+    max-width: 720px;
+  }
 }
 
 .auth-banner {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  width: 100%;
+  flex-shrink: 0;
 }
 
 .auth-banner img {
-  max-width: 100%;
-  max-height: 90vh;
-  /* Ngăn ảnh quá cao so với màn hình */
+  width: 100%;
   height: auto;
-  object-fit: contain;
-  border-radius: 16px;
-  box-shadow: var(--shadow-lg);
-  image-rendering: -webkit-optimize-contrast;
-  transform: translateZ(0);
+  display: block;
+  border-radius: 0;
+}
+
+@media (min-width: 600px) {
+  .auth-banner img {
+    border-radius: 20px 20px 0 0;
+  }
 }
 
 .auth-card {
   background: white;
-  border-radius: 16px;
-  box-shadow: var(--shadow-lg);
-  width: 100%;
-  max-width: 420px;
-  overflow: hidden;
+  border-radius: 24px 24px 0 0;
+  margin-top: -24px;
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  padding-bottom: 16px;
 }
 
-    @media (max-width: 850px) {
-      .auth-container {
-        flex-direction: column;
-      }
+@media (min-width: 600px) {
+  .auth-card {
+    border-radius: 0 0 20px 20px;
+    flex: 1;
+  }
+}
 
-      .auth-banner {
-        display: none;
-      }
-    }
 
-    .auth-top {
-      background: linear-gradient(135deg, #EE4D2D, #ff6b4a);
-      color: white;
-      padding: 28px 32px 22px;
-      text-align: center;
-    }
+.auth-top {
+  padding: 28px 28px 16px;
+  text-align: center;
+}
 
-    .auth-top .logo {
-      font-size: 38px;
-      margin-bottom: 6px;
-    }
+.auth-top .logo {
+  font-size: 36px;
+  margin-bottom: 4px;
+}
 
-    .auth-top h2 {
-      font-size: 19px;
-      font-weight: 700;
-    }
+.auth-top h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 4px;
+}
 
-    .auth-top p {
-      font-size: 13px;
-      opacity: 0.85;
-      margin-top: 4px;
-    }
+.auth-top p {
+  font-size: 13px;
+  color: var(--text-light);
+  margin: 0;
+}
 
-    .auth-tabs {
-      display: flex;
-      border-bottom: 1px solid var(--border);
-    }
+.auth-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  margin: 0 28px;
+}
 
-    .auth-tab {
-      flex: 1;
-      padding: 13px;
-      text-align: center;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      color: var(--text-light);
-      border: none;
-      border-bottom: 3px solid transparent;
-      background: none;
-      font-family: inherit;
-      transition: all 0.2s;
-    }
+.auth-tab {
+  flex: 1;
+  padding: 12px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-light);
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: none;
+  font-family: inherit;
+  transition: all 0.2s;
+}
 
-    .auth-tab.active {
-      color: var(--orange);
-      border-bottom-color: var(--orange);
-    }
+.auth-tab.active {
+  color: var(--orange);
+  border-bottom-color: var(--orange);
+}
 
-    .auth-body {
-      padding: 22px 28px 26px;
-    }
+.auth-body {
+  padding: 20px 28px 32px;
+}
 
     .fg {
       margin-bottom: 14px;

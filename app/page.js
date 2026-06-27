@@ -96,14 +96,9 @@ export default function Page() {
   <div id="auth-screen">
     <div class="auth-container">
       <div class="auth-banner">
-        <img src="banner.png" alt="Banner Shopee Affiliate">
+        <img src="/headerbanner.png" alt="Sandeal.io.vn - Săn deal Shopee hoàn tiền">
       </div>
       <div class="auth-card">
-        <div class="auth-top">
-          <div class="logo">🛍️</div>
-          <h2>Tra cứu đơn hàng Shopee</h2>
-          <p>Đăng nhập để tìm và quản lý đơn hàng của bạn</p>
-        </div>
         <div class="auth-tabs">
           <button class="auth-tab active" onclick="switchTab('login')">Đăng nhập</button>
           <button class="auth-tab" onclick="switchTab('register')">Đăng ký</button>
@@ -125,15 +120,13 @@ export default function Page() {
             <div id="login-msg" class="amsg"></div>
           </div>
           <div id="tab-register" style="display:none">
-            <div class="fg"><label>Họ tên</label><input type="text" id="reg-name" placeholder="Nguyễn Văn A" /></div>
-            <div class="fg"><label>Email</label><input type="email" id="reg-email" placeholder="email@example.com" />
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+              <div class="fg" style="margin-bottom:0"><label style="font-size:12px">Họ tên</label><input type="text" id="reg-name" placeholder="Nguyễn Văn A" style="padding:8px 10px;font-size:13px" /></div>
+              <div class="fg" style="margin-bottom:0"><label style="font-size:12px">Mật khẩu</label><input type="password" id="reg-pass" placeholder="Ít nhất 6 ký tự" style="padding:8px 10px;font-size:13px" /></div>
             </div>
-            <div class="fg"><label>Mật khẩu</label><input type="password" id="reg-pass" placeholder="Ít nhất 6 ký tự" />
-            </div>
-            <div class="fg"><label>Người giới thiệu (Email)</label><input type="email" id="reg-ref"
-                placeholder="Email người giới thiệu (tùy chọn)" />
-            </div>
-            <button class="btn-main" onclick="doRegister()">Đăng ký tài khoản</button>
+            <div class="fg" style="margin-bottom:8px"><label style="font-size:12px">Email</label><input type="email" id="reg-email" placeholder="email@example.com" style="padding:8px 10px;font-size:13px" /></div>
+            <div class="fg" style="margin-bottom:10px"><label style="font-size:12px">Người giới thiệu (Email)</label><input type="email" id="reg-ref" placeholder="Tùy chọn" style="padding:8px 10px;font-size:13px" /></div>
+            <button class="btn-main" style="padding:10px;font-size:14px" onclick="doRegister()">Đăng ký tài khoản</button>
             <div class="auth-divider"><span>HOẶC</span></div>
             <button class="btn-zalo" onclick="doLoginZalo('reg-msg')">
               <svg width="20" height="20" viewBox="0 0 460.1 436.3" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M230.1 0C103 0 0 92.5 0 206.5C0 268 30.6 323.4 82 359.8C80.2 373.1 72.8 406.8 61.3 430.7C60.2 433 62 435.6 64.5 435.1C91.5 430 139.6 414.5 168.3 395.4C188 401 208.6 404 230.1 404C357.2 404 460.1 311.5 460.1 197.5C460.1 83.5 357.2 0 230.1 0Z" fill="white"/></svg>
