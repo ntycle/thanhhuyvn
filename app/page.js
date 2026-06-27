@@ -63,6 +63,24 @@ export default function Page() {
     html.not-logged-in #auth-screen { display: flex !important; }
     html.not-logged-in #app-screen { display: none !important; }
     #auth-screen, #app-screen { display: none; } /* Default hide both to prevent flashes */
+    #typewriter-logo::after {
+      content: '|';
+      animation: blink 0.7s step-end infinite;
+    }
+    #typewriter-logo.done::after { content: ''; }
+    @keyframes blink { 50% { opacity: 0; } }
+    #typewriter-logo.done {
+      background: linear-gradient(90deg, #fff 0%, #fff 35%, #ffeb99 50%, #fff 65%, #fff 100%);
+      background-size: 300% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shimmer 5s linear infinite;
+    }
+    @keyframes shimmer {
+      0%   { background-position: 200% center; }
+      100% { background-position: -200% center; }
+    }
     @keyframes wave {
       0%   { transform: rotate(0deg); }
       15%  { transform: rotate(18deg); }
@@ -144,7 +162,7 @@ export default function Page() {
   <!-- APP -->
   <div id="app-screen">
     <div class="header">
-      <div class="header-logo">🛍️ Sandeal.io.vn</div>
+      <div class="header-logo">🛍️ <span id="typewriter-logo"></span></div>
       <div class="header-right">
         <span class="uname" id="header-uname"></span>
         <button class="btn-out" onclick="doLogout()" title="Đăng xuất" style="display:flex; align-items:center; justify-content:center; padding: 6px 10px;">
@@ -343,6 +361,24 @@ export default function Page() {
   </div>
 
   <script type="module" src="/user.js?v=1.11"></script>
+  <script>
+    (function() {
+      const text = "Sandeal.io.vn";
+      const el = document.getElementById("typewriter-logo");
+      if (!el) return;
+      let i = 0;
+      function type() {
+        if (i <= text.length) {
+          el.textContent = text.slice(0, i);
+          i++;
+          setTimeout(type, i === 1 ? 400 : 80);
+        } else {
+          el.classList.add("done");
+        }
+      }
+      setTimeout(type, 600);
+    })();
+  </script>
 ` }} />
     </>
   );
