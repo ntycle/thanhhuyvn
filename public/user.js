@@ -1006,6 +1006,11 @@ window.doRegister = async function () {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
     await updateProfile(cred.user, { displayName: name });
     await setDoc(doc(db, "users", cred.user.uid), { name, email, role: "user", refEmail, createdAt: serverTimestamp() });
+    // Cập nhật tên trực tiếp vì onAuthStateChanged đã fire trước khi updateProfile xong
+    myName = name;
+    cachedUserDoc = { uid: cred.user.uid, data: { name, email, role: "user", refEmail } };
+    document.getElementById("header-uname").textContent = name;
+    document.getElementById("welcome-name").textContent = name;
     msg.className = "amsg ok"; msg.textContent = "✅ Đăng ký thành công!";
   } catch (e) {
     msg.className = "amsg err";
