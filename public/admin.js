@@ -19,6 +19,10 @@ function escapeHTML(str) {
 }
 
 let allUsers = [], allOrders = [], allShortLinks = [], allPaymentRequests = [];
+let ordersLastLoaded = 0;
+const ORDERS_CACHE_TTL = 5 * 60 * 1000; // 5 phút
+let currentOrderPage = 1;
+const ORDERS_PER_PAGE = 100;
 
 // ─── AUTH ──────────────────────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
@@ -52,10 +56,18 @@ async function loadUsers() {
   allUsers.sort((a, b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
   renderUsers();
 }
-async function loadOrders() {
+async function loadOrders(forceRefresh = false) {
+  const now = Date.now();
+  if (!forceRefresh && allOrders.length > 0 && (now - ordersLastLoaded) < ORDERS_CACHE_TTL) {
+    renderOrders();
+    renderUsers();
+    return;
+  }
   const snap = await getDocs(collection(db, "orders"));
   allOrders = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
   allOrders.sort((a, b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+  ordersLastLoaded = Date.now();
+  currentOrderPage = 1;
   renderOrders();
   renderUsers();
 }
@@ -241,27 +253,43 @@ function populateUserFilter() {
   document.getElementById("filter-user").innerHTML = `<option value="">-- Lọc theo user --</option>` + opts;
 }
 
+function getCKValue(o) {
+  let ck = Number(o["Chiết Khấu"]);
+  if (isNaN(ck)) ck = Number((o["Chiết Khấu"]||"").toString().replace(/[^\d-]/g, ''));
+  if (isNaN(ck) || ck === 0) {
+    let ck2 = Number(o["Chiết Khấu 2%"]);
+    if (isNaN(ck2)) ck2 = Number((o["Chiết Khấu 2%"]||"").toString().replace(/[^\d-]/g, ''));
+    ck = ck2 || 0;
+  }
+  return ck;
+}
+
+function isFraudOrder(o) {
+  const status = (o["Trạng thái đặt hàng"] || "").trim();
+  const isCancelled = status === "Đã huỷ" || status === "Đã hủy" || status === "Hủy";
+  const isPaid = o.thanhToan === "Đã Thanh Toán";
+  const ck = getCKValue(o);
+  const hh = Number((o["Hoa hồng Shopee trên sản phẩm(₫)"] || "0").toString().replace(/[^\d-]/g, "")) || 0;
+
+  const reasons = [];
+  if (isPaid && isCancelled) reasons.push("Đã thanh toán nhưng đơn bị huỷ");
+  if (ck > hh && hh > 0) reasons.push(`CK (${ck.toLocaleString("vi-VN")}đ) > HH Shopee (${hh.toLocaleString("vi-VN")}đ)`);
+  return reasons;
+}
+
 function renderOrders(list) {
   const orders = list || allOrders;
   const tbody  = document.getElementById("orders-tbody");
-  
-  let totalCK = 0;
-  let totalHH = 0;
-  let totalPaid = 0;
 
+  // Tính tổng từ TOÀN BỘ danh sách (không phụ thuộc trang)
+  let totalCK = 0, totalHH = 0, totalPaid = 0, fraudCount = 0;
   orders.forEach(o => {
-    let ck = Number(o["Chiết Khấu"]);
-    if (isNaN(ck)) ck = Number((o["Chiết Khấu"]||"").toString().replace(/[^\d-]/g, ''));
-    if (isNaN(ck) || ck === 0) {
-      let ck2 = Number(o["Chiết Khấu 2%"]);
-      if (isNaN(ck2)) ck2 = Number((o["Chiết Khấu 2%"]||"").toString().replace(/[^\d-]/g, ''));
-      ck = ck2 || 0;
-    }
+    const ck = getCKValue(o);
     const hh = Number((o["Hoa hồng Shopee trên sản phẩm(₫)"] || "0").toString().replace(/[^\d-]/g, "")) || 0;
-    
     totalCK += ck;
     totalHH += hh;
     if (o.thanhToan === "Đã Thanh Toán") totalPaid += ck;
+    if (isFraudOrder(o).length > 0) fraudCount++;
   });
 
   const elTotal = document.getElementById("os-total");
@@ -269,45 +297,48 @@ function renderOrders(list) {
   const elHH = document.getElementById("os-hh");
   const elPaid = document.getElementById("os-paid");
   const elProfit = document.getElementById("os-profit");
-  
-  const profit = totalHH - totalPaid;
-  
+  const elFraud = document.getElementById("os-fraud");
+
   if (elTotal) elTotal.textContent = orders.length.toLocaleString("vi-VN");
   if (elCK) elCK.textContent = totalCK.toLocaleString("vi-VN") + " đ";
   if (elHH) elHH.textContent = totalHH.toLocaleString("vi-VN") + " đ";
   if (elPaid) elPaid.textContent = totalPaid.toLocaleString("vi-VN") + " đ";
-  if (elProfit) elProfit.textContent = profit.toLocaleString("vi-VN") + " đ";
+  if (elProfit) elProfit.textContent = (totalHH - totalPaid).toLocaleString("vi-VN") + " đ";
+  if (elFraud) {
+    elFraud.textContent = fraudCount > 0 ? `⚠️ ${fraudCount} đơn nghi vấn` : "✅ Không phát hiện";
+    elFraud.style.color = fraudCount > 0 ? "var(--red)" : "var(--green)";
+  }
 
-  if (!orders.length) { tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:24px;color:#999">Không có đơn hàng</td></tr>`; return; }
-  
+  if (!orders.length) { tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:24px;color:#999">Không có đơn hàng</td></tr>`; renderOrderPagination(0, 0); return; }
+
   // Xoá check all khi render lại
   const chkAll = document.getElementById("chk-all-orders");
   if (chkAll) chkAll.checked = false;
   if (window.updateDeleteSelectedButton) window.updateDeleteSelectedButton();
-  
-  tbody.innerHTML = orders.map(o => {
-    const val     = Number((o["Giá trị đơn hàng (₫)"]||"0").toString().replace(/[^\d-]/g, "")) || 0;
-    let ck = Number(o["Chiết Khấu"]);
-    if (isNaN(ck)) ck = Number((o["Chiết Khấu"]||"").toString().replace(/[^\d-]/g, ''));
-    if (isNaN(ck) || ck === 0) {
-      let ck2 = Number(o["Chiết Khấu 2%"]);
-      if (isNaN(ck2)) ck2 = Number((o["Chiết Khấu 2%"]||"").toString().replace(/[^\d-]/g, ''));
-      ck = ck2 || 0;
-    }
-    const hh = Number((o["Hoa hồng Shopee trên sản phẩm(₫)"] || "0").toString().replace(/[^\d-]/g, "")) || 0;
+
+  // Pagination — slice 100 items/trang
+  const totalPages = Math.ceil(orders.length / ORDERS_PER_PAGE);
+  if (currentOrderPage > totalPages) currentOrderPage = totalPages;
+  const start = (currentOrderPage - 1) * ORDERS_PER_PAGE;
+  const pageOrders = orders.slice(start, start + ORDERS_PER_PAGE);
+
+  tbody.innerHTML = pageOrders.map(o => {
+    const val = Number((o["Giá trị đơn hàng (₫)"]||"0").toString().replace(/[^\d-]/g, "")) || 0;
+    const ck  = getCKValue(o);
+    const hh  = Number((o["Hoa hồng Shopee trên sản phẩm(₫)"] || "0").toString().replace(/[^\d-]/g, "")) || 0;
     const claimed = !!o.userId;
-    // Build payment dropdown (admin only)
-    const payVal = o.thanhToan || "";
-    const payClass = payVal === "Đã Thanh Toán" ? "paid" : payVal === "Chưa Thanh Toán" || payVal === "Đang chờ xử lý" ? "unpaid" : "";
-    const paySel = `<select class="pay-sel ${payClass}" onchange="setPayment('${escapeHTML(o._id)}', this)">
-      <option value=""${payVal === "" ? " selected" : ""}>– Chưa cập nhật</option>
-      <option value="Đang chờ xử lý"${payVal === "Đang chờ xử lý" ? " selected" : ""}>Đang chờ xử lý</option>
-      <option value="Chưa Thanh Toán"${payVal === "Chưa Thanh Toán" ? " selected" : ""}>Chưa Thanh Toán</option>
-      <option value="Đã Thanh Toán"${payVal === "Đã Thanh Toán" ? " selected" : ""}>Đã Thanh Toán</option>
-    </select>`;
-    return `<tr>
-      <td style="text-align: center;"><input type="checkbox" class="chk-order" value="${escapeHTML(o._id)}" onchange="toggleOrderCheckbox()"></td>
-      <td><code>${escapeHTML(o["ID đơn hàng"]||"")}</code></td>
+    const payVal  = o.thanhToan || "";
+    const payClass = payVal === "Đã Thanh Toán" ? "badge-paid" : payVal === "Chưa Thanh Toán" || payVal === "Đang chờ xử lý" ? "badge-unpaid" : "badge-free";
+    const payBadge = `<span class="badge ${payClass}">${payVal || "– Chưa cập nhật"}</span>`;
+
+    const fraudReasons = isFraudOrder(o);
+    const fraudBadge = fraudReasons.length > 0
+      ? `<span title="${escapeHTML(fraudReasons.join('; '))}" style="cursor:help;color:var(--red);font-size:14px">⚠️</span>`
+      : "";
+
+    return `<tr${fraudReasons.length > 0 ? ' style="background:#fff5f5"' : ''}>
+      <td style="text-align:center"><input type="checkbox" class="chk-order" value="${escapeHTML(o._id)}" onchange="toggleOrderCheckbox()"></td>
+      <td><code>${escapeHTML(o["ID đơn hàng"]||"")}</code> ${fraudBadge}</td>
       <td>${val.toLocaleString("vi-VN")}</td>
       <td style="color:var(--orange);font-weight:600">
         ${ck.toLocaleString("vi-VN")} đ
@@ -316,7 +347,7 @@ function renderOrders(list) {
       <td style="color:var(--green);font-weight:600">${hh.toLocaleString("vi-VN")} đ</td>
       <td>${escapeHTML(o["Trạng thái đặt hàng"] || "–")}</td>
       <td><span class="badge badge-${claimed?"claimed":"free"}">${claimed ? "✅ Đã gán" : "⏳ Chưa gán"}</span></td>
-      <td>${paySel}</td>
+      <td>${payBadge}</td>
       <td>${getUserName(o.userId)}</td>
       <td style="display:flex;gap:6px">
         ${claimed ? `<button class="btn btn-outline btn-xs" onclick="resetClaim('${escapeHTML(o._id)}')">↩ Reset</button>` : ""}
@@ -324,7 +355,47 @@ function renderOrders(list) {
       </td>
     </tr>`;
   }).join("");
+
+  renderOrderPagination(orders.length, totalPages);
 }
+
+function renderOrderPagination(total, totalPages) {
+  let el = document.getElementById("orders-pagination");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "orders-pagination";
+    el.style.cssText = "display:flex;align-items:center;gap:8px;justify-content:center;padding:12px 0;flex-wrap:wrap";
+    const tbody = document.getElementById("orders-tbody");
+    tbody?.closest("table")?.after(el);
+  }
+  if (totalPages <= 1) { el.innerHTML = ""; return; }
+
+  const pages = [];
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || (i >= currentOrderPage - 2 && i <= currentOrderPage + 2)) {
+      pages.push(i);
+    } else if (pages[pages.length - 1] !== "...") {
+      pages.push("...");
+    }
+  }
+
+  el.innerHTML = `
+    <button class="btn btn-outline btn-xs" ${currentOrderPage === 1 ? "disabled" : ""} onclick="goOrderPage(${currentOrderPage - 1})">◀</button>
+    ${pages.map(p => p === "..."
+      ? `<span style="padding:0 4px">...</span>`
+      : `<button class="btn btn-xs ${p === currentOrderPage ? "btn-green" : "btn-outline"}" onclick="goOrderPage(${p})">${p}</button>`
+    ).join("")}
+    <button class="btn btn-outline btn-xs" ${currentOrderPage === totalPages ? "disabled" : ""} onclick="goOrderPage(${currentOrderPage + 1})">▶</button>
+    <span style="font-size:12px;color:#999">${total} đơn</span>
+  `;
+}
+
+window.goOrderPage = function(page) {
+  currentOrderPage = page;
+  renderOrders(currentFilteredOrders.length > 0 || document.getElementById("filter-status")?.value || document.getElementById("filter-user")?.value || document.getElementById("filter-id")?.value
+    ? currentFilteredOrders : undefined);
+  document.getElementById("orders-tbody")?.closest(".card")?.scrollIntoView({ behavior: "smooth", block: "start" });
+};
 
 let currentFilteredOrders = [];
 
@@ -415,7 +486,7 @@ window.editCK = async function(docId, currentCK) {
     await updateDoc(doc(db, "orders", docId), { "Chiết Khấu": newCK, updatedAt: serverTimestamp() });
     const o = allOrders.find(o => o._id === docId);
     if (o) o["Chiết Khấu"] = newCK;
-    await loadOrders(); renderDashboard();
+    await loadOrders(true); renderDashboard();
   } catch(e) {
     alert("❌ Lỗi cập nhật chiết khấu: " + e.message);
   }
@@ -493,7 +564,7 @@ window.fixDraftData = async function() {
     }
 
     await batch.commit();
-    await loadOrders(); renderDashboard();
+    await loadOrders(true); renderDashboard();
     msgEl.innerHTML = `<div class="msg msg-ok">✅ Hoàn tất! Đã dọn <strong>${fixed}</strong> đơn. Bỏ qua: <strong>${skipped}</strong>.</div>`;
   } catch(e) {
     msgEl.innerHTML = `<div class="msg msg-err">❌ Lỗi: ${e.message}</div>`;
@@ -521,7 +592,7 @@ window.setPayment = async function(docId, sel) {
 window.resetClaim = async function(docId) {
   if (!confirm("Reset gán đơn hàng này? Đơn sẽ trở về pool chung.")) return;
   await updateDoc(doc(db, "orders", docId), { userId: null, claimedAt: null });
-  await loadOrders(); renderDashboard();
+  await loadOrders(true); renderDashboard();
 };
 
 // Reset all claims for a user
@@ -532,13 +603,13 @@ window.resetUserClaims = async function(uid, name) {
   const batch = writeBatch(db);
   snap.docs.forEach(d => batch.update(d.ref, { userId: null, claimedAt: null }));
   await batch.commit();
-  await loadOrders(); renderDashboard();
+  await loadOrders(true); renderDashboard();
 };
 
 window.deleteOrder = async function(docId) {
   if (!confirm("Xóa đơn hàng này?")) return;
   await deleteDoc(doc(db, "orders", docId));
-  await loadOrders(); renderDashboard();
+  await loadOrders(true); renderDashboard();
 };
 
 window.toggleAllOrders = function(source) {
@@ -591,7 +662,7 @@ window.deleteSelectedOrders = async function() {
       });
       await batch.commit();
     }
-    await loadOrders(); 
+    await loadOrders(true); 
     renderDashboard();
   } catch (error) {
     alert("❌ Lỗi khi xoá: " + error.message);
@@ -611,7 +682,7 @@ window.clearAllOrders = async function() {
     snap.docs.slice(i, i+CHUNK).forEach(d => batch.delete(d.ref));
     await batch.commit();
   }
-  await loadOrders(); renderDashboard();
+  await loadOrders(true); renderDashboard();
 };
 
 // ─── UPLOAD ────────────────────────────────────────────────
@@ -794,7 +865,7 @@ window.confirmUpload = async function() {
     </div>`;
     document.getElementById("upload-preview").innerHTML = "";
     pendingData = null;
-    await loadOrders(); renderDashboard();
+    await loadOrders(true); renderDashboard();
   } catch(e) {
     msgEl.innerHTML = `<div class="msg msg-err">❌ ${e.message}</div>`;
   }

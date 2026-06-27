@@ -76,6 +76,7 @@ export default function Page() {
             <div class="stat-card"><div class="stat-icon">💰</div><div><div class="stat-label">Tổng HH Shopee</div><div class="stat-value" id="os-hh" style="color:var(--green);">0 đ</div></div></div>
             <div class="stat-card"><div class="stat-icon">✅</div><div><div class="stat-label">Tổng TT (Đã trả)</div><div class="stat-value" id="os-paid">0 đ</div></div></div>
             <div class="stat-card"><div class="stat-icon">📈</div><div><div class="stat-label">Lợi nhuận</div><div class="stat-value" id="os-profit" style="color:#007bff;">0 đ</div></div></div>
+            <div class="stat-card"><div class="stat-icon">🔍</div><div><div class="stat-label">Kiểm tra gian lận</div><div class="stat-value" id="os-fraud" style="font-size:13px">–</div></div></div>
           </div>
           <div class="panel">
             <div class="panel-header">
