@@ -692,8 +692,10 @@ window.confirmUpload = async function() {
             );
         }
 
-        // Đơn hàng ĐÃ CÓ trong database nhưng không còn doc nào chưa match → bỏ qua
-        if (!matchedDoc && existingDocs.length > 0 && existingDocs.every(d => usedDocIds.has(d._id))) {
+        // Đơn hàng ĐÃ CÓ trong database nhưng không match được:
+        // - Nếu có ID Model → luôn tạo mới (có thể là sản phẩm khác trong cùng đơn)
+        // - Nếu không có ID Model → bỏ qua để tránh tạo trùng
+        if (!matchedDoc && existingDocs.length > 0 && !modelId) {
             return;
         }
 
