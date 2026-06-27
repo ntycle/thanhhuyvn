@@ -63,7 +63,7 @@ onAuthStateChanged(auth, async (user) => {
       cachedUserDoc = { uid: user.uid, data: uData };
     }
     
-    myName = uData.name || user.email;
+    myName = uData.name || user.displayName || user.email;
 
     document.getElementById("header-uname").textContent = myName;
     document.getElementById("welcome-name").textContent = myName;
