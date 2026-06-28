@@ -715,6 +715,8 @@ async function handleZaloOauth(code) {
       name: realName,
       avatar: realAvatar,
       role: "user",
+      zaloId: zaloId,
+      loginType: "zalo",
       updatedAt: serverTimestamp()
     };
     if (!existingSnap.exists() || !existingSnap.data().createdAt) {
