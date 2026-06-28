@@ -709,12 +709,18 @@ async function handleZaloOauth(code) {
       photoURL: realAvatar
     });
     
-    await setDoc(doc(db, "users", userCredential.user.uid), {
+    // Đọc doc hiện tại để giữ createdAt nếu đã có
+    const existingSnap = await getDoc(doc(db, "users", userCredential.user.uid));
+    const updateData = {
       name: realName,
       avatar: realAvatar,
-      email: userCredential.user.email,
-      role: "user"
-    }, { merge: true });
+      role: "user",
+      updatedAt: serverTimestamp()
+    };
+    if (!existingSnap.exists() || !existingSnap.data().createdAt) {
+      updateData.createdAt = serverTimestamp();
+    }
+    await setDoc(doc(db, "users", userCredential.user.uid), updateData, { merge: true });
     
     if (msg) {
       msg.className = "amsg ok";
