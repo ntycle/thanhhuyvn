@@ -1000,8 +1000,32 @@ window.doRegister = async function () {
   const refEmail = document.getElementById("reg-ref").value.trim();
   const msg = document.getElementById("reg-msg");
   msg.className = "amsg";
-  if (!name || !email || !pass) { msg.className = "amsg err"; msg.textContent = "Vui lòng nhập đầy đủ."; return; }
-  if (pass.length < 6) { msg.className = "amsg err"; msg.textContent = "Mật khẩu phải ít nhất 6 ký tự."; return; }
+  // Xoá lỗi cũ
+  ["reg-name","reg-email","reg-pass"].forEach(id => {
+    const el = document.getElementById(id);
+    el.style.borderColor = "";
+    const err = el.parentElement.querySelector(".field-err");
+    if (err) err.remove();
+  });
+
+  let hasErr = false;
+  function fieldErr(id, text) {
+    const el = document.getElementById(id);
+    el.style.borderColor = "#e53e3e";
+    const span = document.createElement("span");
+    span.className = "field-err";
+    span.style.cssText = "color:#e53e3e;font-size:12px;margin-top:3px;display:block";
+    span.textContent = text;
+    el.parentElement.appendChild(span);
+    hasErr = true;
+  }
+
+  if (!name) fieldErr("reg-name", "Vui lòng nhập họ tên");
+  if (!email) fieldErr("reg-email", "Vui lòng nhập email");
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) fieldErr("reg-email", "Email không hợp lệ");
+  if (!pass) fieldErr("reg-pass", "Vui lòng nhập mật khẩu");
+  else if (pass.length < 6) fieldErr("reg-pass", "Mật khẩu phải ít nhất 6 ký tự");
+  if (hasErr) return;
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
     await updateProfile(cred.user, { displayName: name });

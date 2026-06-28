@@ -121,10 +121,10 @@ export default function Page() {
           </div>
           <div id="tab-register" style="display:none">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-              <div class="fg" style="margin-bottom:0"><label style="font-size:12px">Họ tên</label><input type="text" id="reg-name" placeholder="Nguyễn Văn A" style="padding:8px 10px;font-size:13px" /></div>
-              <div class="fg" style="margin-bottom:0"><label style="font-size:12px">Mật khẩu</label><input type="password" id="reg-pass" placeholder="Ít nhất 6 ký tự" style="padding:8px 10px;font-size:13px" /></div>
+              <div class="fg" style="margin-bottom:0"><label style="font-size:12px">Họ tên <span style="color:#e53e3e">*</span></label><input type="text" id="reg-name" placeholder="Nguyễn Văn A" style="padding:8px 10px;font-size:13px" /></div>
+              <div class="fg" style="margin-bottom:0"><label style="font-size:12px">Mật khẩu <span style="color:#e53e3e">*</span></label><input type="password" id="reg-pass" placeholder="Ít nhất 6 ký tự" style="padding:8px 10px;font-size:13px" /></div>
             </div>
-            <div class="fg" style="margin-bottom:8px"><label style="font-size:12px">Email</label><input type="email" id="reg-email" placeholder="email@example.com" style="padding:8px 10px;font-size:13px" /></div>
+            <div class="fg" style="margin-bottom:8px"><label style="font-size:12px">Email <span style="color:#e53e3e">*</span></label><input type="email" id="reg-email" placeholder="email@example.com" style="padding:8px 10px;font-size:13px" /></div>
             <div class="fg" style="margin-bottom:10px"><label style="font-size:12px">Người giới thiệu (Email)</label><input type="email" id="reg-ref" placeholder="Tùy chọn" style="padding:8px 10px;font-size:13px" /></div>
             <button class="btn-main" style="padding:10px;font-size:14px" onclick="doRegister()">Đăng ký tài khoản</button>
             <div class="auth-divider"><span>HOẶC</span></div>
