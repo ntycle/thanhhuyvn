@@ -729,8 +729,8 @@ window.confirmUpload = async function() {
       const batch = writeBatch(db);
       const slice = pendingData.slice(i, i + CHUNK);
 
-      // Check existing docs to distinguish new vs update
-      await Promise.all(slice.map(async order => {
+      // Xử lý tuần tự (không dùng Promise.all) để tránh race condition với usedDocIds
+      for (const order of slice) {
         const orderId = (order["ID đơn hàng"] || "").toString().trim();
         if (!orderId) {
           // No order ID — create with auto ID (fallback)
@@ -854,7 +854,7 @@ window.confirmUpload = async function() {
           batch.set(ref, { ...order, userId: inheritUserId, claimedAt: inheritClaimedAt, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
           countNew++;
         }
-      }));
+      }
 
       await batch.commit();
     }
