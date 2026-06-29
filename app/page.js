@@ -92,6 +92,21 @@ export default function Page() {
     }
   </style>
 
+  {/* FB WebView Overlay */}
+  <div id="fb-webview-overlay">
+    <div className="fb-popup">
+      <div className="fb-logo">🌐</div>
+      <h2>Mở bằng trình duyệt ngoài</h2>
+      <p>Sandeal.io.vn hoạt động tốt nhất trên Chrome hoặc Safari. Vui lòng mở bằng trình duyệt ngoài để trải nghiệm đầy đủ.</p>
+      <div id="fb-open-chrome-wrap"></div>
+      <div className="fb-steps" id="fb-steps-text"></div>
+      <button className="fb-btn btn-copy" onclick="(function(btn){navigator.clipboard.writeText(location.href).then(()=>{btn.textContent='✅ Đã copy link!';setTimeout(()=>{btn.textContent='📋 Copy link'},2000)}).catch(()=>{btn.textContent='📋 Copy link'});})(this)">📋 Copy link</button>
+      <button className="fb-dismiss" onclick="document.getElementById('fb-webview-overlay').classList.remove('show')">Bỏ qua, tiếp tục xem</button>
+    </div>
+  </div>
+
+  <script src="/fbdetect.js" defer></script>
+
   <!-- AUTH -->
   <div id="auth-screen">
     <div class="auth-container">
@@ -121,10 +136,10 @@ export default function Page() {
           </div>
           <div id="tab-register" style="display:none">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-              <div class="fg" style="margin-bottom:0"><label style="font-size:12px">Họ tên</label><input type="text" id="reg-name" placeholder="Nguyễn Văn A" style="padding:8px 10px;font-size:13px" /></div>
-              <div class="fg" style="margin-bottom:0"><label style="font-size:12px">Mật khẩu</label><input type="password" id="reg-pass" placeholder="Ít nhất 6 ký tự" style="padding:8px 10px;font-size:13px" /></div>
+              <div class="fg" style="margin-bottom:0"><label style="font-size:12px">Họ tên <span style="color:#e53e3e">*</span></label><input type="text" id="reg-name" placeholder="Nguyễn Văn A" style="padding:8px 10px;font-size:13px" /></div>
+              <div class="fg" style="margin-bottom:0"><label style="font-size:12px">Mật khẩu <span style="color:#e53e3e">*</span></label><input type="password" id="reg-pass" placeholder="Ít nhất 6 ký tự" style="padding:8px 10px;font-size:13px" /></div>
             </div>
-            <div class="fg" style="margin-bottom:8px"><label style="font-size:12px">Email</label><input type="email" id="reg-email" placeholder="email@example.com" style="padding:8px 10px;font-size:13px" /></div>
+            <div class="fg" style="margin-bottom:8px"><label style="font-size:12px">Email <span style="color:#e53e3e">*</span></label><input type="email" id="reg-email" placeholder="email@example.com" style="padding:8px 10px;font-size:13px" /></div>
             <div class="fg" style="margin-bottom:10px"><label style="font-size:12px">Người giới thiệu (Email)</label><input type="email" id="reg-ref" placeholder="Tùy chọn" style="padding:8px 10px;font-size:13px" /></div>
             <button class="btn-main" style="padding:10px;font-size:14px" onclick="doRegister()">Đăng ký tài khoản</button>
             <div class="auth-divider"><span>HOẶC</span></div>

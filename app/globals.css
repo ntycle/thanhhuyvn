@@ -1736,3 +1736,52 @@ body {
     box-shadow: 0 4px 16px rgba(0,0,0,0.04);
   }
 }
+
+/* ── FB WebView popup ── */
+#fb-webview-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 99999;
+  background: rgba(0,0,0,0.5);
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+#fb-webview-overlay.show { display: flex; }
+#fb-webview-overlay .fb-popup {
+  background: #fff;
+  border-radius: 20px;
+  padding: 28px 22px 22px;
+  width: 100%; max-width: 360px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+#fb-webview-overlay .fb-logo { font-size: 44px; margin-bottom: 10px; }
+#fb-webview-overlay h2 {
+  font-size: 18px; font-weight: 700; color: #1a1a1a; margin: 0 0 8px;
+}
+#fb-webview-overlay p {
+  font-size: 14px; color: #666; line-height: 1.6; margin: 0 0 18px;
+}
+#fb-webview-overlay .fb-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%;
+  padding: 13px 16px; border-radius: 12px;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  border: none; text-decoration: none; margin-bottom: 10px;
+  transition: opacity .15s;
+}
+#fb-webview-overlay .fb-btn:active { opacity: .75; }
+#fb-webview-overlay .btn-chrome { background: #1a73e8; color: #fff; }
+#fb-webview-overlay .btn-copy { background: #f0f0f0; color: #333; }
+#fb-webview-overlay .fb-steps {
+  background: #f7f7f7; border-radius: 10px;
+  padding: 12px 14px; text-align: left;
+  font-size: 13px; color: #555; line-height: 1.8;
+  margin-bottom: 14px;
+}
+#fb-webview-overlay .fb-steps b { color: #1a1a1a; }
+#fb-webview-overlay .fb-dismiss {
+  font-size: 13px; color: #aaa; cursor: pointer; margin-top: 4px;
+  background: none; border: none; padding: 4px 8px;
+}
