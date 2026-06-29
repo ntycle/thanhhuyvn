@@ -91,46 +91,6 @@ export default function Page() {
       100% { transform: rotate(0deg); }
     }
   </style>
-  <style dangerouslySetInnerHTML={{__html: `
-    #fb-webview-overlay {
-      display: none !important;
-      position: fixed !important; inset: 0 !important; z-index: 99999 !important;
-      background: rgba(0,0,0,0.55) !important;
-      align-items: center !important;
-      justify-content: center !important;
-      padding: 24px !important;
-    }
-    #fb-webview-overlay.show { display: flex !important; }
-    #fb-webview-overlay .fb-popup {
-      background: #ffffff !important;
-      border-radius: 20px !important;
-      padding: 28px 22px 22px !important;
-      width: 100% !important; max-width: 360px !important;
-      text-align: center !important;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.22) !important;
-    }
-    #fb-webview-overlay .fb-logo { font-size: 44px; margin-bottom: 10px; }
-    #fb-webview-overlay h2 { font-size: 18px; font-weight: 700; color: #1a1a1a !important; margin: 0 0 8px; }
-    #fb-webview-overlay p { font-size: 14px; color: #666 !important; line-height: 1.6; margin: 0 0 18px; }
-    #fb-webview-overlay .fb-btn {
-      display: flex !important; align-items: center; justify-content: center; gap: 8px;
-      width: 100% !important; padding: 13px 16px !important; border-radius: 12px !important;
-      font-size: 15px !important; font-weight: 600 !important; cursor: pointer;
-      border: none !important; text-decoration: none; margin-bottom: 10px !important;
-    }
-    #fb-webview-overlay .btn-chrome { background: #1a73e8 !important; color: #fff !important; }
-    #fb-webview-overlay .btn-copy { background: #f0f0f0 !important; color: #333 !important; }
-    #fb-webview-overlay .fb-steps {
-      background: #f7f7f7 !important; border-radius: 10px !important;
-      padding: 12px 14px !important; text-align: left !important;
-      font-size: 13px !important; color: #555 !important; line-height: 1.8;
-      margin-bottom: 14px !important;
-    }
-    #fb-webview-overlay .fb-dismiss {
-      font-size: 13px; color: #aaa !important; cursor: pointer; margin-top: 4px;
-      background: none !important; border: none; padding: 4px 8px;
-    }
-  `}} />
 
   <div id="fb-webview-overlay">
     <div className="fb-popup">
