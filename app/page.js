@@ -171,7 +171,7 @@ export default function Page() {
 
       if (isAndroid) {
         // Intent URL mở Chrome trên Android
-        var intentUrl = "intent://" + url.replace(/^https?:\\/\\//, "") + "#Intent;scheme=https;package=com.android.chrome;end";
+        var intentUrl = "intent://" + url.replace(new RegExp("^https?://"), "") + "#Intent;scheme=https;package=com.android.chrome;end";
         chromewrap.innerHTML = '<a class="fb-btn btn-chrome" href="' + intentUrl + '">🌐 Mở bằng Chrome</a>';
         stepsEl.innerHTML = '<b>Hoặc làm thủ công:</b><br>1. Bấm vào <b>⋮</b> (góc trên phải)<br>2. Chọn <b>"Open in browser"</b>';
       } else if (isIOS) {
