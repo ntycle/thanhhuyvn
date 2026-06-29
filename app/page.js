@@ -90,70 +90,7 @@ export default function Page() {
       75%  { transform: rotate(12deg); }
       100% { transform: rotate(0deg); }
     }
-    /* FB WebView popup */
-    #fb-webview-overlay {
-      display: none;
-      position: fixed; inset: 0; z-index: 99999;
-      background: rgba(0,0,0,0.5);
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-    }
-    #fb-webview-overlay.show { display: flex; }
-    #fb-webview-overlay .fb-popup {
-      background: #fff;
-      border-radius: 20px;
-      padding: 28px 22px 22px;
-      width: 100%; max-width: 360px;
-      text-align: center;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    }
-    #fb-webview-overlay .fb-logo { font-size: 44px; margin-bottom: 10px; }
-    #fb-webview-overlay h2 {
-      font-size: 18px; font-weight: 700; color: #1a1a1a; margin: 0 0 8px;
-    }
-    #fb-webview-overlay p {
-      font-size: 14px; color: #666; line-height: 1.6; margin: 0 0 18px;
-    }
-    #fb-webview-overlay .fb-btn {
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      width: 100%;
-      padding: 13px 16px; border-radius: 12px;
-      font-size: 15px; font-weight: 600; cursor: pointer;
-      border: none; text-decoration: none; margin-bottom: 10px;
-      transition: opacity .15s;
-    }
-    #fb-webview-overlay .fb-btn:active { opacity: .75; }
-    #fb-webview-overlay .btn-chrome { background: #1a73e8; color: #fff; }
-    #fb-webview-overlay .btn-copy { background: #f0f0f0; color: #333; }
-    #fb-webview-overlay .fb-steps {
-      background: #f7f7f7; border-radius: 10px;
-      padding: 12px 14px; text-align: left;
-      font-size: 13px; color: #555; line-height: 1.8;
-      margin-bottom: 14px;
-    }
-    #fb-webview-overlay .fb-steps b { color: #1a1a1a; }
-    #fb-webview-overlay .fb-dismiss {
-      font-size: 13px; color: #aaa; cursor: pointer; margin-top: 4px;
-      background: none; border: none; padding: 4px 8px;
-    }
   </style>
-
-  {/* FB WebView Overlay */}
-  <div id="fb-webview-overlay">
-    <div className="fb-popup">
-      <div className="fb-logo">🌐</div>
-      <h2>Mở bằng trình duyệt ngoài</h2>
-      <p>Sandeal.io.vn hoạt động tốt nhất trên Chrome hoặc Safari. Vui lòng mở bằng trình duyệt ngoài để trải nghiệm đầy đủ.</p>
-      <div id="fb-open-chrome-wrap"></div>
-      <div className="fb-steps" id="fb-steps-text"></div>
-      <button className="fb-btn btn-copy" onclick="(function(btn){navigator.clipboard.writeText(location.href).then(()=>{btn.textContent='✅ Đã copy link!';setTimeout(()=>{btn.textContent='📋 Copy link'},2000)}).catch(()=>{btn.textContent='📋 Copy link'});})(this)">📋 Copy link</button>
-      <button className="fb-dismiss" onclick="document.getElementById('fb-webview-overlay').classList.remove('show')">Bỏ qua, tiếp tục xem</button>
-    </div>
-  </div>
-
-  <script src="/fbdetect.js" defer></script>
 
   <!-- AUTH -->
   <div id="auth-screen">
@@ -184,10 +121,10 @@ export default function Page() {
           </div>
           <div id="tab-register" style="display:none">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-              <div class="fg" style="margin-bottom:0"><label style="font-size:12px">Họ tên <span style="color:#e53e3e">*</span></label><input type="text" id="reg-name" placeholder="Nguyễn Văn A" style="padding:8px 10px;font-size:13px" /></div>
-              <div class="fg" style="margin-bottom:0"><label style="font-size:12px">Mật khẩu <span style="color:#e53e3e">*</span></label><input type="password" id="reg-pass" placeholder="Ít nhất 6 ký tự" style="padding:8px 10px;font-size:13px" /></div>
+              <div class="fg" style="margin-bottom:0"><label style="font-size:12px">Họ tên</label><input type="text" id="reg-name" placeholder="Nguyễn Văn A" style="padding:8px 10px;font-size:13px" /></div>
+              <div class="fg" style="margin-bottom:0"><label style="font-size:12px">Mật khẩu</label><input type="password" id="reg-pass" placeholder="Ít nhất 6 ký tự" style="padding:8px 10px;font-size:13px" /></div>
             </div>
-            <div class="fg" style="margin-bottom:8px"><label style="font-size:12px">Email <span style="color:#e53e3e">*</span></label><input type="email" id="reg-email" placeholder="email@example.com" style="padding:8px 10px;font-size:13px" /></div>
+            <div class="fg" style="margin-bottom:8px"><label style="font-size:12px">Email</label><input type="email" id="reg-email" placeholder="email@example.com" style="padding:8px 10px;font-size:13px" /></div>
             <div class="fg" style="margin-bottom:10px"><label style="font-size:12px">Người giới thiệu (Email)</label><input type="email" id="reg-ref" placeholder="Tùy chọn" style="padding:8px 10px;font-size:13px" /></div>
             <button class="btn-main" style="padding:10px;font-size:14px" onclick="doRegister()">Đăng ký tài khoản</button>
             <div class="auth-divider"><span>HOẶC</span></div>
