@@ -4,17 +4,9 @@ import { useEffect } from "react";
 export default function Page() {
   return (
     <>
-      <script dangerouslySetInnerHTML={{
-        __html: `window.ENV = {
-      apiKey: ${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_API_KEY)},
-      authDomain: ${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN)},
-      projectId: ${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID)},
-      storageBucket: ${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET)},
-      messagingSenderId: ${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID)},
-      appId: ${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_APP_ID)}
-    };` }} />
-      <script type="module" src="/user.js?v=1.11"></script>
-      <div dangerouslySetInnerHTML={{
+      <script dangerouslySetInnerHTML={{ __html: `window.ENV={apiKey:${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_API_KEY)},authDomain:${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN)},projectId:${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID)},storageBucket:${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET)},messagingSenderId:${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID)},appId:${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_APP_ID)}};` }} />
+      <script type="module" src="/user.js?v=1.12"></script>
+      <div suppressHydrationWarning dangerouslySetInnerHTML={{
         __html: `
 
   
@@ -170,6 +162,7 @@ export default function Page() {
     <div class="tab-nav">
       <button class="active" id="nav-search" onclick="showMainTab('search')">🔍 Tìm đơn hàng</button>
       <button id="nav-mine" onclick="showMainTab('mine')">📦 Đơn của tôi <span id="mine-badge"></span></button>
+      <button id="nav-bonus" onclick="showMainTab('bonus')" style="position:relative">🎁 Bonus<span id="nav-bonus-badge" style="display:none;position:absolute;top:8px;right:4px;background:#e53935;border-radius:50%;width:7px;height:7px"></span></button>
     </div>
 
     <div class="container">
@@ -320,6 +313,12 @@ export default function Page() {
         </div>
       </div>
     </div>
+
+      <!-- BONUS TAB -->
+      <div id="main-bonus" style="display:none">
+        <div id="main-bonus-content" style="padding:8px 0"></div>
+      </div>
+    </div>
   </div>
 
   <div class="overlay" id="bank-info-modal"
@@ -356,7 +355,6 @@ export default function Page() {
     </div>
   </div>
 
-  <script type="module" src="/user.js?v=1.11"></script>
   <script>
     (function() {
       const text = "Sandeal.io.vn";

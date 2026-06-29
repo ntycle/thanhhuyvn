@@ -85,6 +85,7 @@ onAuthStateChanged(auth, async (user) => {
     }
 
     await refreshMyOrders();
+    loadMyBonus();
   } else {
     document.documentElement.classList.remove("is-logged-in");
     document.documentElement.classList.add("not-logged-in");
@@ -682,6 +683,34 @@ async function handleZaloOauth(code) {
     const realName = profileData.name || "Người dùng Zalo";
     const realAvatar = profileData.picture?.data?.url || "";
 
+    // LINK MODE: user email muốn gắn zaloId vào tài khoản hiện tại
+    if (localStorage.getItem('zalo_link_mode') === '1') {
+      localStorage.removeItem('zalo_link_mode');
+      window.history.replaceState({}, document.title, window.location.pathname);
+      if (msg) { msg.className = "amsg"; msg.textContent = "⏳ Đang liên kết..."; msg.style.display = "block"; }
+
+      // Đợi Firebase Auth restore session (me có thể chưa được set lúc này)
+      const resolvedUid = await new Promise(resolve => {
+        if (me) { resolve(me); return; }
+        const unsub = onAuthStateChanged(auth, user => {
+          unsub();
+          resolve(user ? user.uid : null);
+        });
+      });
+
+      if (!resolvedUid) {
+        if (msg) { msg.className = "amsg err"; msg.textContent = "❌ Bạn cần đăng nhập trước khi liên kết Zalo."; }
+        return;
+      }
+
+      await setDoc(doc(db, "users", resolvedUid), { zaloId, updatedAt: serverTimestamp() }, { merge: true });
+      if (cachedUserDoc?.data) cachedUserDoc.data.zaloId = zaloId;
+      else if (cachedUserDoc) cachedUserDoc.zaloId = zaloId;
+      if (msg) { msg.className = "amsg ok"; msg.textContent = "✅ Liên kết Zalo thành công!"; }
+      await loadMyBonus();
+      return;
+    }
+
     // PHASE 3: Mint Custom Token on Server
     let mintRes = await fetch(tokenUrl, {
       method: 'POST',
@@ -719,11 +748,17 @@ async function handleZaloOauth(code) {
       loginType: "zalo",
       updatedAt: serverTimestamp()
     };
-    if (!existingSnap.exists() || !existingSnap.data().createdAt) {
+    const isNewUser = !existingSnap.exists() || !existingSnap.data().createdAt;
+    if (isNewUser) {
       updateData.createdAt = serverTimestamp();
     }
     await setDoc(doc(db, "users", userCredential.user.uid), updateData, { merge: true });
-    
+
+    // Tạo bonus code cho user Zalo mới đăng ký sau ngày launch
+    if (isNewUser && new Date() >= BONUS_LAUNCH_DATE) {
+      await createBonusCodeForUser(userCredential.user.uid, zaloId);
+    }
+
     if (msg) {
       msg.className = "amsg ok";
       msg.textContent = "✅ Đăng nhập Zalo thành công!";
@@ -827,7 +862,8 @@ window.createPaymentRequest = async function () {
     totalDisc += calcDisc(o);
   });
 
-  const msg = `Bạn sắp tạo yêu cầu thanh toán cho ${eligibleOrders.length} đơn hàng.\nTổng giá trị: ${totalVal.toLocaleString("vi-VN")}đ\nTổng chiết khấu: ${totalDisc.toLocaleString("vi-VN")}đ\n\nBạn có muốn tiếp tục?`;
+  const bonusPreview = (myBonusCode && myBonusCode.status === "active") ? `\n🎁 Bonus +${myBonusCode.bonusPercent}%: +${Math.round(totalDisc * (myBonusCode.bonusPercent||10) / 100).toLocaleString("vi-VN")}đ` : "";
+  const msg = `Bạn sắp tạo yêu cầu thanh toán cho ${eligibleOrders.length} đơn hàng.\nTổng chiết khấu: ${totalDisc.toLocaleString("vi-VN")}đ${bonusPreview}\n\nBạn có muốn tiếp tục?`;
   if (!confirm(msg)) return;
 
   const btn = document.querySelector('button[onclick="createPaymentRequest()"]');
@@ -841,6 +877,18 @@ window.createPaymentRequest = async function () {
     const batch = writeBatch(db);
 
     // Create new payment_requests document
+    // Kiểm tra bonus active
+    let bonusApplied = false, bonusAmount = 0, bonusPercent = 0;
+    if (myBonusCode && myBonusCode.status === "active") {
+      const expireTs = myBonusCode.expireAt?.toDate ? myBonusCode.expireAt.toDate().getTime() : (myBonusCode.expireAt ? new Date(myBonusCode.expireAt).getTime() : null);
+      if (!expireTs || Date.now() <= expireTs) {
+        bonusApplied = true;
+        bonusPercent = myBonusCode.bonusPercent || BONUS_PERCENT;
+        bonusAmount = Math.round(totalDisc * bonusPercent / 100);
+      }
+    }
+    const totalPayout = totalDisc + bonusAmount;
+
     const reqRef = doc(collection(db, "payment_requests"), reqId);
     batch.set(reqRef, {
       requestId: reqId,
@@ -850,9 +898,24 @@ window.createPaymentRequest = async function () {
       totalCount: eligibleOrders.length,
       totalValue: totalDisc,
       totalOrderValue: totalVal,
+      bonusApplied,
+      bonusPercent: bonusApplied ? bonusPercent : 0,
+      bonusAmount: bonusApplied ? bonusAmount : 0,
+      totalPayout,
       status: "pending",
       createdAt: serverTimestamp()
     });
+
+    // Update bonusCode → used
+    if (bonusApplied && myBonusCode) {
+      const bonusRef = doc(db, "bonusCodes", myBonusCode.id);
+      batch.update(bonusRef, {
+        status: "used",
+        usedAt: serverTimestamp(),
+        usedOnRequestId: reqId,
+        bonusAmount,
+      });
+    }
 
     // Update all relevant orders
     eligibleOrders.forEach(o => {
@@ -861,8 +924,10 @@ window.createPaymentRequest = async function () {
     });
 
     await batch.commit();
-    alert("✅ Đã tạo yêu cầu thanh toán thành công!");
+    const bonusMsg = bonusApplied ? `\n🎁 Bonus +${bonusAmount.toLocaleString("vi-VN")}đ đã được áp dụng!` : "";
+    alert(`✅ Đã tạo yêu cầu thanh toán thành công!${bonusMsg}`);
     await refreshMyOrders();
+    if (bonusApplied) loadMyBonus();
   } catch (e) {
     alert("❌ Lỗi: " + e.message);
   } finally {
@@ -870,19 +935,252 @@ window.createPaymentRequest = async function () {
   }
 };
 
+// ─── BONUS CODE ───────────────────────────────────────────
+const BONUS_LAUNCH_DATE = new Date("2026-07-01T00:00:00+07:00");
+const BONUS_PERCENT = 10;
+
+function genBonusCode() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let s = "SD-";
+  for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s;
+}
+
+async function createBonusCodeForUser(userId, zaloId) {
+  try {
+    // Kiểm tra đã có bonus code chưa
+    const existing = await getDocs(query(
+      collection(db, "bonusCodes"),
+      where("userId", "==", userId),
+      limit(1)
+    ));
+    if (!existing.empty) return; // đã có rồi
+
+    // Sinh code unique
+    let code, attempt = 0;
+    do {
+      code = genBonusCode();
+      const snap = await getDoc(doc(db, "bonusCodes", code));
+      if (!snap.exists()) break;
+      attempt++;
+    } while (attempt < 5);
+
+    await setDoc(doc(db, "bonusCodes", code), {
+      code,
+      userId,
+      zaloId,
+      status: "pending",
+      bonusPercent: BONUS_PERCENT,
+      createdAt: serverTimestamp(),
+      activatedAt: null,
+      expireAt: null,
+      usedAt: null,
+      usedOnRequestId: null,
+      bonusAmount: null,
+    });
+    return code;
+  } catch (e) {
+    console.error("createBonusCode error:", e);
+  }
+}
+
+let myBonusCode = null;   // mã tốt nhất để áp dụng khi rút
+let myBonusCodes = [];    // toàn bộ mã của user
+
+async function loadMyBonus() {
+  if (!me) return;
+  const snap = await getDocs(query(
+    collection(db, "bonusCodes"),
+    where("userId", "==", me)
+  ));
+  myBonusCodes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+  // Ưu tiên: active chưa hết hạn > pending > còn lại
+  const now = Date.now();
+  const getTs = b => b.expireAt?.toDate ? b.expireAt.toDate().getTime() : (b.expireAt ? new Date(b.expireAt).getTime() : null);
+  const activeValid = myBonusCodes.filter(b => {
+    if (b.status !== "active") return false;
+    const ts = getTs(b);
+    return !ts || now <= ts;
+  });
+  const pending = myBonusCodes.filter(b => b.status === "pending");
+  myBonusCode = activeValid[0] || pending[0] || myBonusCodes[0] || null;
+
+  renderBonusTab();
+}
+
+function bonusCard(borderColor, icon, title, bodyHtml) {
+  return `<div style="background:#fff;border-radius:16px;padding:24px 20px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,0.08);border:2px solid ${borderColor};text-align:center">
+    <div style="font-size:48px;margin-bottom:12px">${icon}</div>
+    <div style="font-size:18px;font-weight:700;color:#333;margin-bottom:8px">${title}</div>
+    ${bodyHtml}
+  </div>`;
+}
+
+function renderBonusTab() {
+  const el = document.getElementById("main-bonus-content");
+  if (!el) return;
+  const userData = cachedUserDoc?.data || cachedUserDoc;
+  const isZalo = userData && userData.loginType === "zalo";
+
+  if (!isZalo) {
+    // Nếu user email đã liên kết zaloId rồi thì cho qua
+    if (userData && userData.zaloId) {
+      // có zaloId → tiếp tục render bonus bình thường
+    } else {
+      el.innerHTML = bonusCard("#0068ff", "🔗", "Liên kết tài khoản Zalo",
+        `<div style="font-size:14px;color:#555;line-height:1.8;margin-bottom:16px">
+           Liên kết Zalo để sử dụng tính năng Bonus.<br>
+           <span style="font-size:12px;color:#aaa">Tài khoản email của bạn vẫn giữ nguyên.</span>
+         </div>
+         <button onclick="doLinkZalo('bonus-link-msg')" style="display:inline-flex;align-items:center;gap:8px;background:#0068ff;color:#fff;border:none;border-radius:12px;padding:12px 24px;font-size:15px;font-weight:600;cursor:pointer">
+           <svg width="18" height="18" viewBox="0 0 460.1 436.3" fill="none"><path d="M230.1 0C103 0 0 92.5 0 206.5C0 268 30.6 323.4 82 359.8C80.2 373.1 72.8 406.8 61.3 430.7C60.2 433 62 435.6 64.5 435.1C91.5 430 139.6 414.5 168.3 395.4C188 401 208.6 404 230.1 404C357.2 404 460.1 311.5 460.1 197.5C460.1 83.5 357.2 0 230.1 0Z" fill="white"/></svg>
+           Liên kết Zalo
+         </button>
+         <div id="bonus-link-msg" class="amsg" style="margin-top:10px"></div>`);
+      updateBonusBadge(null);
+      return;
+    }
+  }
+
+  // ── Helper render danh sách tất cả mã (nếu > 1)
+  function renderAllCodesList() {
+    if (myBonusCodes.length <= 1) return "";
+    const statusLabel = s => ({ pending:"⏳ Chờ kích hoạt", active:"✅ Đang hoạt động", used:"🎉 Đã dùng", expired:"⏰ Hết hạn", revoked:"🚫 Thu hồi" }[s] || s);
+    const statusColor = s => ({ pending:"#EE4D2D", active:"#0abd50", used:"#0a6ebd", expired:"#999", revoked:"#999" }[s] || "#999");
+    const list = myBonusCodes.map(bc => {
+      const ts = bc.expireAt?.toDate ? bc.expireAt.toDate().getTime() : (bc.expireAt ? new Date(bc.expireAt).getTime() : null);
+      const expStr = ts ? new Date(ts).toLocaleDateString("vi-VN") : "Không hạn";
+      const isBest = bc.id === myBonusCode?.id;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;background:${isBest?"#fff8f0":"#f9f9f9"};border:1px solid ${isBest?"#EE4D2D":"#eee"};margin-bottom:8px">
+        <div style="flex:1;min-width:0">
+          <div style="font-family:monospace;font-weight:700;font-size:14px;color:#333">${escapeHTML(bc.code)}${isBest?' <span style="font-size:11px;background:#EE4D2D;color:#fff;border-radius:4px;padding:1px 5px">Đang dùng</span>':''}</div>
+          <div style="font-size:12px;color:#888;margin-top:2px">+${bc.bonusPercent}% · Hết hạn: ${expStr}</div>
+        </div>
+        <div style="font-size:12px;font-weight:600;color:${statusColor(bc.status)};white-space:nowrap">${statusLabel(bc.status)}</div>
+      </div>`;
+    }).join("");
+    return `<div style="margin-top:4px"><div style="font-size:13px;font-weight:600;color:#555;margin-bottom:10px">📋 Tất cả mã của bạn (${myBonusCodes.length})</div>${list}</div>`;
+  }
+
+  if (!myBonusCode) {
+    el.innerHTML = bonusCard("#eee", "🎁", "Chưa có ưu đãi",
+      `<div style="font-size:14px;color:#777">Tài khoản của bạn chưa có mã bonus nào.</div>`);
+    return;
+  }
+
+  const b = myBonusCode;
+  const now = Date.now();
+  const expireTs = b.expireAt?.toDate ? b.expireAt.toDate().getTime() : (b.expireAt ? new Date(b.expireAt).getTime() : null);
+  const daysLeft = expireTs ? Math.max(0, Math.ceil((expireTs - now) / 86400000)) : null;
+  const expireStr = expireTs ? new Date(expireTs).toLocaleDateString("vi-VN") : "";
+
+  if (b.status === "active" && expireTs && now > expireTs) {
+    el.innerHTML = bonusCard("#ccc", "⏰", "Ưu đãi đã hết hạn",
+      `<div style="font-size:14px;color:#777">Bạn đã kích hoạt nhưng không sử dụng trong 30 ngày.</div>`) + renderAllCodesList();
+    updateBonusBadge(null);
+    return;
+  }
+
+  if (b.status === "pending") {
+    const syntax = `/sandeal ${b.code}`;
+    el.innerHTML = bonusCard("#EE4D2D", "🎁", "Bạn có ưu đãi chờ kích hoạt!",
+      `<div style="font-size:14px;color:#555;line-height:1.6;margin-bottom:14px">Nhắn tin vào group Zalo để nhận <b style="color:#EE4D2D">+${b.bonusPercent}%</b> cho lần rút đầu tiên.</div>
+       <div style="display:flex;align-items:center;gap:8px;background:#f5f5f5;border-radius:10px;padding:10px 14px;margin-bottom:8px;flex-wrap:wrap;justify-content:center">
+         <span style="font-size:13px;color:#888">Cú pháp:</span>
+         <span id="bonus-syntax-text" style="font-family:monospace;font-size:15px;font-weight:700;color:#EE4D2D;letter-spacing:1px">${escapeHTML(syntax)}</span>
+         <button id="bonus-copy-btn" onclick="copyBonusSyntax()" style="background:#EE4D2D;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;transition:background 0.2s">📋 Copy</button>
+       </div>
+       <div style="font-size:12px;color:#aaa">Gửi vào group Zalo Sandeal.io.vn</div>`) + renderAllCodesList();
+    updateBonusBadge("pending");
+    return;
+  }
+
+  if (b.status === "active") {
+    const activatedStr = b.activatedAt?.toDate
+      ? b.activatedAt.toDate().toLocaleDateString("vi-VN")
+      : (b.activatedAt ? new Date(b.activatedAt).toLocaleDateString("vi-VN") : "–");
+    const expireInfo = expireTs
+      ? `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #d1fae5">
+           <span style="color:#888">⏳ Hết hạn</span><b>${expireStr} (còn ${daysLeft} ngày)</b>
+         </div>`
+      : `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #d1fae5">
+           <span style="color:#888">⏳ Hết hạn</span><b>Không giới hạn</b>
+         </div>`;
+    el.innerHTML = bonusCard("#0abd50", "✅", "Bonus đang hoạt động!",
+      `<div style="font-size:14px;color:#555;margin-bottom:14px"><b style="color:#0abd50;font-size:18px">+${b.bonusPercent}%</b> sẽ được cộng vào lần rút đầu tiên của bạn.</div>
+       <div style="background:#f0fdf4;border-radius:10px;padding:10px 14px;font-size:13px;color:#333;line-height:2">
+         <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #d1fae5">
+           <span style="color:#888">🎫 Mã</span><b style="font-family:monospace;letter-spacing:1px">${escapeHTML(b.code)}</b>
+         </div>
+         <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #d1fae5">
+           <span style="color:#888">📅 Kích hoạt</span><b>${activatedStr}</b>
+         </div>
+         ${expireInfo}
+         <div style="display:flex;justify-content:space-between;padding:6px 0">
+           <span style="color:#888">💰 Bonus</span><b style="color:#0abd50">+${b.bonusPercent}% hoa hồng lần rút đầu</b>
+         </div>
+       </div>`) + renderAllCodesList();
+    updateBonusBadge("active");
+    return;
+  }
+
+  if (b.status === "used") {
+    const usedDate = b.usedAt?.toDate ? b.usedAt.toDate().toLocaleDateString("vi-VN") : "";
+    const bonusAmt = b.bonusAmount ? b.bonusAmount.toLocaleString("vi-VN") + "đ" : "";
+    el.innerHTML = bonusCard("#0a6ebd", "🎉", "Đã sử dụng bonus!",
+      `<div style="font-size:14px;color:#555">Bạn đã nhận <b style="color:#0a6ebd">+${bonusAmt}</b> bonus vào lần rút ngày ${usedDate}.</div>`) + renderAllCodesList();
+    updateBonusBadge(null);
+    return;
+  }
+
+  el.innerHTML = bonusCard("#ccc", "⏰", "Ưu đãi đã hết hạn",
+    `<div style="font-size:14px;color:#777">Mã bonus đã hết hạn sử dụng.</div>`) + renderAllCodesList();
+  updateBonusBadge(null);
+}
+
+function updateBonusBadge(status) {
+  const badge = document.getElementById("nav-bonus-badge");
+  if (!badge) return;
+  badge.style.display = (status === "pending" || status === "active") ? "inline-block" : "none";
+}
+
+window.copyBonusSyntax = function () {
+  const txt = document.getElementById("bonus-syntax-text")?.textContent || "";
+  const btn = document.getElementById("bonus-copy-btn");
+  navigator.clipboard.writeText(txt).then(() => {
+    if (btn) {
+      btn.textContent = "✅ Đã copy!";
+      btn.style.background = "#22c55e";
+      setTimeout(() => {
+        btn.textContent = "📋 Copy";
+        btn.style.background = "#EE4D2D";
+      }, 2000);
+    }
+  }).catch(() => {
+    if (btn) {
+      btn.textContent = "❌ Lỗi";
+      setTimeout(() => { btn.textContent = "📋 Copy"; }, 2000);
+    }
+  });
+};
+
 // ─── NAV TABS ─────────────────────────────────────────────
 window.showMainTab = function (tab) {
   document.getElementById("main-search").style.display = tab === "search" ? "block" : "none";
   document.getElementById("main-mine").style.display = tab === "mine" ? "block" : "none";
+  document.getElementById("main-bonus").style.display = tab === "bonus" ? "block" : "none";
   document.getElementById("nav-search").classList.toggle("active", tab === "search");
   document.getElementById("nav-mine").classList.toggle("active", tab === "mine");
+  document.getElementById("nav-bonus").classList.toggle("active", tab === "bonus");
 };
 
 // ─── SWIPE BETWEEN TABS ───────────────────────────────────
 (function () {
   let startX = 0, startY = 0;
-  const THRESHOLD = 60;   // px tối thiểu để tính là vuốt
-  const MAX_Y    = 80;    // px dọc tối đa — tránh nhầm với scroll
+  const THRESHOLD = 60;
+  const MAX_Y = 80;
+  const TABS = ["search", "mine", "bonus"];
 
   const container = document.getElementById("app-screen");
   if (!container) return;
@@ -895,12 +1193,16 @@ window.showMainTab = function (tab) {
   container.addEventListener("touchend", e => {
     const dx = e.changedTouches[0].clientX - startX;
     const dy = e.changedTouches[0].clientY - startY;
-    if (Math.abs(dy) > MAX_Y) return;          // vuốt dọc → bỏ qua
-    if (Math.abs(dx) < THRESHOLD) return;      // quá ngắn → bỏ qua
+    if (Math.abs(dy) > MAX_Y) return;
+    if (Math.abs(dx) < THRESHOLD) return;
 
-    const isSearch = document.getElementById("main-search").style.display !== "none";
-    if (dx < 0 && isSearch)  window.showMainTab("mine");   // vuốt trái → Đơn của tôi
-    if (dx > 0 && !isSearch) window.showMainTab("search"); // vuốt phải → Tìm đơn hàng
+    const currentIdx = TABS.findIndex(t => {
+      const el = document.getElementById("main-" + t);
+      return el && el.style.display !== "none";
+    });
+    if (currentIdx === -1) return;
+    if (dx < 0 && currentIdx < TABS.length - 1) window.showMainTab(TABS[currentIdx + 1]);
+    if (dx > 0 && currentIdx > 0) window.showMainTab(TABS[currentIdx - 1]);
   }, { passive: true });
 })();
 
@@ -917,6 +1219,18 @@ window.showForgotPassword = function () {
 };
 
 // ─── AUTH ACTIONS ─────────────────────────────────────────
+window.doLinkZalo = function (msgId = "bonus-link-msg") {
+  const msg = document.getElementById(msgId);
+  if (msg) { msg.className = "amsg"; msg.textContent = "⏳ Đang chuyển hướng sang Zalo..."; msg.style.display = "block"; }
+  localStorage.setItem('zalo_link_mode', '1');
+  localStorage.setItem('zalo_msg_id', msgId);
+  const appId = '1150083649033793704';
+  const redirectUrl = encodeURIComponent(window.location.origin + window.location.pathname);
+  const state = crypto.randomUUID();
+  sessionStorage.setItem('zalo_oauth_state', state);
+  window.location.href = `https://oauth.zaloapp.com/v4/permission?app_id=${appId}&redirect_uri=${redirectUrl}&state=${state}`;
+};
+
 window.doLoginZalo = function (msgId = "login-msg") {
   const msg = document.getElementById(msgId);
   msg.className = "amsg";

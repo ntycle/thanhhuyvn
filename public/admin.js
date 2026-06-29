@@ -47,7 +47,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-async function loadAll() { await Promise.all([loadUsers(), loadOrders(), loadShortLinks(), loadPaymentRequests()]); populateUserFilter(); renderDashboard(); }
+async function loadAll() { await Promise.all([loadUsers(), loadOrders(), loadShortLinks(), loadPaymentRequests(), loadBonusCodes()]); populateUserFilter(); renderDashboard(); }
 
 // ─── LOAD ──────────────────────────────────────────────────
 async function loadUsers() {
@@ -126,15 +126,15 @@ function renderDashboard() {
 // ─── USERS ─────────────────────────────────────────────────
 function renderUsers() {
   const tbody = document.getElementById("users-tbody");
-  if (!allUsers.length) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:#999">Chưa có user</td></tr>`; return; }
+  if (!allUsers.length) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:24px;color:#999">Chưa có user</td></tr>`; return; }
 
   const kw = (document.getElementById("filter-user-search")?.value || "").toLowerCase().trim();
   const filtered = allUsers.filter(u => {
     if (!kw) return true;
-    return (u.name || "").toLowerCase().includes(kw) || (u.email || "").toLowerCase().includes(kw);
+    return (u.name || "").toLowerCase().includes(kw) || (u.email || "").toLowerCase().includes(kw) || (u.zaloId || "").toLowerCase().includes(kw);
   });
-  
-  if (!filtered.length) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:#999">Không tìm thấy user nào</td></tr>`; return; }
+
+  if (!filtered.length) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:24px;color:#999">Không tìm thấy user nào</td></tr>`; return; }
 
   tbody.innerHTML = filtered.map(u => {
     const cnt  = allOrders.filter(o => o.userId === u.id).length;
@@ -149,6 +149,7 @@ function renderUsers() {
     return `<tr>
       <td>${escapeHTML(u.name || "–")}</td>
       <td>${escapeHTML(u.email)}</td>
+      <td style="font-size:12px;color:#666">${escapeHTML(u.zaloId || "–")}</td>
       <td><span class="badge badge-${u.role === "admin" ? "admin" : "user"}">${u.role === "admin" ? "Admin" : "User"}</span></td>
       <td>${cnt}</td>
       <td>${bankStatus}</td>
@@ -954,7 +955,7 @@ function renderPaymentRequests() {
     return true;
   });
 
-  if (!filtered.length) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:#999">Không tìm thấy yêu cầu nào</td></tr>`; return; }
+  if (!filtered.length) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:#999">Không tìm thấy yêu cầu nào</td></tr>`; return; }
 
   tbody.innerHTML = filtered.map(r => {
     let date = "–";
@@ -997,6 +998,10 @@ function renderPaymentRequests() {
         </div>
       </td>
       <td style="font-weight:600;color:var(--orange)">${(r.totalValue||0).toLocaleString("vi-VN")} đ</td>
+      <td>${r.bonusApplied
+        ? `<span style="color:var(--green);font-weight:600">+${(r.bonusAmount||0).toLocaleString("vi-VN")} đ</span><br><span style="font-size:11px;color:#888">(+${r.bonusPercent||0}%)</span>`
+        : `<span style="color:#ccc">–</span>`}</td>
+      <td style="font-weight:700;color:var(--blue)">${(r.totalPayout||r.totalValue||0).toLocaleString("vi-VN")} đ</td>
       <td>${date}</td>
       <td>${stBadge}</td>
       <td>${actionBtn}</td>
@@ -1178,5 +1183,197 @@ window.deletePayment = async function(reqId) {
     await loadPaymentRequests();
   } catch(e) {
     alert("❌ Lỗi khi xoá: " + e.message);
+  }
+};
+
+// ─── BONUS CODES ───────────────────────────────────────────
+let allBonusCodes = [];
+
+async function loadBonusCodes() {
+  try {
+    const snap = await getDocs(collection(db, "bonusCodes"));
+    allBonusCodes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    allBonusCodes.sort((a, b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+  } catch (e) {
+    console.error("loadBonusCodes error", e);
+    allBonusCodes = [];
+  }
+  renderBonusCodes();
+}
+window.loadBonusCodes = loadBonusCodes;
+
+function renderBonusCodes() {
+  // Stat cards
+  const total = allBonusCodes.length;
+  const pending = allBonusCodes.filter(b => b.status === "pending").length;
+  const active = allBonusCodes.filter(b => b.status === "active").length;
+  const used = allBonusCodes.filter(b => b.status === "used").length;
+  const expired = allBonusCodes.filter(b => b.status === "expired" || (b.status === "active" && b.expireAt && new Date(b.expireAt?.seconds ? b.expireAt.seconds * 1000 : b.expireAt) < new Date())).length;
+
+  const sTotal = document.getElementById("bonus-stat-total");
+  const sPending = document.getElementById("bonus-stat-pending");
+  const sActive = document.getElementById("bonus-stat-active");
+  const sUsed = document.getElementById("bonus-stat-used");
+  const sExpired = document.getElementById("bonus-stat-expired");
+  if (sTotal) sTotal.textContent = total;
+  if (sPending) sPending.textContent = pending;
+  if (sActive) sActive.textContent = active;
+  if (sUsed) sUsed.textContent = used;
+  if (sExpired) sExpired.textContent = expired;
+
+  const tbody = document.getElementById("bonus-tbody");
+  if (!tbody) return;
+
+  const stFilter = document.getElementById("filter-bonus-status")?.value || "";
+  const txtFilter = (document.getElementById("filter-bonus-search")?.value || "").toLowerCase();
+  const now = Date.now();
+
+  let list = allBonusCodes.filter(b => {
+    if (stFilter && b.status !== stFilter) return false;
+    if (txtFilter) {
+      const s = [b.code, b.zaloId, getUserName(b.userId)].join(" ").toLowerCase();
+      if (!s.includes(txtFilter)) return false;
+    }
+    return true;
+  });
+
+  if (!list.length) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:#999">Không có dữ liệu</td></tr>`; return; }
+
+  tbody.innerHTML = list.map(b => {
+    const isExpired = b.status === "active" && b.expireAt && new Date(b.expireAt?.seconds ? b.expireAt.seconds * 1000 : b.expireAt) < new Date();
+    const displayStatus = isExpired ? "expired" : b.status;
+
+    const statusMap = {
+      pending:  `<span class="badge badge-unpaid">🕐 Chờ kích hoạt</span>`,
+      active:   `<span class="badge badge-paid">✅ Đã active</span>`,
+      used:     `<span class="badge" style="background:#e3f2fd;color:#1565c0">🎉 Đã dùng</span>`,
+      expired:  `<span class="badge" style="background:#f5f5f5;color:#999">⏰ Hết hạn</span>`,
+      revoked:  `<span class="badge" style="background:#fce4ec;color:#b71c1c">🚫 Đã thu hồi</span>`,
+    };
+
+    const createdAt = b.createdAt?.seconds ? new Date(b.createdAt.seconds * 1000).toLocaleDateString("vi-VN") : "–";
+    const activatedAt = b.activatedAt?.seconds ? new Date(b.activatedAt.seconds * 1000).toLocaleDateString("vi-VN") : "–";
+    const expireAt = b.expireAt?.seconds ? new Date(b.expireAt.seconds * 1000).toLocaleDateString("vi-VN") : (b.expireAt ? new Date(b.expireAt).toLocaleDateString("vi-VN") : "–");
+    const usedAt = b.usedAt?.seconds ? new Date(b.usedAt.seconds * 1000).toLocaleDateString("vi-VN") : "–";
+    const bonusAmt = b.bonusAmount ? `+${b.bonusAmount.toLocaleString("vi-VN")}đ` : "–";
+    const userName = getUserName(b.userId) || b.userId || "–";
+
+    const actions = displayStatus !== "used" && displayStatus !== "revoked"
+      ? `<button class="btn btn-red btn-xs" onclick="revokeBonus('${escapeHTML(b.id)}')">🚫 Thu hồi</button>`
+      : `<span style="color:#aaa;font-size:12px">–</span>`;
+
+    return `<tr>
+      <td><code>${escapeHTML(b.id)}</code></td>
+      <td>${escapeHTML(userName)}</td>
+      <td style="font-size:12px;color:#888">${escapeHTML(b.zaloId || "–")}</td>
+      <td>${statusMap[displayStatus] || displayStatus}</td>
+      <td style="color:var(--green);font-weight:600">${b.bonusPercent || 10}%</td>
+      <td style="font-size:12px">${createdAt}<br><span style="color:#aaa">${activatedAt !== "–" ? "Active: " + activatedAt : ""}</span><br><span style="color:#e53935;font-size:11px">${expireAt !== "–" ? "Hết hạn: " + expireAt : ""}</span></td>
+      <td style="color:var(--blue);font-weight:600">${bonusAmt}<br><span style="font-size:11px;color:#888">${usedAt !== "–" ? usedAt : ""}</span></td>
+      <td>${actions}</td>
+    </tr>`;
+  }).join("");
+}
+window.renderBonusCodes = renderBonusCodes;
+
+window.revokeBonus = async function(codeId) {
+  if (!confirm(`Thu hồi mã bonus ${codeId}?`)) return;
+  try {
+    await setDoc(doc(db, "bonusCodes", codeId), { status: "revoked" }, { merge: true });
+    await loadBonusCodes();
+    alert("✅ Đã thu hồi mã bonus.");
+  } catch (e) {
+    alert("❌ Lỗi: " + e.message);
+  }
+};
+
+window.searchGrantUser = function() {
+  const q = (document.getElementById("grant-bonus-search")?.value || "").toLowerCase().trim();
+  const dropdown = document.getElementById("grant-user-dropdown");
+  if (!dropdown) return;
+  if (!q) { dropdown.style.display = "none"; return; }
+
+  const matches = allUsers.filter(u => {
+    const name = (u.name || u.displayName || "").toLowerCase();
+    const email = (u.email || "").toLowerCase();
+    const zaloId = (u.zaloId || "").toLowerCase();
+    return name.includes(q) || email.includes(q) || zaloId.includes(q);
+  }).slice(0, 8);
+
+  if (!matches.length) {
+    dropdown.innerHTML = `<div style="padding:10px 14px;color:#999;font-size:13px">Không tìm thấy user</div>`;
+  } else {
+    dropdown.innerHTML = matches.map(u => {
+      const name = escapeHTML(u.name || u.displayName || "Không tên");
+      const email = escapeHTML(u.email || "");
+      const zaloId = escapeHTML(u.zaloId || "");
+      const isZalo = u.loginType === "zalo" || (u.email || "").includes("@zalo.com");
+      const tag = isZalo ? `<span style="font-size:10px;background:#e3f2fd;color:#1565c0;border-radius:4px;padding:1px 5px;margin-left:4px">Zalo</span>` : "";
+      return `<div style="padding:10px 14px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:13px"
+        onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''"
+        onclick="selectGrantUser('${escapeHTML(u.id)}','${name}','${email}','${zaloId}')">
+        <div style="font-weight:600">${name}${tag}</div>
+        <div style="color:#888;font-size:12px">${email || (zaloId ? "Zalo: " + zaloId : "–")}</div>
+      </div>`;
+    }).join("");
+  }
+  dropdown.style.display = "block";
+};
+
+window.selectGrantUser = function(uid, name, email, zaloId) {
+  document.getElementById("grant-bonus-user").value = uid;
+  document.getElementById("grant-bonus-zalo").value = zaloId || "";
+  document.getElementById("grant-selected-name").textContent = name;
+  document.getElementById("grant-selected-email").textContent = email ? "(" + email + ")" : (zaloId ? "(Zalo: " + zaloId + ")" : "");
+  document.getElementById("grant-bonus-search").value = name;
+  document.getElementById("grant-user-dropdown").style.display = "none";
+};
+
+document.addEventListener("click", function(e) {
+  if (!e.target.closest("#grant-bonus-search") && !e.target.closest("#grant-user-dropdown")) {
+    const dd = document.getElementById("grant-user-dropdown");
+    if (dd) dd.style.display = "none";
+  }
+});
+
+window.grantBonus = async function() {
+  const userId = document.getElementById("grant-bonus-user")?.value?.trim();
+  const zaloId = document.getElementById("grant-bonus-zalo")?.value?.trim();
+  if (!userId) { alert("Vui lòng tìm và chọn user trước."); return; }
+
+  const expireInput = document.getElementById("grant-bonus-expire")?.value;
+  const expireAt = expireInput ? new Date(expireInput + "T23:59:59+07:00") : null;
+  const bonusPercent = Math.min(100, Math.max(1, parseInt(document.getElementById("grant-bonus-percent")?.value) || 10));
+
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "SD-";
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+
+  try {
+    await setDoc(doc(db, "bonusCodes", code), {
+      code,
+      userId,
+      zaloId: zaloId || null,
+      status: "pending",
+      bonusPercent,
+      createdAt: serverTimestamp(),
+      activatedAt: null,
+      expireAt: expireAt,
+      usedAt: null,
+      usedOnRequestId: null,
+      bonusAmount: null,
+      createdBy: "admin",
+    });
+    document.getElementById("grant-bonus-user").value = "";
+    document.getElementById("grant-bonus-zalo").value = "";
+    document.getElementById("grant-bonus-search").value = "";
+    document.getElementById("grant-bonus-expire").value = "";
+    document.getElementById("grant-selected-name").textContent = "–";
+    document.getElementById("grant-selected-email").textContent = "";
+    const expireMsg = expireAt ? ` (hết hạn ${expireAt.toLocaleDateString("vi-VN")})` : "";
+    alert(`✅ Đã cấp mã bonus: ${code}${expireMsg}`);
+    await loadBonusCodes();
+  } catch (e) {
+    alert("❌ Lỗi: " + e.message);
   }
 };

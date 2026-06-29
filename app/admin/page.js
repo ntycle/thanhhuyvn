@@ -4,16 +4,9 @@ import { useEffect } from "react";
 export default function Page() {
   return (
     <>
-      <script dangerouslySetInnerHTML={{ __html: `window.ENV = {
-      apiKey: ${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_API_KEY)},
-      authDomain: ${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN)},
-      projectId: ${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID)},
-      storageBucket: ${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET)},
-      messagingSenderId: ${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID)},
-      appId: ${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_APP_ID)}
-      };` }} />
+      <script dangerouslySetInnerHTML={{ __html: `window.ENV={apiKey:${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_API_KEY)},authDomain:${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN)},projectId:${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID)},storageBucket:${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET)},messagingSenderId:${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID)},appId:${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_APP_ID)}};` }} />
       <script type="module" src="/admin.js?v=202606231621"></script>
-    <div dangerouslySetInnerHTML={{ __html: `
+      <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: `
 
 <!-- LOGIN -->
 <div id="admin-auth">
@@ -39,6 +32,7 @@ export default function Page() {
         <div class="nav-item" data-tab="payments"  onclick="showTab('payments')"><span class="nav-icon">💳</span> Yêu Cầu Thanh Toán <span id="payment-badge" style="color:var(--orange);font-weight:700;margin-left:4px"></span></div>
         <div class="nav-item" data-tab="upload"    onclick="showTab('upload')"><span class="nav-icon">📤</span> Upload JSON</div>
         <div class="nav-item" data-tab="shortlinks" onclick="showTab('shortlinks')"><span class="nav-icon">🔗</span> Rút gọn Link</div>
+        <div class="nav-item" data-tab="bonus" onclick="showTab('bonus')"><span class="nav-icon">🎁</span> Bonus Code</div>
       </nav>
       <div class="sidebar-foot">
         <div class="aname" id="adm-name">Admin</div>
@@ -120,7 +114,7 @@ export default function Page() {
             </div>
             <div style="overflow-x:auto">
               <table>
-                <thead><tr><th>Họ tên</th><th>Email</th><th>Vai trò</th><th>Đơn đã gán</th><th>TT Ngân hàng</th><th>Ngày tạo</th><th>Người GT</th><th>Thao tác</th></tr></thead>
+                <thead><tr><th>Họ tên</th><th>Email</th><th>Zalo ID</th><th>Vai trò</th><th>Đơn đã gán</th><th>TT Ngân hàng</th><th>Ngày tạo</th><th>Người GT</th><th>Thao tác</th></tr></thead>
                 <tbody id="users-tbody"><tr><td colspan="8" style="text-align:center;padding:24px;color:#999"><span class="spinner"></span>Đang tải...</td></tr></tbody>
               </table>
             </div>
@@ -156,8 +150,8 @@ export default function Page() {
             </div>
             <div style="overflow-x:auto">
               <table>
-                <thead><tr><th>Mã Yêu Cầu</th><th>User</th><th>Số đơn</th><th>Tổng CK</th><th>Ngày gửi</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
-                <tbody id="payments-tbody"><tr><td colspan="7" style="text-align:center;padding:24px;color:#999"><span class="spinner"></span>Đang tải...</td></tr></tbody>
+                <thead><tr><th>Mã Yêu Cầu</th><th>User</th><th>Số đơn</th><th>Tổng CK</th><th>Bonus</th><th>Tổng cần trả</th><th>Ngày gửi</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+                <tbody id="payments-tbody"><tr><td colspan="9" style="text-align:center;padding:24px;color:#999"><span class="spinner"></span>Đang tải...</td></tr></tbody>
               </table>
             </div>
           </div>
@@ -216,6 +210,90 @@ export default function Page() {
           </div>
         </div>
 
+        <!-- BONUS CODES -->
+        <div id="tab-bonus" class="tab-content">
+          <!-- Inline stat bar -->
+          <div style="display:flex;gap:0;background:#fff;border-radius:12px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:16px;flex-wrap:wrap">
+            <div style="flex:1;min-width:80px;padding:12px 16px;text-align:center;border-right:1px solid var(--border)">
+              <div style="font-size:11px;color:var(--text-light);margin-bottom:4px">Tổng</div>
+              <div style="font-size:20px;font-weight:700" id="bonus-stat-total">–</div>
+            </div>
+            <div style="flex:1;min-width:80px;padding:12px 16px;text-align:center;border-right:1px solid var(--border)">
+              <div style="font-size:11px;color:var(--text-light);margin-bottom:4px">Chờ KH</div>
+              <div style="font-size:20px;font-weight:700;color:var(--orange)" id="bonus-stat-pending">–</div>
+            </div>
+            <div style="flex:1;min-width:80px;padding:12px 16px;text-align:center;border-right:1px solid var(--border)">
+              <div style="font-size:11px;color:var(--text-light);margin-bottom:4px">Active</div>
+              <div style="font-size:20px;font-weight:700;color:var(--green)" id="bonus-stat-active">–</div>
+            </div>
+            <div style="flex:1;min-width:80px;padding:12px 16px;text-align:center;border-right:1px solid var(--border)">
+              <div style="font-size:11px;color:var(--text-light);margin-bottom:4px">Đã dùng</div>
+              <div style="font-size:20px;font-weight:700;color:var(--blue)" id="bonus-stat-used">–</div>
+            </div>
+            <div style="flex:1;min-width:80px;padding:12px 16px;text-align:center">
+              <div style="font-size:11px;color:var(--text-light);margin-bottom:4px">Hết hạn</div>
+              <div style="font-size:20px;font-weight:700;color:#999" id="bonus-stat-expired">–</div>
+            </div>
+          </div>
+          <div class="panel" style="margin-bottom:16px">
+            <div class="panel-header"><h2>➕ Cấp mã bonus thủ công</h2></div>
+            <div class="panel-body">
+              <div style="position:relative;margin-bottom:12px">
+                <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">Tìm user (tên hoặc email)</label>
+                <input type="text" id="grant-bonus-search" placeholder="Gõ tên hoặc email để tìm user..." oninput="searchGrantUser()" autocomplete="off"
+                  style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;outline:none"/>
+                <div id="grant-user-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-lg);z-index:100;max-height:200px;overflow-y:auto"></div>
+              </div>
+              <div style="display:flex;gap:10px;align-items:center;background:#f7f7f7;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:13px">
+                <span style="color:var(--text-light)">Đã chọn:</span>
+                <span id="grant-selected-name" style="font-weight:600;color:var(--text)">–</span>
+                <span id="grant-selected-email" style="color:var(--text-light)"></span>
+                <input type="hidden" id="grant-bonus-user" />
+                <input type="hidden" id="grant-bonus-zalo" />
+              </div>
+              <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px">
+                <div>
+                  <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">% Bonus</label>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <input type="number" id="grant-bonus-percent" value="10" min="1" max="100"
+                      style="width:80px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;outline:none;color:var(--text);text-align:center" />
+                    <span style="font-size:14px;color:#888">%</span>
+                  </div>
+                </div>
+                <div>
+                  <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">Ngày hết hạn code <span style="color:#aaa;font-weight:400">(để trống = không hết hạn)</span></label>
+                  <input type="date" id="grant-bonus-expire"
+                    style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;outline:none;color:var(--text)" />
+                </div>
+              </div>
+              <button class="btn btn-blue" onclick="grantBonus()">🎁 Cấp mã bonus</button>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header">
+              <h2>📋 Danh sách Bonus Code</h2>
+              <button class="btn btn-outline btn-sm" onclick="loadBonusCodes()">🔄 Làm mới</button>
+            </div>
+            <div class="filter-bar">
+              <select id="filter-bonus-status" onchange="renderBonusCodes()">
+                <option value="">-- Tất cả --</option>
+                <option value="pending">Chờ kích hoạt</option>
+                <option value="active">Đang active</option>
+                <option value="used">Đã dùng</option>
+                <option value="expired">Hết hạn</option>
+                <option value="revoked">Đã thu hồi</option>
+              </select>
+              <input type="text" id="filter-bonus-search" placeholder="Tìm theo mã, user, Zalo ID..." oninput="renderBonusCodes()" />
+            </div>
+            <div style="overflow-x:auto">
+              <table>
+                <thead><tr><th>Mã</th><th>User</th><th>Zalo ID</th><th>Trạng thái</th><th>Bonus</th><th>Ngày tạo / Active / Hết hạn</th><th>Số tiền bonus / Ngày dùng</th><th>Thao tác</th></tr></thead>
+                <tbody id="bonus-tbody"><tr><td colspan="8" style="text-align:center;padding:24px;color:#999"><span class="spinner"></span>Đang tải...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
       </div>
     </main>
   </div>
@@ -261,6 +339,6 @@ export default function Page() {
   </div>
 
 ` }} />
-  </>
+    </>
   );
 }

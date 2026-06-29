@@ -1788,3 +1788,42 @@ body {
   font-size: 13px; color: #aaa !important; cursor: pointer; margin-top: 4px;
   background: none !important; border: none; padding: 4px 8px;
 }
+
+/* ── Bonus Tab ── */
+.bonus-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+.bonus-icon { font-size: 48px; margin-bottom: 12px; }
+.bonus-title { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.bonus-desc { font-size: 14px; color: var(--text-light); line-height: 1.6; }
+.bonus-pending { border: 2px solid var(--orange); }
+.bonus-active  { border: 2px solid var(--green); }
+.bonus-used    { border: 2px solid var(--blue); }
+.bonus-expired { border: 2px solid #ccc; }
+.bonus-link-zalo { border: 2px dashed #ccc; }
+.bonus-code-box {
+  display: flex; align-items: center; gap: 8px;
+  background: #f5f5f5; border-radius: 10px;
+  padding: 10px 14px; margin: 14px 0 8px;
+  flex-wrap: wrap; justify-content: center;
+}
+.bonus-code-label { font-size: 13px; color: var(--text-light); }
+.bonus-code-value {
+  font-family: monospace; font-size: 15px; font-weight: 700;
+  color: var(--orange); letter-spacing: 1px;
+}
+.bonus-copy-btn {
+  background: var(--orange); color: #fff; border: none;
+  border-radius: 8px; padding: 6px 12px; font-size: 13px;
+  cursor: pointer; font-weight: 600;
+}
+.bonus-hint { font-size: 12px; color: var(--text-light); margin-top: 4px; }
+.bonus-expire {
+  margin-top: 14px; font-size: 14px; color: var(--text-light);
+  background: #f0fdf4; border-radius: 8px; padding: 8px 12px;
+}
