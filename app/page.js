@@ -92,17 +92,6 @@ export default function Page() {
     }
   </style>
 
-  <div id="fb-webview-overlay" style={{display:'none',position:'fixed',inset:0,zIndex:99999,background:'rgba(0,0,0,0.55)',alignItems:'center',justifyContent:'center',padding:'24px'}}>
-    <div style={{background:'#ffffff',borderRadius:'20px',padding:'28px 22px 22px',width:'100%',maxWidth:'360px',textAlign:'center',boxShadow:'0 8px 32px rgba(0,0,0,0.22)',fontFamily:'-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif'}}>
-      <div style={{fontSize:'44px',marginBottom:'10px'}}>🌐</div>
-      <h2 style={{fontSize:'18px',fontWeight:700,color:'#1a1a1a',margin:'0 0 8px'}}>Mở bằng trình duyệt ngoài</h2>
-      <p style={{fontSize:'14px',color:'#666',lineHeight:1.6,margin:'0 0 18px'}}>Sandeal.io.vn hoạt động tốt nhất trên Chrome hoặc Safari. Vui lòng mở bằng trình duyệt ngoài để trải nghiệm đầy đủ.</p>
-      <div id="fb-open-chrome-wrap"></div>
-      <div id="fb-steps-text" style={{background:'#f7f7f7',borderRadius:'10px',padding:'12px 14px',textAlign:'left',fontSize:'13px',color:'#555',lineHeight:1.8,marginBottom:'14px'}}></div>
-      <button style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',width:'100%',padding:'13px 16px',borderRadius:'12px',fontSize:'15px',fontWeight:600,cursor:'pointer',border:'none',background:'#f0f0f0',color:'#333',marginBottom:'10px'}} onClick="(function(btn){navigator.clipboard.writeText(location.href).then(()=>{btn.textContent='✅ Đã copy link!';setTimeout(()=>{btn.textContent='📋 Copy link'},2000)}).catch(()=>{btn.textContent='📋 Copy link'});})(this)">📋 Copy link</button>
-      <button style={{fontSize:'13px',color:'#aaa',cursor:'pointer',marginTop:'4px',background:'none',border:'none',padding:'4px 8px'}} onClick="document.getElementById('fb-webview-overlay').style.display='none'">Bỏ qua, tiếp tục xem</button>
-    </div>
-  </div>
 
   <script src="/fbdetect.js" defer></script>
 
