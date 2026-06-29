@@ -264,7 +264,28 @@ function getCKValue(o) {
   return ck;
 }
 
-function isFraudOrder(o) {
+// Build a Set of doc _id that are duplicates (same orderId + giá trị + HH Shopee)
+function buildDupeSet(orders) {
+  const map = {};
+  orders.forEach(o => {
+    const orderId = (o["ID Đơn hàng"] || "").trim();
+    if (!orderId) return;
+    const val = Number((o["Giá trị đơn hàng(₫)"] || "0").toString().replace(/[^\d-]/g, "")) || 0;
+    const hh  = Number((o["Hoa hồng Shopee trên sản phẩm(₫)"] || "0").toString().replace(/[^\d-]/g, "")) || 0;
+    const key = `${orderId}|${val}|${hh}`;
+    if (!map[key]) map[key] = [];
+    map[key].push(o._id);
+  });
+  const dupeSet = new Set();
+  Object.values(map).forEach(ids => {
+    if (ids.length > 1) ids.forEach(id => dupeSet.add(id));
+  });
+  return dupeSet;
+}
+
+let _currentDupeSet = new Set();
+
+function isFraudOrder(o, dupeSet) {
   const status = (o["Trạng thái đặt hàng"] || "").trim();
   const isCancelled = status === "Đã huỷ" || status === "Đã hủy" || status === "Hủy";
   const isPaid = o.thanhToan === "Đã Thanh Toán";
@@ -274,12 +295,32 @@ function isFraudOrder(o) {
   const reasons = [];
   if (isPaid && isCancelled) reasons.push("Đã thanh toán nhưng đơn bị huỷ");
   if (ck > hh && hh > 0) reasons.push(`CK (${ck.toLocaleString("vi-VN")}đ) > HH Shopee (${hh.toLocaleString("vi-VN")}đ)`);
+  if (dupeSet && dupeSet.has(o._id)) reasons.push("Đơn hàng trùng lặp (ID + Giá trị + HH giống nhau)");
   return reasons;
 }
+
+window.copyFraudOrders = function() {
+  const dupeSet = _currentDupeSet;
+  const fraudIds = new Set();
+  allOrders.forEach(o => {
+    if (isFraudOrder(o, dupeSet).length > 0) {
+      const id = (o["ID Đơn hàng"] || "").trim();
+      if (id) fraudIds.add(id);
+    }
+  });
+  if (fraudIds.size === 0) { alert("Không có đơn nghi vấn nào."); return; }
+  navigator.clipboard.writeText([...fraudIds].join("\n")).then(() => {
+    const el = document.getElementById("os-fraud");
+    if (el) { const prev = el.textContent; el.textContent = "✅ Đã copy!"; setTimeout(() => { renderOrders(); }, 1500); }
+  });
+};
 
 function renderOrders(list) {
   const orders = list || allOrders;
   const tbody  = document.getElementById("orders-tbody");
+
+  // Build dupe set from full allOrders (không chỉ trang hiện tại)
+  _currentDupeSet = buildDupeSet(allOrders);
 
   // Tính tổng từ TOÀN BỘ danh sách (không phụ thuộc trang)
   let totalCK = 0, totalHH = 0, totalPaid = 0, fraudCount = 0;
@@ -289,7 +330,7 @@ function renderOrders(list) {
     totalCK += ck;
     totalHH += hh;
     if (o.thanhToan === "Đã Thanh Toán") totalPaid += ck;
-    if (isFraudOrder(o).length > 0) fraudCount++;
+    if (isFraudOrder(o, _currentDupeSet).length > 0) fraudCount++;
   });
 
   const elTotal = document.getElementById("os-total");
@@ -307,6 +348,9 @@ function renderOrders(list) {
   if (elFraud) {
     elFraud.textContent = fraudCount > 0 ? `⚠️ ${fraudCount} đơn nghi vấn` : "✅ Không phát hiện";
     elFraud.style.color = fraudCount > 0 ? "var(--red)" : "var(--green)";
+    elFraud.style.cursor = fraudCount > 0 ? "pointer" : "default";
+    elFraud.title = fraudCount > 0 ? "Bấm để copy danh sách ID đơn nghi vấn" : "";
+    elFraud.onclick = fraudCount > 0 ? copyFraudOrders : null;
   }
 
   if (!orders.length) { tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:24px;color:#999">Không có đơn hàng</td></tr>`; renderOrderPagination(0, 0); return; }
@@ -331,7 +375,7 @@ function renderOrders(list) {
     const payClass = payVal === "Đã Thanh Toán" ? "badge-paid" : payVal === "Chưa Thanh Toán" || payVal === "Đang chờ xử lý" ? "badge-unpaid" : "badge-free";
     const payBadge = `<span class="badge ${payClass}">${payVal || "– Chưa cập nhật"}</span>`;
 
-    const fraudReasons = isFraudOrder(o);
+    const fraudReasons = isFraudOrder(o, _currentDupeSet);
     const fraudBadge = fraudReasons.length > 0
       ? `<span title="${escapeHTML(fraudReasons.join('; '))}" style="cursor:help;color:var(--red);font-size:14px">⚠️</span>`
       : "";
