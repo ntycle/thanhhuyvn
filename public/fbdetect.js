@@ -5,7 +5,7 @@
 
   var overlay = document.getElementById("fb-webview-overlay");
   if (!overlay) return;
-  overlay.classList.add("show");
+  overlay.style.display = "flex";
 
   var isAndroid = /Android/i.test(ua);
   var isIOS = /iPhone|iPad|iPod/i.test(ua);
