@@ -92,7 +92,6 @@ export default function Page() {
     }
   </style>
 
-  {/* FB WebView Overlay */}
   <div id="fb-webview-overlay">
     <div className="fb-popup">
       <div className="fb-logo">🌐</div>
