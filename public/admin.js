@@ -737,7 +737,7 @@ window.confirmUpload = async function() {
           const ref = doc(collection(db, "orders"));
           batch.set(ref, { ...order, userId: null, claimedAt: null, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
           countNew++;
-          return;
+          continue;
         }
 
         const modelId = (order["ID Model"] || "").toString().trim();
@@ -988,30 +988,62 @@ window.approvePayment = async function(reqId) {
 };
 
 // ─── SHORTLINKS ────────────────────────────────────────────
+let currentSLPage = 1;
+const SL_PER_PAGE = 100;
+
 function renderShortLinks() {
   const tbody = document.getElementById("shortlinks-tbody");
-  if (!allShortLinks.length) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:#999">Chưa có link nào</td></tr>`; return; }
-  
+  if (!allShortLinks.length) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:#999">Chưa có link nào</td></tr>`; renderSLPagination(0, 0); return; }
+
+  const totalPages = Math.ceil(allShortLinks.length / SL_PER_PAGE);
+  if (currentSLPage > totalPages) currentSLPage = totalPages;
+  const start = (currentSLPage - 1) * SL_PER_PAGE;
+  const pageLinks = allShortLinks.slice(start, start + SL_PER_PAGE);
+
   const domain = window.location.origin + "/";
-  tbody.innerHTML = allShortLinks.map(s => {
-    const fullLink = domain + s.id;
+  tbody.innerHTML = pageLinks.map(s => {
+    const shortLink = domain + s.id;
+    const originUrl = s.url || "";
     let date = "–";
     if (s.createdAt && typeof s.createdAt.toDate === "function") {
-      date = s.createdAt.toDate().toLocaleDateString("vi-VN");
+      date = s.createdAt.toDate().toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" });
     }
-    
     return `<tr>
-      <td><a href="${fullLink}" target="_blank" style="color:var(--blue);font-weight:600;text-decoration:none">${fullLink}</a></td>
-      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHTML(s.url)}">${escapeHTML(s.url)}</td>
+      <td><a href="${shortLink}" target="_blank" style="color:var(--blue);font-weight:600;text-decoration:none">${shortLink}</a></td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHTML(originUrl)}">${escapeHTML(originUrl)}</td>
       <td>${date}</td>
       <td>${s.clicks || 0}</td>
       <td style="display:flex;gap:4px;">
-        <button class="btn btn-outline btn-xs" onclick="data-link="${escapeHTML(fullLink)}" onclick="copyToClipboard(this.dataset.link, this)"">📋 Copy</button>
+        <button class="btn btn-outline btn-xs" data-link="${escapeHTML(originUrl)}" onclick="copyToClipboard(this.dataset.link, this)">📋 Copy</button>
         <button class="btn btn-red btn-xs" onclick="deleteShortLink('${escapeHTML(s.id)}')">🗑️</button>
       </td>
     </tr>`;
   }).join("");
+
+  renderSLPagination(allShortLinks.length, totalPages);
 }
+
+function renderSLPagination(total, totalPages) {
+  let el = document.getElementById("sl-pagination");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "sl-pagination";
+    el.style.cssText = "display:flex;align-items:center;gap:8px;justify-content:center;padding:12px 0;flex-wrap:wrap";
+    document.getElementById("shortlinks-tbody")?.closest("table")?.after(el);
+  }
+  if (totalPages <= 1) { el.innerHTML = ""; return; }
+  el.innerHTML = `
+    <button class="btn btn-outline btn-xs" ${currentSLPage === 1 ? "disabled" : ""} onclick="goSLPage(${currentSLPage - 1})">◀</button>
+    <span style="font-size:13px">Trang ${currentSLPage}/${totalPages}</span>
+    <button class="btn btn-outline btn-xs" ${currentSLPage === totalPages ? "disabled" : ""} onclick="goSLPage(${currentSLPage + 1})">▶</button>
+    <span style="font-size:12px;color:#999">${total} links</span>
+  `;
+}
+
+window.goSLPage = function(page) {
+  currentSLPage = page;
+  renderShortLinks();
+};
 
 window.copyToClipboard = function(text, btn) {
   navigator.clipboard.writeText(text).then(() => {
