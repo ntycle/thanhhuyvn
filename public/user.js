@@ -1010,7 +1010,7 @@ async function loadMyBonus() {
 }
 
 function bonusCard(borderColor, icon, title, bodyHtml) {
-  return `<div style="background:#fff;border-radius:16px;padding:24px 20px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,0.08);border:2px solid ${borderColor};text-align:center">
+  return `<div style="background:#fff;border-radius:16px;padding:24px 20px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,0.08);border:2px solid ${borderColor};text-align:center;max-width:480px;margin-left:auto;margin-right:auto">
     <div style="font-size:48px;margin-bottom:12px">${icon}</div>
     <div style="font-size:18px;font-weight:700;color:#333;margin-bottom:8px">${title}</div>
     ${bodyHtml}
@@ -1060,7 +1060,7 @@ function renderBonusTab() {
         <div style="font-size:12px;font-weight:600;color:${statusColor(bc.status)};white-space:nowrap">${statusLabel(bc.status)}</div>
       </div>`;
     }).join("");
-    return `<div style="margin-top:4px"><div style="font-size:13px;font-weight:600;color:#555;margin-bottom:10px">📋 Tất cả mã của bạn (${myBonusCodes.length})</div>${list}</div>`;
+    return `<div style="margin-top:4px;max-width:480px;margin-left:auto;margin-right:auto"><div style="font-size:13px;font-weight:600;color:#555;margin-bottom:10px">📋 Tất cả mã của bạn (${myBonusCodes.length})</div>${list}</div>`;
   }
 
   if (!myBonusCode) {
