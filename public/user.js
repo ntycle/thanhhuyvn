@@ -703,6 +703,14 @@ async function handleZaloOauth(code) {
         return;
       }
 
+      // Kiểm tra ZaloID này đã được liên kết với tài khoản khác chưa
+      const dupSnap = await getDocs(query(collection(db, "users"), where("zaloId", "==", zaloId)));
+      const alreadyLinked = dupSnap.docs.find(d => d.id !== resolvedUid);
+      if (alreadyLinked) {
+        if (msg) { msg.className = "amsg err"; msg.textContent = "❌ Tài khoản Zalo này đã được liên kết với một tài khoản khác."; }
+        return;
+      }
+
       await setDoc(doc(db, "users", resolvedUid), { zaloId, updatedAt: serverTimestamp() }, { merge: true });
       if (cachedUserDoc?.data) cachedUserDoc.data.zaloId = zaloId;
       else if (cachedUserDoc) cachedUserDoc.zaloId = zaloId;
