@@ -5,7 +5,7 @@ export default function Page() {
   return (
     <>
       <script dangerouslySetInnerHTML={{ __html: `window.ENV={apiKey:${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_API_KEY)},authDomain:${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN)},projectId:${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID)},storageBucket:${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET)},messagingSenderId:${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID)},appId:${JSON.stringify(process.env.NEXT_PUBLIC_FIREBASE_APP_ID)}};` }} />
-      <script type="module" src="/admin.js?v=202606231621"></script>
+      <script type="module" src="/admin.js?v=202606300001"></script>
       <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: `
 
 <!-- LOGIN -->
