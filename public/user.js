@@ -895,7 +895,7 @@ window.createPaymentRequest = async function () {
       userId: me,
       userName: myName,
       orderIds: orderIds,
-      totalCount: eligibleOrders.length,
+      totalCount: new Set(eligibleOrders.map(o => (o["ID đơn hàng"] || o._id).split("_")[0])).size,
       totalValue: totalDisc,
       totalOrderValue: totalVal,
       bonusApplied,
