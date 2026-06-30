@@ -312,11 +312,10 @@ export default function Page() {
           </div>
         </div>
       </div>
-    </div>
 
       <!-- BONUS TAB -->
       <div id="main-bonus" style="display:none">
-        <div id="main-bonus-content" style="padding:8px 0"></div>
+        <div id="main-bonus-content" style="padding:12px 0"></div>
       </div>
     </div>
   </div>
