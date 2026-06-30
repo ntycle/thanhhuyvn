@@ -812,7 +812,7 @@ window.confirmUpload = async function() {
         // - Nếu có ID Model → luôn tạo mới (có thể là sản phẩm khác trong cùng đơn)
         // - Nếu không có ID Model → bỏ qua để tránh tạo trùng
         if (!matchedDoc && existingDocs.length > 0 && !modelId) {
-            return;
+            continue;
         }
 
         let docId = "";
