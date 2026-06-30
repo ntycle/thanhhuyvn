@@ -968,7 +968,7 @@ function renderPaymentRequests() {
     const uInfo = allUsers.find(x => x.id === r.userId) || {};
     const bankAcc = uInfo.bankAccount || "";
     const bankName = uInfo.bankName || "";
-    const amount = r.totalValue || 0;
+    const amount = r.totalPayout || r.totalValue || 0;
     const userName = (r.userName || "USER").trim();
     // Thay thế dấu gạch ngang/underscore bằng khoảng trắng vì VietQR xoá kí tự đặc biệt làm dính chữ
     const neatId = (r.requestId || "").replace(/_/g, ' '); 
