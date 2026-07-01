@@ -194,6 +194,9 @@ async function autoClaimRealOrders(orders) {
 }
 
 async function refreshMyOrders() {
+  // Render skeleton ngay để user thấy UI trong khi chờ data
+  renderMyOrders(true);
+
   const q = query(collection(db, "orders"), where("userId", "==", me), limit(50));
   const snap = await getDocs(q);
   myOrders = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
@@ -201,18 +204,19 @@ async function refreshMyOrders() {
   // Bước 1: Dọn trùng ID trong myOrders
   const cleaned = await cleanupDuplicateDrafts(myOrders);
 
-  // Bước 2: Với mỗi nháp còn lại, chủ động tìm đơn thật trong Firestore
-  //         → xóa nháp + tự gán đơn thật về user (không cần search thủ công)
-  const autoClaimed = await autoClaimRealOrders(
-    cleaned
-      ? (await getDocs(query(collection(db, "orders"), where("userId", "==", me), limit(50)))).docs.map(d => ({ _id: d.id, ...d.data() }))
-      : myOrders
-  );
+  // Bước 2: autoClaimRealOrders — dùng lại myOrders đã có, không fetch lại
+  const ordersForClaim = cleaned
+    ? (await getDocs(query(collection(db, "orders"), where("userId", "==", me), limit(50)))).docs.map(d => ({ _id: d.id, ...d.data() }))
+    : myOrders;
+  const autoClaimed = await autoClaimRealOrders(ordersForClaim);
 
-  // Reload lần cuối nếu có bất kỳ thay đổi nào
-  if (cleaned || autoClaimed) {
+  // Reload lần cuối CHỈ KHI có thay đổi thực sự (autoClaimed), cleaned đã reload ở trên
+  if (autoClaimed && !cleaned) {
     const snap2 = await getDocs(query(collection(db, "orders"), where("userId", "==", me), limit(50)));
     myOrders = snap2.docs.map(d => ({ _id: d.id, ...d.data() }));
+  } else if (cleaned) {
+    // ordersForClaim đã là data mới nhất sau cleaned
+    myOrders = ordersForClaim;
   }
 
   const count = myOrders.length;
@@ -293,9 +297,16 @@ function groupOrdersById(orders) {
 }
 
 window.renderMyOrders = renderMyOrders;
-function renderMyOrders() {
+function renderMyOrders(skeleton = false) {
   const el = document.getElementById("mine-list");
-  
+
+  if (skeleton) {
+    el.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px;padding:4px 0">
+      ${[1,2,3].map(() => `<div style="height:64px;border-radius:10px;background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.2s infinite"></div>`).join("")}
+    </div>`;
+    return;
+  }
+
   let filteredOrders = myOrders;
   const filterSelect = document.getElementById("order-filter");
   if (filterSelect) {
