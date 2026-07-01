@@ -18,7 +18,7 @@ async function getFirestore() {
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { senderZaloId, code } = body;
+    const { senderZaloId, username_zalo, code } = body;
 
     if (!senderZaloId || !code) {
       return NextResponse.json({ error: 'Thiếu thông tin' }, { status: 400 });
@@ -62,6 +62,19 @@ export async function POST(req) {
       expireAt: expireAt,
       activatedByZaloId: senderZaloId,
     });
+
+    // Gán senderZaloId + username_zalo vào user document
+    if (data.userId && (senderZaloId || username_zalo)) {
+      try {
+        const userRef = db.collection('users').doc(data.userId);
+        const updateData = {};
+        if (senderZaloId) updateData.senderZaloId = senderZaloId;
+        if (username_zalo) updateData.zaloUsername = username_zalo;
+        await userRef.set(updateData, { merge: true });
+      } catch (_) {
+        // Lỗi cập nhật Zalo info không ảnh hưởng đến việc kích hoạt
+      }
+    }
 
     return NextResponse.json({
       success: true,
