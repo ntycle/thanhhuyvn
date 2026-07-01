@@ -437,7 +437,7 @@ const SEARCH_LIMIT = 15;    // tối đa 15 lần / phút
 
 // Shopee order ID: bắt đầu bằng 6 chữ số (YYMMDD), theo sau là chữ số/chữ hoa, tổng 12-18 ký tự
 function isValidOrderId(id) {
-  return /^\d{6}[A-Z0-9]{6,12}$/.test(id);
+  return /^\d{6}(?=[A-Z0-9]{6,12}$)(?=\d*[A-Z])[A-Z0-9]{6,12}$/.test(id);
 }
 
 window.doSearch = async function () {
