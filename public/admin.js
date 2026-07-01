@@ -770,6 +770,14 @@ window.confirmUpload = async function() {
     let idCounter = {};
     let usedDocIds = new Set();
 
+    // Build lookup map từ allUsers để auto-assign theo Sub_id2/Sub_id3
+    const userBySenderZaloId = {};
+    const userByZaloUsername = {};
+    for (const u of allUsers) {
+      if (u.senderZaloId) userBySenderZaloId[u.senderZaloId] = u.id;
+      if (u.zaloUsername) userByZaloUsername[u.zaloUsername] = u.id;
+    }
+
     for (let i = 0; i < pendingData.length; i += CHUNK) {
       const batch = writeBatch(db);
       const slice = pendingData.slice(i, i + CHUNK);
@@ -896,7 +904,15 @@ window.confirmUpload = async function() {
           } catch(e) {
             // Không ảnh hưởng đến việc tạo đơn mới
           }
-          batch.set(ref, { ...order, userId: inheritUserId, claimedAt: inheritClaimedAt, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+          // Auto-assign userId theo Sub_id2 (senderZaloId) hoặc Sub_id3 (zaloUsername)
+          if (!inheritUserId) {
+            const sub2 = (order["Sub_id2"] || "").toString().trim();
+            const sub3 = (order["Sub_id3"] || "").toString().trim();
+            inheritUserId = (sub2 && userBySenderZaloId[sub2])
+              || (sub3 && userByZaloUsername[sub3])
+              || null;
+          }
+          batch.set(ref, { ...order, userId: inheritUserId, claimedAt: inheritUserId ? serverTimestamp() : null, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
           countNew++;
         }
       }
