@@ -832,8 +832,8 @@ async function handleZaloOauth(code) {
     }
     await setDoc(doc(db, "users", userCredential.user.uid), updateData, { merge: true });
 
-    // Tạo bonus code cho user Zalo mới đăng ký sau ngày launch
-    if (isNewUser && new Date() >= BONUS_LAUNCH_DATE) {
+    // Tạo bonus code cho user Zalo (nếu chưa có) sau ngày launch
+    if (new Date() >= BONUS_LAUNCH_DATE) {
       await createBonusCodeForUser(userCredential.user.uid, zaloId);
     }
 
