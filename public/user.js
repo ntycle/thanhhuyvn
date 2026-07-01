@@ -193,9 +193,28 @@ async function autoClaimRealOrders(orders) {
   return changed;
 }
 
-async function refreshMyOrders() {
+const ORDERS_CACHE_KEY = () => `myOrders_${me}`;
+const ORDERS_CACHE_TTL = 5 * 60 * 1000; // 5 phút
+
+async function refreshMyOrders(forceRefresh = false) {
   // Render skeleton ngay để user thấy UI trong khi chờ data
   renderMyOrders(true);
+
+  // Thử load từ sessionStorage trước
+  if (!forceRefresh) {
+    try {
+      const cached = sessionStorage.getItem(ORDERS_CACHE_KEY());
+      if (cached) {
+        const { data, ts } = JSON.parse(cached);
+        if (Date.now() - ts < ORDERS_CACHE_TTL) {
+          myOrders = data;
+          renderMyOrders();
+          _updateOrderStats();
+          return;
+        }
+      }
+    } catch(e) {}
+  }
 
   const q = query(collection(db, "orders"), where("userId", "==", me), limit(50));
   const snap = await getDocs(q);
@@ -215,13 +234,21 @@ async function refreshMyOrders() {
     const snap2 = await getDocs(query(collection(db, "orders"), where("userId", "==", me), limit(50)));
     myOrders = snap2.docs.map(d => ({ _id: d.id, ...d.data() }));
   } else if (cleaned) {
-    // ordersForClaim đã là data mới nhất sau cleaned
     myOrders = ordersForClaim;
   }
 
+  // Lưu vào sessionStorage
+  try {
+    sessionStorage.setItem(ORDERS_CACHE_KEY(), JSON.stringify({ data: myOrders, ts: Date.now() }));
+  } catch(e) {}
+
+  _updateOrderStats();
+  renderMyOrders();
+}
+
+function _updateOrderStats() {
   const count = myOrders.length;
   document.getElementById("mine-badge").textContent = count > 0 ? `(${count})` : "";
-
   let totalVal = 0, totalDisc = 0, totalAvailable = 0;
   myOrders.forEach(o => {
     totalVal += Number(o["Giá trị đơn hàng (₫)"]) || 0;
@@ -236,8 +263,10 @@ async function refreshMyOrders() {
   document.getElementById("sum-disc").textContent = totalDisc.toLocaleString("vi-VN");
   const elTotalAvailable = document.getElementById("sum-avail");
   if (elTotalAvailable) elTotalAvailable.textContent = totalAvailable.toLocaleString("vi-VN");
+}
 
-  renderMyOrders();
+function _clearOrdersCache() {
+  try { sessionStorage.removeItem(ORDERS_CACHE_KEY()); } catch(e) {}
 }
 
 function paymentBadge(val) {
@@ -403,14 +432,43 @@ function renderMyOrders(skeleton = false) {
 
 // ─── SEARCH ──────────────────────────────────────────────
 const searchCache = new Map();
+let _searchTimestamps = []; // lưu thời điểm các lần tìm
+const SEARCH_LIMIT = 15;    // tối đa 15 lần / phút
+
+// Shopee order ID: bắt đầu bằng 6 chữ số (YYMMDD), theo sau là chữ số/chữ hoa, tổng 12-18 ký tự
+function isValidOrderId(id) {
+  return /^\d{6}[A-Z0-9]{6,12}$/.test(id);
+}
 
 window.doSearch = async function () {
   const raw = document.getElementById("orderId").value;
-  const ids = Array.from(new Set(raw.toUpperCase().split(/[\s,]+/).filter(Boolean)));
+  const allIds = Array.from(new Set(raw.toUpperCase().split(/[\s,]+/).filter(Boolean)));
+  const ids = allIds.filter(isValidOrderId);
+  const invalidIds = allIds.filter(id => !isValidOrderId(id));
   const resultDiv = document.getElementById("search-result");
-  if (!ids.length) return;
+  if (!allIds.length) return;
+
+  if (ids.length === 0) {
+    resultDiv.innerHTML = `<div class="not-found" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div><b>⚠️ Không có thông tin đơn hàng</b><br><span style="font-size:13px;color:#999">Hãy thử tìm lại bạn nhé.</span></div>
+      <button onclick="document.getElementById('orderId').value='';document.getElementById('search-result').innerHTML=''" style="background:#EE4D2D;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">✏️ Xoá văn bản</button>
+    </div>`;
+    return;
+  }
+  if (invalidIds.length > 0) {
+    resultDiv.innerHTML = `<div class="msg msg-info" style="margin-bottom:8px">⚠️ Bỏ qua ${invalidIds.length} mã không hợp lệ: <code>${invalidIds.join(", ")}</code></div>`;
+  }
 
   const btn = document.getElementById("btn-search");
+  const now = Date.now();
+  // Giữ lại các lần tìm trong 60 giây gần nhất
+  _searchTimestamps = _searchTimestamps.filter(t => now - t < 60000);
+  if (_searchTimestamps.length >= SEARCH_LIMIT) {
+    const resetIn = Math.ceil((60000 - (now - _searchTimestamps[0])) / 1000);
+    alert(`⚠️ Bạn đã tìm ${SEARCH_LIMIT} lần trong 1 phút. Vui lòng chờ ${resetIn}s.`);
+    return;
+  }
+  _searchTimestamps.push(now);
   btn.disabled = true; btn.textContent = "⏳ Đang tìm...";
   resultDiv.innerHTML = `<div class="spinner-wrap"><div class="spinner"></div>Đang tìm kiếm trong hệ thống...</div>`;
 
@@ -619,7 +677,8 @@ window.claimOrder = async function (docIdsStr, btn) {
     if (anySuccess) await batch.commit();
 
     btn.parentNode.innerHTML = `<span class="tag-mine">✅ Của tôi</span>`;
-    await refreshMyOrders();
+    _clearOrdersCache();
+    await refreshMyOrders(true);
   } catch (err) {
     btn.disabled = false; btn.textContent = "Lưu Thông Tin Mặc Định";
     alert("❌ Lỗi lưu thông tin: " + err.message);
@@ -815,7 +874,8 @@ window.saveMissingOrder = async function (id, btn) {
       }
     });
     btn.parentNode.innerHTML = `<span class="tag-mine" style="padding: 8px 16px; font-size: 13px;">✅ Đã lưu</span>`;
-    await refreshMyOrders();
+    _clearOrdersCache();
+    await refreshMyOrders(true);
   } catch (e) {
     if (e.message === "TAKEN") {
       btn.parentNode.innerHTML = `<span class="tag-other" style="padding: 8px 16px; font-size: 13px;">🔒 Đã có người gán</span>`;
@@ -837,7 +897,8 @@ window.deleteMyOrder = async function (docIdsStr, btn) {
       batch.delete(doc(db, "orders", id));
     }
     await batch.commit();
-    await refreshMyOrders();
+    _clearOrdersCache();
+    await refreshMyOrders(true);
     // Refresh search results if we are currently looking at search
     if (document.getElementById("main-search").style.display === "block" && document.getElementById("orderId").value.trim() !== "") {
       doSearch();
@@ -945,7 +1006,8 @@ window.createPaymentRequest = async function () {
     await batch.commit();
     const bonusMsg = bonusApplied ? `\n🎁 Bonus +${bonusAmount.toLocaleString("vi-VN")}đ đã được áp dụng!` : "";
     alert(`✅ Đã tạo yêu cầu thanh toán thành công!${bonusMsg}`);
-    await refreshMyOrders();
+    _clearOrdersCache();
+    await refreshMyOrders(true);
     if (bonusApplied) loadMyBonus();
   } catch (e) {
     alert("❌ Lỗi: " + e.message);
