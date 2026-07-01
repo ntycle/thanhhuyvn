@@ -17,6 +17,12 @@ async function getFirestore() {
 
 export async function POST(req) {
   try {
+    // Xác thực bot secret
+    const authHeader = req.headers.get('authorization');
+    if (!process.env.BONUS_SECRET || authHeader !== `Bearer ${process.env.BONUS_SECRET}`) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await req.json();
     const { senderZaloId, username_zalo, code } = body;
 
